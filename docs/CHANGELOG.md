@@ -3,6 +3,11 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v15 — Projeção de parcelas (Onda 3)
+- Painel **Parcelas futuras**: mostra parcelas em aberto (Parcelado com parcela atual < total).
+- Total ainda a pagar + gráfico do valor **comprometido nos próximos 6 meses**.
+- Backend: `getProjecaoParcelas(mesISO, meses)` (só leitura/cálculo).
+
 ## v14 — Sanitização para repositório público
 - Removidos dados pessoais dos valores-semente: salário e saldos zerados em `criarEstruturaPlanilha` (só afetam a criação de planilha nova).
 - Removido e-mail pessoal e valor de salário de exemplo na documentação.

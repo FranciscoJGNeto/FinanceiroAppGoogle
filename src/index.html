@@ -529,6 +529,10 @@
     .sugActions .miniBtn { flex: 0 0 auto; padding: 7px 12px; }
     .sugActions .apply { border-color: rgba(34, 197, 94, .5); color: #86efac; }
 
+    /* Parcelas futuras */
+    .projTotal { font-size: 14px; }
+    .projTotal b { color: var(--warn); }
+
     /* Acordeão dos painéis */
     .accHead { cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
     .accHead:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; border-radius: var(--r) var(--r) 0 0; }
@@ -747,6 +751,19 @@
           <div class="chartTitle">🗂️ Despesas por categoria (mês)</div>
           <div id="chartCat"></div>
         </div>
+      </div>
+    </section>
+
+    <!-- Parcelas futuras -->
+    <section class="panel acc" data-acc="parcelas">
+      <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="true" aria-controls="bodyParcelas">
+        <h2>🔮 Parcelas futuras</h2>
+        <div class="right">
+          <span class="chevron" aria-hidden="true">▾</span>
+        </div>
+      </div>
+      <div class="panelBody" id="bodyParcelas">
+        <div id="projContent"></div>
       </div>
     </section>
 
@@ -1083,6 +1100,29 @@
       }).join('');
     }
 
+    // ---- Parcelas futuras (projeção) ----
+    function renderProjecao(data) {
+      const el = document.getElementById('projContent');
+      const itens = (data && data.itens) || [];
+      if (itens.length === 0) {
+        el.innerHTML = '<div style="color:var(--muted); font-size:13px;">Nenhuma parcela em aberto neste mês. Lançamentos do tipo <b>Parcelado</b> com parcela atual menor que o total aparecem aqui.</div>';
+        return;
+      }
+      const lista = itens.map(i => `<div class="orcRow">
+        <div class="orcTop">
+          <div class="orcName">${escapeHtml(i.descricao)} <span class="pill">${escapeHtml(i.parcela)}</span></div>
+          <div class="orcVals">${moneyBRL(i.valor)}/mês · faltam ${i.restante}</div>
+        </div>
+        <div class="orcVals" style="text-align:left;">Restante: <b>${moneyBRL(i.totalRestante)}</b></div>
+      </div>`).join('');
+      el.innerHTML =
+        `<div class="projTotal">Total ainda a pagar em parcelas: <b>${moneyBRL(data.totalRestante)}</b></div>
+         <div class="chartTitle" style="margin-top:12px;">📅 Comprometido nos próximos meses</div>
+         <div id="projChartInner"></div>
+         <div style="margin-top:12px;">${lista}</div>`;
+      renderBars(document.getElementById('projChartInner'), data.meses || []);
+    }
+
     // ---- Orçamentos por categoria (gasto vs limite) ----
     function carregarOrcamentos() {
       google.script.run
@@ -1332,6 +1372,11 @@
 
       carregarOrcamentos();
       carregarSugestoes(mesISO);
+
+      google.script.run
+        .withSuccessHandler(renderProjecao)
+        .withFailureHandler(() => { /* silencioso */ })
+        .getProjecaoParcelas(mesISO, 6);
     }
 
     function fillResumo(r) {

@@ -517,6 +517,66 @@ function getPorCategoria(mesISO) {
     .sort((a, b) => b.total - a.total);
 }
 
+// Projeta as parcelas em aberto do mês selecionado para os próximos meses.
+// Para cada transação "Parcelado" com parcelaAtual < parcelaTotal, considera que
+// faltam (total - atual) parcelas de mesmo valor, uma por mês seguinte.
+function getProjecaoParcelas(mesISO, meses) {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEET_TRANS);
+  if (!sh) throw new Error('Aba "Transacoes" não encontrada na planilha');
+  const n = meses && meses > 0 ? meses : 6;
+
+  const vals = sh.getDataRange().getValues();
+  if (vals.length < 2) return { itens: [], meses: [], totalRestante: 0 };
+  const map = colMapTrans_(vals[0].map(norm_));
+  const col = (r, f) => (map[f] != null ? r[map[f]] : '');
+  const base = mesISO ? parseLocalDate_(mesISO) : new Date();
+  const ymTarget = base.getFullYear() * 100 + (base.getMonth() + 1);
+  const tz = Session.getScriptTimeZone();
+
+  // Próximos n meses (a partir do mês seguinte)
+  const mesesArr = [];
+  const idx = {};
+  for (let o = 1; o <= n; o++) {
+    const d = new Date(base.getFullYear(), base.getMonth() + o, 1);
+    idx[d.getFullYear() * 12 + d.getMonth()] = mesesArr.length;
+    mesesArr.push({ label: Utilities.formatDate(d, tz, 'MMM/yy'), total: 0 });
+  }
+
+  const itens = [];
+  let totalRestante = 0;
+  for (let i = 1; i < vals.length; i++) {
+    const r = vals[i];
+    if (norm_(col(r, 'tipo')) !== 'parcelado') continue;
+    if (toYM_(col(r, 'data')) !== ymTarget) continue;
+    const pa = Number(col(r, 'parcelaAtual')) || 0;
+    const pt = Number(col(r, 'parcelaTotal')) || 0;
+    const v = Number(col(r, 'valor')) || 0;
+    if (!(pt > pa) || !(v > 0)) continue;
+
+    const restante = pt - pa;
+    totalRestante += restante * v;
+    itens.push({
+      descricao: String(col(r, 'descricao') || ''),
+      parcela: `${pa}/${pt}`,
+      valor: round2_(v),
+      restante: restante,
+      totalRestante: round2_(restante * v)
+    });
+
+    const dv = col(r, 'data');
+    const dd = dv instanceof Date ? dv : new Date(dv);
+    const bIdx = dd.getFullYear() * 12 + dd.getMonth();
+    for (let o = 1; o <= restante; o++) {
+      const mi = idx[bIdx + o];
+      if (mi != null) mesesArr[mi].total += v;
+    }
+  }
+  mesesArr.forEach(m => { m.total = round2_(m.total); });
+  itens.sort((a, b) => b.totalRestante - a.totalRestante);
+  return { itens: itens, meses: mesesArr, totalRestante: round2_(totalRestante) };
+}
+
 // ===================== Orçamentos por categoria =====================
 
 // Lê os orçamentos definidos (aba Orcamentos: A=Categoria, B=Limite).
