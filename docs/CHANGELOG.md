@@ -3,6 +3,11 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v17 — Acerto de contas + suíte de testes
+- Painel **Compartilhado**: lista as despesas compartilhadas do mês e mostra **quanto a outra pessoa te reembolsa** (usa o rateio da Config).
+- Backend: `getCompartilhados(mesISO)`.
+- **Suíte de testes** em `tests/` (Node + mock do Apps Script): 32 checagens cobrindo valores, resumo, CRUD, categorias, orçamentos, parcelas, recorrentes e compartilhado. Rode com `node tests/run.js`.
+
 ## v16 — Recorrentes (modo manual) — Onda 3 concluída
 - Botão **Gerar recorrentes deste mês**: replica os lançamentos "Recorrente" de meses anteriores no mês atual.
 - **Anti-duplicação e idempotente:** não recria itens que já existem no mês (pode clicar várias vezes).

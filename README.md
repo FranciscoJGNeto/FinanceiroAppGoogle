@@ -29,7 +29,8 @@ na **sua** conta Google (nada de servidor de terceiros, nada de mensalidade).
 | **Gerenciar** | Editar e excluir qualquer lançamento · busca/filtro instantâneo por descrição, conta, categoria… |
 | **Entender** | Resumo do mês (totais por conta, gasto compartilhado, reembolso, previsão de saldo, % do salário) |
 | **Visualizar** | Dashboard com gráficos: rosca por conta · evolução de 6 meses · barras por categoria |
-| **Planejar** | Orçamento por categoria, com barra de progresso (verde / âmbar / vermelho) |
+| **Planejar** | Orçamento por categoria (com sugestões e alerta de estouro) · projeção de parcelas · recorrentes |
+| **Dividir** | Acerto de contas de gastos compartilhados (quanto a outra pessoa te reembolsa) |
 | **Experiência** | Painéis em acordeão que lembram o estado · atualização automática · instalável na tela inicial (Android/iOS) |
 
 > 💡 **Gasto compartilhado:** marque serviços que você divide com alguém (ex.: streamings)
@@ -73,6 +74,9 @@ FinanceiroAppGoogle/
 │   ├── appsscript.json    # manifesto (timezone America/Sao_Paulo, V8)
 │   ├── Código.js          # backend
 │   └── index.html         # frontend (UI + JS)
+├── tests/                 # suíte de testes em Node (mock do Apps Script)
+│   ├── mock-sheets.js     # mock da API do Sheets + carregador do Código.js
+│   └── run.js             # casos de teste (node tests/run.js)
 └── docs/                  # documentação (não vai para a nuvem)
     ├── CHANGELOG.md               # histórico de versões
     ├── ANALISE_PROJETO.md         # o que é o projeto
@@ -99,6 +103,19 @@ Primeira vez? Rode a função **`criarEstruturaPlanilha`** no editor do Apps Scr
 criar as abas automaticamente. Já tem uma planilha? Rode **`migrarEstrutura`** uma vez
 para adicionar as colunas novas (ID, categorias etc.) sem perder dados.
 
+## 🧪 Testes
+
+O backend tem uma suíte de testes que roda em **Node**, com a API do Google Apps
+Script **mockada** — ou seja, valida a lógica **sem tocar em nenhuma planilha real**.
+
+```bash
+node tests/run.js
+```
+
+Cobre parsing de valores, mapeamento por cabeçalho, resumo, CRUD, categorias,
+evolução, orçamentos (com sugestões), projeção de parcelas, recorrentes e acerto
+de contas. Sai com código ≠ 0 se algo falhar (pronto para CI).
+
 ## 🛠️ Stack
 
 - **Google Apps Script (V8)** — backend serverless e Web App
@@ -111,8 +128,9 @@ para adicionar as colunas novas (ID, categorias etc.) sem perder dados.
 
 - ✅ **Onda 1** — editar/excluir, receitas, busca
 - ✅ **Onda 2** — categorias e dashboard com gráficos
-- 🔜 **Onda 3** — orçamentos (feito) · lançamentos recorrentes automáticos · projeção de parcelas
-- 🔮 **Futuro** — acerto de contas compartilhadas, lembretes, importar extrato, bot de lançamento
+- ✅ **Onda 3** — orçamentos (com sugestões/alerta), projeção de parcelas, recorrentes (manual)
+- ✅ **Acerto de contas** compartilhadas
+- 🔮 **Futuro** — recorrentes automáticos (gatilho), lembretes de vencimento, importar extrato, backup/exportação
 
 Detalhes e ideias em [docs/PLANO_FUNCIONALIDADES.md](docs/PLANO_FUNCIONALIDADES.md).
 Histórico do que já foi entregue em [docs/CHANGELOG.md](docs/CHANGELOG.md).

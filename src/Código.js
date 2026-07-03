@@ -652,6 +652,50 @@ function gerarRecorrentes(mesISO) {
   }
 }
 
+// Lista as despesas compartilhadas do mês e calcula o reembolso (acerto de contas).
+function getCompartilhados(mesISO) {
+  const ss = SpreadsheetApp.getActive();
+  const shT = ss.getSheetByName(SHEET_TRANS);
+  const shS = ss.getSheetByName(SHEET_SERV);
+  const shC = ss.getSheetByName(SHEET_CONF);
+  if (!shT) throw new Error('Aba "Transacoes" não encontrada na planilha');
+
+  const vals = shT.getDataRange().getValues();
+  const map = vals.length ? colMapTrans_(vals[0].map(norm_)) : {};
+  const col = (r, f) => (map[f] != null ? r[map[f]] : '');
+  const d = mesISO ? parseLocalDate_(mesISO) : new Date();
+  const ymTarget = d.getFullYear() * 100 + (d.getMonth() + 1);
+
+  let compartilhados = [];
+  if (shS && shS.getLastRow() > 1) {
+    const sv = shS.getDataRange().getValues();
+    compartilhados = sv.slice(1)
+      .filter(r => r[0] && (r[1] === true || String(r[1]).toLowerCase() === 'true'))
+      .map(r => String(r[0]).trim().toLowerCase());
+  }
+
+  const itens = [];
+  let total = 0;
+  for (let i = 1; i < vals.length; i++) {
+    const r = vals[i];
+    if (toYM_(col(r, 'data')) !== ymTarget) continue;
+    if (norm_(col(r, 'natureza')) === 'receita') continue;
+    const desc = String(col(r, 'descricao') || '').trim();
+    if (!desc) continue;
+    const dl = desc.toLowerCase();
+    if (compartilhados.some(c => c && dl.includes(c))) {
+      const v = Number(col(r, 'valor')) || 0;
+      total += v;
+      itens.push({ descricao: desc, conta: String(col(r, 'conta') || ''), valor: round2_(v) });
+    }
+  }
+
+  const cfg = getConfigMap_(shC);
+  const rateio = numFrom_(cfg.rateio, 0.5);
+  itens.sort((a, b) => b.valor - a.valor);
+  return { itens: itens, total: round2_(total), rateio: rateio, reembolso: round2_(total * rateio) };
+}
+
 // ===================== Orçamentos por categoria =====================
 
 // Lê os orçamentos definidos (aba Orcamentos: A=Categoria, B=Limite).

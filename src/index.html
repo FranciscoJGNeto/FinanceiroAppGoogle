@@ -533,6 +533,11 @@
     .projTotal { font-size: 14px; }
     .projTotal b { color: var(--warn); }
 
+    /* Acerto de contas */
+    .compAcerto { margin-top: 8px; font-size: 14px; padding: 10px 12px; border-radius: 12px;
+      border: 1px solid rgba(34, 197, 94, .4); background: rgba(34, 197, 94, .08); }
+    .compAcerto b { color: var(--ok); }
+
     /* Acordeão dos painéis */
     .accHead { cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
     .accHead:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; border-radius: var(--r) var(--r) 0 0; }
@@ -764,6 +769,19 @@
       </div>
       <div class="panelBody" id="bodyParcelas">
         <div id="projContent"></div>
+      </div>
+    </section>
+
+    <!-- Compartilhado / acerto de contas -->
+    <section class="panel acc" data-acc="compartilhado">
+      <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="true" aria-controls="bodyCompartilhado">
+        <h2>🤝 Compartilhado</h2>
+        <div class="right">
+          <span class="chevron" aria-hidden="true">▾</span>
+        </div>
+      </div>
+      <div class="panelBody" id="bodyCompartilhado">
+        <div id="compContent"></div>
       </div>
     </section>
 
@@ -1124,6 +1142,27 @@
       renderBars(document.getElementById('projChartInner'), data.meses || []);
     }
 
+    // ---- Compartilhado / acerto de contas ----
+    function renderCompartilhado(data) {
+      const el = document.getElementById('compContent');
+      const itens = (data && data.itens) || [];
+      if (itens.length === 0) {
+        el.innerHTML = '<div style="color:var(--muted); font-size:13px;">Nenhum gasto compartilhado neste mês. Marque serviços como compartilhados na aba <b>Servicos</b> da planilha.</div>';
+        return;
+      }
+      const pctOutra = Math.round((data.rateio || 0) * 100);
+      const lista = itens.map(i => `<div class="orcRow">
+        <div class="orcTop">
+          <div class="orcName">${escapeHtml(i.descricao)} <span class="pill">🏦 ${escapeHtml(i.conta)}</span></div>
+          <div class="orcVals">${moneyBRL(i.valor)}</div>
+        </div>
+      </div>`).join('');
+      el.innerHTML =
+        `<div class="projTotal">Total compartilhado: <b>${moneyBRL(data.total)}</b></div>
+         <div class="compAcerto">💸 A outra pessoa te reembolsa: <b>${moneyBRL(data.reembolso)}</b> <span class="sugSub">(${pctOutra}% do compartilhado)</span></div>
+         <div style="margin-top:12px;">${lista}</div>`;
+    }
+
     // ---- Orçamentos por categoria (gasto vs limite) ----
     function carregarOrcamentos() {
       google.script.run
@@ -1378,6 +1417,11 @@
         .withSuccessHandler(renderProjecao)
         .withFailureHandler(() => { /* silencioso */ })
         .getProjecaoParcelas(mesISO, 6);
+
+      google.script.run
+        .withSuccessHandler(renderCompartilhado)
+        .withFailureHandler(() => { /* silencioso */ })
+        .getCompartilhados(mesISO);
     }
 
     function fillResumo(r) {
