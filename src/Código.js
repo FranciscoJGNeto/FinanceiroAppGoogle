@@ -577,6 +577,81 @@ function getProjecaoParcelas(mesISO, meses) {
   return { itens: itens, meses: mesesArr, totalRestante: round2_(totalRestante) };
 }
 
+// Gera, no mês alvo, os lançamentos recorrentes (tipo "Recorrente") a partir da
+// ocorrência mais recente de cada um em meses anteriores. Não duplica: pula
+// itens cuja descrição já exista no mês alvo. Retorna quantos criou/pulou.
+function gerarRecorrentes(mesISO) {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEET_TRANS);
+  if (!sh) throw new Error('Aba "Transacoes" não encontrada na planilha');
+
+  const target = mesISO ? parseLocalDate_(mesISO) : new Date();
+  const ymTarget = target.getFullYear() * 100 + (target.getMonth() + 1);
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const map = ensureColunasTrans_(sh);
+    const vals = sh.getDataRange().getValues();
+    const col = (r, f) => (map[f] != null ? r[map[f]] : '');
+
+    // Descrições já presentes no mês alvo (evita duplicar)
+    const existentes = {};
+    for (let i = 1; i < vals.length; i++) {
+      if (toYM_(col(vals[i], 'data')) === ymTarget) {
+        const k = norm_(col(vals[i], 'descricao'));
+        if (k) existentes[k] = true;
+      }
+    }
+
+    // Templates: recorrentes de meses ANTERIORES, o mais recente por descrição
+    const templates = {};
+    for (let i = 1; i < vals.length; i++) {
+      const r = vals[i];
+      if (norm_(col(r, 'tipo')) !== 'recorrente') continue;
+      const ym = toYM_(col(r, 'data'));
+      if (ym == null || ym >= ymTarget) continue;
+      const k = norm_(col(r, 'descricao'));
+      if (!k) continue;
+      const dv = col(r, 'data');
+      const dt = dv instanceof Date ? dv : new Date(dv);
+      if (!templates[k] || dt > templates[k]._dt) templates[k] = { _dt: dt, row: r };
+    }
+
+    const nCols = sh.getLastColumn();
+    const ultimoDia = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+    let criadas = 0;
+    let ignoradas = 0;
+
+    Object.keys(templates).forEach(k => {
+      if (existentes[k]) { ignoradas++; return; }
+      const src = templates[k];
+      const dia = Math.min(src._dt.getDate(), ultimoDia);
+      const novaData = new Date(target.getFullYear(), target.getMonth(), dia);
+      const g = (f) => (map[f] != null ? src.row[map[f]] : '');
+      const row = new Array(nCols).fill('');
+      const setc = (campo, val) => { if (map[campo] != null) row[map[campo]] = val; };
+      setc('id', Utilities.getUuid());
+      setc('data', novaData);
+      setc('conta', g('conta'));
+      setc('meio', g('meio'));
+      setc('descricao', g('descricao'));
+      setc('tipo', 'Recorrente');
+      setc('natureza', norm_(g('natureza')) === 'receita' ? 'Receita' : 'Despesa');
+      setc('categoria', g('categoria'));
+      setc('valor', Number(g('valor')) || 0);
+      setc('obs', g('obs'));
+      setc('criadoEm', new Date());
+      sh.appendRow(row);
+      criadas++;
+    });
+
+    return { ok: true, criadas: criadas, ignoradas: ignoradas };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 // ===================== Orçamentos por categoria =====================
 
 // Lê os orçamentos definidos (aba Orcamentos: A=Categoria, B=Limite).

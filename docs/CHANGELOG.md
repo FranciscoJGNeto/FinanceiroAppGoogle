@@ -3,6 +3,12 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v16 — Recorrentes (modo manual) — Onda 3 concluída
+- Botão **Gerar recorrentes deste mês**: replica os lançamentos "Recorrente" de meses anteriores no mês atual.
+- **Anti-duplicação e idempotente:** não recria itens que já existem no mês (pode clicar várias vezes).
+- Usa a ocorrência mais recente de cada recorrente; ajusta o dia ao mês (clamp).
+- Backend: `gerarRecorrentes(mesISO)`. (Modo automático por gatilho fica como opção futura.)
+
 ## v15 — Projeção de parcelas (Onda 3)
 - Painel **Parcelas futuras**: mostra parcelas em aberto (Parcelado com parcela atual < total).
 - Total ainda a pagar + gráfico do valor **comprometido nos próximos 6 meses**.

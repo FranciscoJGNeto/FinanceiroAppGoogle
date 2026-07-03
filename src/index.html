@@ -904,6 +904,7 @@
       </div>
 
       <div class="panelBody" id="bodyTransacoes">
+        <button class="btnGhost" id="btnRecorrentes" style="margin-bottom:10px;">🔄 Gerar recorrentes deste mês</button>
         <div style="margin-bottom:10px;">
           <input class="field" type="search" id="busca"
             placeholder="🔎 Buscar por descrição, conta, meio, tipo..." />
@@ -1573,6 +1574,22 @@
     }
 
     // Delegação de clique nos botões editar/excluir (cards e tabela)
+    function gerarRecorrentes() {
+      if (!confirm('Gerar os lançamentos recorrentes neste mês?\n\n'
+        + 'Itens marcados como "Recorrente" em meses anteriores que ainda não existem '
+        + 'neste mês serão criados (sem duplicar os que já existem).')) return;
+      setMsg('msgLista', '⏳ Gerando recorrentes...', 'ok');
+      google.script.run
+        .withSuccessHandler(res => {
+          const parts = [`✅ ${res.criadas} recorrente(s) criada(s)`];
+          if (res.ignoradas) parts.push(`${res.ignoradas} já existia(m)`);
+          setMsg('msgLista', parts.join(' · ') + '.', 'ok');
+          refresh();
+        })
+        .withFailureHandler(err => setMsg('msgLista', '❌ Erro ao gerar recorrentes: ' + (err?.message || err), 'err'))
+        .gerarRecorrentes(mesISOatual());
+    }
+
     function onListClick(e) {
       const btn = e.target.closest('button[data-act]');
       if (!btn) return;
@@ -1684,6 +1701,7 @@
     // Editar/excluir por transação (delegação de evento)
     document.getElementById('txCards').addEventListener('click', onListClick);
     document.getElementById('tb').addEventListener('click', onListClick);
+    document.getElementById('btnRecorrentes').addEventListener('click', gerarRecorrentes);
 
     // Máscara de moeda: reformata a cada tecla
     document.getElementById('tValor').addEventListener('input', (e) => {

@@ -1,6 +1,6 @@
 # Plano de Funcionalidades — Soluções para um App de Finanças Pessoais
 
-> **Status (jul/2026):** ✅ **Onda 1** (editar/excluir, receitas, busca), ✅ **Onda 2** (categorias, dashboard/gráficos) e ✅ **Orçamento por categoria** (2.3) concluídos. ⏳ **Onda 3** restante: lançamentos recorrentes automáticos (2.1) e projeção de parcelas (2.2). Detalhes em [CHANGELOG.md](CHANGELOG.md).
+> **Status (jul/2026):** ✅ **Onda 1**, ✅ **Onda 2** e ✅ **Onda 3** concluídas — orçamento (2.3), projeção de parcelas (2.2) e recorrentes manuais (2.1). Pendente opcional: recorrentes **automáticos** via gatilho de tempo. Detalhes em [CHANGELOG.md](CHANGELOG.md).
 
 Ideias de recursos que fazem sentido para o processo financeiro pessoal, considerando o que o app já faz (lançar gastos, resumo por conta, gastos compartilhados com reembolso, previsão de saldo). Priorizadas por **valor × esforço**.
 
