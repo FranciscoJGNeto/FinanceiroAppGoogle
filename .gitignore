@@ -1,0 +1,19 @@
+# Dependências
+node_modules/
+
+# Credenciais do clasp (ficam no HOME, mas por segurança)
+.clasprc.json
+
+# Sistema operacional
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editores
+.vscode/
+.idea/
+*.swp
+
+# Temporários
+*.log
+*.tmp
