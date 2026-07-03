@@ -3,6 +3,12 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v18 — Contas dinâmicas
+- **Contas gerenciáveis no app** (painel Contas): criar/editar/remover, com saldo — usa a aba `Saldos` como fonte.
+- Seletor de conta no formulário **populado dinamicamente** (não mais fixo em Inter/Itaú/Conta Simples).
+- **Resumo e rosca por conta agora dinâmicos**: `getResumo` retorna `porConta` (agrupado por qualquer conta), com paleta acessível que escala.
+- Backend: `getContas`, `setConta`, `deleteConta`. Testes atualizados (36 checagens).
+
 ## v17 — Acerto de contas + suíte de testes
 - Painel **Compartilhado**: lista as despesas compartilhadas do mês e mostra **quanto a outra pessoa te reembolsa** (usa o rateio da Config).
 - Backend: `getCompartilhados(mesISO)`.

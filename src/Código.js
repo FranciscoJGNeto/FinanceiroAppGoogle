@@ -382,9 +382,16 @@ function getResumo(mesISO) {
   const isDespesa = (r) => !isReceita(r); // vazio/qualquer coisa = despesa (compatível com dados antigos)
 
   // Totais por conta consideram apenas DESPESAS
-  const totalInter = sumRows(r => isDespesa(r) && contaLc(r).includes('inter'));
-  const totalItau = sumRows(r => isDespesa(r) && (contaLc(r).includes('itaú') || contaLc(r).includes('itau')));
-  const totalContaSimples = sumRows(r => isDespesa(r) && contaLc(r).includes('conta simples'));
+  // Despesas agrupadas por conta (dinâmico — não depende de contas fixas)
+  const porContaMap = {};
+  rows.forEach(r => {
+    if (isReceita(r)) return;
+    const c = String(col(r, 'conta') || '').trim() || '(sem conta)';
+    porContaMap[c] = (porContaMap[c] || 0) + (Number(col(r, 'valor')) || 0);
+  });
+  const porConta = Object.keys(porContaMap)
+    .map(c => ({ conta: c, total: round2_(porContaMap[c]) }))
+    .sort((a, b) => b.total - a.total);
 
   // Receitas lançadas no mês (entradas extras além do salário fixo da Config)
   const totalReceitas = sumRows(isReceita);
@@ -434,7 +441,7 @@ function getResumo(mesISO) {
   }
 
   // Resumo final
-  const totalGeral = round2_(totalInter + totalItau + totalContaSimples);
+  const totalGeral = round2_(porConta.reduce((a, x) => a + x.total, 0));
   const reembolso = round2_(totalCompart * rateio);
   const totalAjustado = round2_(totalGeral - reembolso);
   const pctSalario = salario > 0 ? totalAjustado / salario : 0;
@@ -443,9 +450,7 @@ function getResumo(mesISO) {
 
   return {
     mes: Utilities.formatDate(new Date(d.getFullYear(), d.getMonth(), 1), Session.getScriptTimeZone(), 'MM/yyyy'),
-    totalInter: round2_(totalInter),
-    totalItau: round2_(totalItau),
-    totalContaSimples: round2_(totalContaSimples),
+    porConta: porConta,
     totalGeral,
     totalReceitas: round2_(totalReceitas),
     totalCompart: round2_(totalCompart),
@@ -801,6 +806,67 @@ function deleteOrcamento(categoria) {
     lock.releaseLock();
   }
   return { ok: true, message: 'Orçamento removido' };
+}
+
+// ===================== Contas (dinâmicas, via aba Saldos) =====================
+
+// Lista as contas cadastradas (aba Saldos: A=Conta, B=Saldo).
+function getContas() {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEET_SALD);
+  if (!sh || sh.getLastRow() < 2) return [];
+  return sh.getDataRange().getValues().slice(1)
+    .filter(r => String(r[0]).trim())
+    .map(r => ({ conta: String(r[0]).trim(), saldo: Number(r[1]) || 0 }));
+}
+
+// Cria/atualiza uma conta e seu saldo (upsert por nome, ignora acento/caixa).
+function setConta(nome, saldo) {
+  nome = String(nome || '').trim();
+  if (!nome) throw new Error('Informe o nome da conta.');
+  const s = toNumBR_(saldo); // saldo pode ser 0 ou negativo
+
+  const ss = SpreadsheetApp.getActive();
+  let sh = ss.getSheetByName(SHEET_SALD);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_SALD);
+    sh.getRange('A1:B1').setValues([['Conta', 'Saldo']]);
+    sh.getRange('A1:B1').setFontWeight('bold');
+  }
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const last = sh.getLastRow();
+    const nomes = last > 1 ? sh.getRange(2, 1, last - 1, 1).getValues() : [];
+    let row = -1;
+    for (let i = 0; i < nomes.length; i++) {
+      if (norm_(nomes[i][0]) === norm_(nome)) { row = i + 2; break; }
+    }
+    if (row === -1) sh.appendRow([nome, s]);
+    else sh.getRange(row, 1, 1, 2).setValues([[nome, s]]);
+  } finally {
+    lock.releaseLock();
+  }
+  return { ok: true, message: 'Conta salva' };
+}
+
+// Remove uma conta da aba Saldos (não altera as transações já lançadas).
+function deleteConta(nome) {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEET_SALD);
+  if (!sh || sh.getLastRow() < 2) return { ok: true };
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const nomes = sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues();
+    for (let i = 0; i < nomes.length; i++) {
+      if (norm_(nomes[i][0]) === norm_(nome)) { sh.deleteRow(i + 2); break; }
+    }
+  } finally {
+    lock.releaseLock();
+  }
+  return { ok: true, message: 'Conta removida' };
 }
 
 // ===================== Estrutura / manutenção =====================

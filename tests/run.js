@@ -57,7 +57,7 @@ group('getResumo — receita separada de despesa');
   ]), );
   const r = api.getResumo('2026-07-01');
   eq(r.totalGeral, 186.65, 'totalGeral só despesas de julho');
-  eq(r.totalInter, 150.75, 'totalInter não inclui a receita');
+  eq(r.porConta, [{ conta: 'Inter', total: 150.75 }, { conta: 'Itaú', total: 35.9 }], 'porConta dinâmico (desc), sem a receita');
   eq(r.totalReceitas, 500, 'totalReceitas = 500');
   ok(Math.abs(r.prevFinal - (0 + 0 + 500 - 186.65)) < 0.01, 'prevFinal soma receita e desconta despesa');
 }
@@ -175,6 +175,21 @@ group('getCompartilhados — lista e reembolso');
   const c = api.getCompartilhados('2026-07-01');
   eq(c.total, 40, 'total compartilhado = 40 (só Disney+)');
   eq(c.reembolso, 20, 'reembolso = 40 * 0.5');
+}
+
+group('contas — cadastro dinâmico (upsert, delete)');
+{
+  const { api } = loadApp({ Transacoes: [HEADER.slice()], Saldos: [['Conta', 'Saldo']] });
+  api.setConta('Nubank', '1.000,50');
+  api.setConta('Inter', '0');
+  api.setConta('nubank', '250'); // upsert normalizado
+  const lista = api.getContas();
+  eq(lista.length, 2, 'upsert não duplica (2 contas)');
+  const nu = lista.find(c => c.conta.toLowerCase() === 'nubank');
+  eq(nu.saldo, 250, 'saldo do Nubank atualizado para 250');
+  throws(() => api.setConta('', '100'), 'conta sem nome lança');
+  api.deleteConta('Inter');
+  eq(api.getContas().length, 1, 'delete removeu 1');
 }
 
 // ---------------------------------------------------------------------------

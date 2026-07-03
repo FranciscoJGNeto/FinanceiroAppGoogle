@@ -686,16 +686,9 @@
 
         <div class="kpis">
           <div class="kpi">
-            <div class="name">💳 Total Inter</div>
-            <div class="val" id="cInter">—</div>
-          </div>
-          <div class="kpi">
-            <div class="name">🏦 Total Itaú</div>
-            <div class="val" id="cItau">—</div>
-          </div>
-          <div class="kpi">
             <div class="name">📊 Total Geral</div>
             <div class="val" id="cGeral">—</div>
+            <div class="small">gastos do mês</div>
           </div>
 
           <div class="kpi">
@@ -785,6 +778,34 @@
       </div>
     </section>
 
+    <!-- Contas -->
+    <section class="panel acc" data-acc="contas">
+      <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="true" aria-controls="bodyContas">
+        <h2>🏦 Contas</h2>
+        <div class="right">
+          <span class="chevron" aria-hidden="true">▾</span>
+        </div>
+      </div>
+      <div class="panelBody" id="bodyContas">
+        <div class="row2" style="margin-bottom:12px;">
+          <div>
+            <label for="cNome">🏦 Nome da conta</label>
+            <input class="field" type="text" id="cNome" autocomplete="off" placeholder="Ex.: Nubank" />
+          </div>
+          <div>
+            <label for="cSaldo">💵 Saldo atual</label>
+            <div class="moneyWrap">
+              <span class="prefix">R$</span>
+              <input class="field money" type="text" id="cSaldo" inputmode="numeric" autocomplete="off" placeholder="0,00" style="font-size:20px;" />
+            </div>
+          </div>
+        </div>
+        <button class="btn" id="btnSalvarConta">🏦 Salvar conta</button>
+        <div class="msg" id="msgConta"></div>
+        <div id="contasList" style="margin-top:12px;"></div>
+      </div>
+    </section>
+
     <!-- Novo lançamento -->
     <section class="panel acc" data-acc="lancamento">
       <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="true" aria-controls="bodyLancamento">
@@ -852,11 +873,7 @@
           </div>
           <div>
             <label for="tConta">🏦 Conta</label>
-            <select class="field" id="tConta">
-              <option value="Inter">💳 Inter</option>
-              <option value="Itaú">🏦 Itaú</option>
-              <option value="Conta Simples">🏢 Conta Simples</option>
-            </select>
+            <select class="field" id="tConta"></select>
           </div>
           <div>
             <label for="tMeio">💰 Meio</label>
@@ -1004,6 +1021,28 @@
     let spentByCat = {}; // gasto do mês por categoria (chave normalizada)
     let sugestoes = [];
     let orcDismiss = JSON.parse(localStorage.getItem('orcDismiss') || '[]'); // sugestões rejeitadas
+    let contas = [];
+
+    // Paleta categórica validada (fundo escuro, segura p/ daltônicos)
+    const CORES_CONTA = ['#3987e5', '#199e70', '#c98500', '#008300', '#9085e9', '#e66767', '#d55181', '#d95926'];
+    function donutDataPorConta(porConta) {
+      const arr = (porConta || []).filter(x => x.total > 0);
+      const top = arr.slice(0, 8).map((x, i) => ({ label: x.conta, value: x.total, color: CORES_CONTA[i] }));
+      const resto = arr.slice(8);
+      if (resto.length) {
+        const s = resto.reduce((a, x) => a + x.total, 0);
+        top.push({ label: 'Outros', value: Math.round(s * 100) / 100, color: '#8a8f98' });
+      }
+      return top;
+    }
+
+    // Define o valor de um <select>, criando a opção se ela não existir (ex.: edição)
+    function setSelectValue(sel, val) {
+      if (val == null) return;
+      const has = Array.prototype.some.call(sel.options, o => o.value === val);
+      if (!has && val !== '') { const o = document.createElement('option'); o.value = val; o.textContent = val; sel.appendChild(o); }
+      sel.value = val;
+    }
 
     // Normaliza categoria (igual ao backend: sem acento, minúsculo, alfanumérico)
     function normCat(s) {
@@ -1161,6 +1200,78 @@
         `<div class="projTotal">Total compartilhado: <b>${moneyBRL(data.total)}</b></div>
          <div class="compAcerto">💸 A outra pessoa te reembolsa: <b>${moneyBRL(data.reembolso)}</b> <span class="sugSub">(${pctOutra}% do compartilhado)</span></div>
          <div style="margin-top:12px;">${lista}</div>`;
+    }
+
+    // ---- Contas (dinâmicas) ----
+    function carregarContas() {
+      google.script.run
+        .withSuccessHandler(items => { contas = items || []; popularSelectContas(); renderContas(); })
+        .withFailureHandler(() => { /* silencioso */ })
+        .getContas();
+    }
+
+    function popularSelectContas() {
+      const sel = document.getElementById('tConta');
+      const atual = sel.value;
+      if (contas.length === 0) {
+        sel.innerHTML = '<option value="">(cadastre uma conta)</option>';
+        return;
+      }
+      sel.innerHTML = contas.map(c => `<option value="${escapeHtml(c.conta)}">${escapeHtml(c.conta)}</option>`).join('');
+      if (atual) setSelectValue(sel, atual);
+    }
+
+    function renderContas() {
+      const el = document.getElementById('contasList');
+      if (!contas.length) {
+        el.innerHTML = '<div style="color:var(--muted); font-size:13px;">Nenhuma conta cadastrada. Crie a primeira acima.</div>';
+        return;
+      }
+      el.innerHTML = contas.map(c => `<div class="orcRow">
+        <div class="orcTop">
+          <div class="orcName">🏦 ${escapeHtml(c.conta)}</div>
+          <div class="orcVals">saldo: ${moneyBRL(c.saldo)}</div>
+        </div>
+        <div class="orcActions">
+          <button class="miniBtn" data-cact="edit" data-nome="${escapeHtml(c.conta)}" data-saldo="${c.saldo}">✏️ Editar</button>
+          <button class="miniBtn danger" data-cact="del" data-nome="${escapeHtml(c.conta)}">🗑️ Remover</button>
+        </div>
+      </div>`).join('');
+    }
+
+    function salvarConta() {
+      const nome = document.getElementById('cNome').value.trim();
+      const saldo = centsOfEl(document.getElementById('cSaldo')) / 100;
+      if (!nome) { setMsg('msgConta', '❌ Informe o nome da conta.', 'err'); return; }
+      setMsg('msgConta', '⏳ Salvando...', 'ok');
+      google.script.run
+        .withSuccessHandler(() => {
+          setMsg('msgConta', '✅ Conta salva!', 'ok');
+          document.getElementById('cNome').value = '';
+          document.getElementById('cSaldo').value = '';
+          carregarContas();
+          refresh(); // saldo entra no resumo/previsão
+        })
+        .withFailureHandler(err => setMsg('msgConta', '❌ ' + (err?.message || err), 'err'))
+        .setConta(nome, saldo);
+    }
+
+    function onContaClick(e) {
+      const b = e.target.closest('button[data-cact]');
+      if (!b) return;
+      const nome = b.getAttribute('data-nome');
+      if (b.getAttribute('data-cact') === 'edit') {
+        document.getElementById('cNome').value = nome;
+        setValorEl(document.getElementById('cSaldo'), Number(b.getAttribute('data-saldo')));
+        setMsg('msgConta', '', 'ok');
+        document.getElementById('cNome').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        if (!confirm(`Remover a conta "${nome}"?\nAs transações já lançadas nela não são alteradas.`)) return;
+        google.script.run
+          .withSuccessHandler(() => { carregarContas(); refresh(); })
+          .withFailureHandler(err => setMsg('msgConta', '❌ ' + (err?.message || err), 'err'))
+          .deleteConta(nome);
+      }
     }
 
     // ---- Orçamentos por categoria (gasto vs limite) ----
@@ -1426,8 +1537,6 @@
 
     function fillResumo(r) {
       const set = (id, v) => { document.getElementById(id).textContent = moneyBRL(v); };
-      set('cInter', r.totalInter);
-      set('cItau', r.totalItau);
       set('cGeral', r.totalGeral);
       set('cCompart', r.totalCompart);
       set('cReemb', r.reembolso);
@@ -1446,12 +1555,8 @@
       // Previsão final colorida (verde se positiva, vermelha se negativa)
       document.getElementById('cPrev').style.color = (r.prevFinal < 0) ? 'var(--bad)' : 'var(--ok)';
 
-      // Gráfico de rosca: despesas por conta
-      renderDonut(document.getElementById('chartConta'), [
-        { label: 'Inter', value: r.totalInter, color: '#3987e5' },
-        { label: 'Itaú', value: r.totalItau, color: '#199e70' },
-        { label: 'Conta Simples', value: r.totalContaSimples, color: '#c98500' }
-      ]);
+      // Gráfico de rosca: despesas por conta (dinâmico)
+      renderDonut(document.getElementById('chartConta'), donutDataPorConta(r.porConta));
     }
 
     function fillTransacoes(rows) {
@@ -1556,7 +1661,8 @@
       document.getElementById('tParcTotal').value = '';
       document.getElementById('tTipo').value = 'Único';
       document.getElementById('tMeio').value = 'Conta';
-      document.getElementById('tConta').value = 'Inter';
+      const selConta = document.getElementById('tConta');
+      if (selConta.options.length) selConta.selectedIndex = 0;
       document.getElementById('tData').value = new Date().toISOString().slice(0, 10);
       setNatureza('Despesa');
       toggleParcelas();
@@ -1588,7 +1694,7 @@
       setValorFromNumber(r.valor);
       document.getElementById('tDesc').value = r.descricao;
       document.getElementById('tCategoria').value = r.categoria || '';
-      document.getElementById('tConta').value = r.conta || 'Inter';
+      setSelectValue(document.getElementById('tConta'), r.conta || '');
       document.getElementById('tMeio').value = r.meio || 'Conta';
       document.getElementById('tTipo').value = r.tipo || 'Único';
       setNatureza(r.natureza || 'Despesa');
@@ -1771,9 +1877,18 @@
     document.getElementById('orcList').addEventListener('click', onOrcClick);
     document.getElementById('orcSugestoes').addEventListener('click', onSugClick);
 
+    // Contas
+    document.getElementById('cSaldo').addEventListener('input', (e) => {
+      const c = centsOfEl(e.target);
+      e.target.value = c ? formatCentavos(c) : '';
+    });
+    document.getElementById('btnSalvarConta').addEventListener('click', salvarConta);
+    document.getElementById('contasList').addEventListener('click', onContaClick);
+
     // Estado inicial do formulário
     setNatureza('Despesa');
     toggleParcelas();
+    carregarContas();
     initAccordions();
 
     // Atalho no PC

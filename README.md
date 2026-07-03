@@ -26,7 +26,7 @@ na **sua** conta Google (nada de servidor de terceiros, nada de mensalidade).
 | Área | Recursos |
 |------|----------|
 | **Lançar** | Despesas **e** receitas · máscara de moeda (é só digitar números) · categorias com sugestões · parcelas · observações |
-| **Gerenciar** | Editar e excluir qualquer lançamento · busca/filtro instantâneo por descrição, conta, categoria… |
+| **Gerenciar** | Editar e excluir qualquer lançamento · busca/filtro instantâneo · **contas dinâmicas** (crie/edite as suas) |
 | **Entender** | Resumo do mês (totais por conta, gasto compartilhado, reembolso, previsão de saldo, % do salário) |
 | **Visualizar** | Dashboard com gráficos: rosca por conta · evolução de 6 meses · barras por categoria |
 | **Planejar** | Orçamento por categoria (com sugestões e alerta de estouro) · projeção de parcelas · recorrentes |
