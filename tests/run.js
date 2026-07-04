@@ -257,6 +257,37 @@ group('importarTransacoes — lote e dedup');
   eq(rec.natureza, 'Receita', 'natureza da receita importada preservada');
 }
 
+group('lembretes — CRUD + verificação/e-mail (idempotente no mês)');
+{
+  const { api, emails } = loadApp({ Transacoes: [HEADER.slice()], Lembretes: [['Descrição', 'Dia', 'Valor', 'Antecedencia', 'Ativo', 'UltimoAviso']] });
+  api.setLembrete('Aluguel', 10, '1200', 3, true);
+  api.setLembrete('aluguel', 15, '1300', 5, true); // upsert (normalizado)
+  const lst = api.getLembretes();
+  eq(lst.length, 1, 'upsert não duplica');
+  eq([lst[0].dia, lst[0].valor, lst[0].antecedencia], [15, 1300, 5], 'dados do lembrete atualizados');
+
+  const diaHoje = new Date().getDate();
+  api.setLembrete('Cartão', diaHoje, '500', 0, true); // vence hoje
+  const r1 = api.verificarLembretes();
+  ok(r1.enviados >= 1, 'verifica e envia (vence hoje)');
+  eq(emails.length, 1, 'um e-mail consolidado');
+  eq(api.verificarLembretes().enviados, 0, 'não reenvia no mesmo mês (idempotente)');
+
+  api.deleteLembrete('Aluguel');
+  eq(api.getLembretes().length, 1, 'delete remove');
+}
+
+group('lembretes — gatilho automático (instalar/status/remover)');
+{
+  const { api } = loadApp({ Transacoes: [HEADER.slice()] });
+  eq(api.statusGatilhoLembretes().ativo, false, 'começa sem gatilho');
+  api.instalarGatilhoLembretes();
+  eq(api.statusGatilhoLembretes().ativo, true, 'após instalar: ativo');
+  api.instalarGatilhoLembretes(); // reinstalar não duplica
+  api.removerGatilhoLembretes();
+  eq(api.statusGatilhoLembretes().ativo, false, 'após remover: inativo');
+}
+
 // ---------------------------------------------------------------------------
 console.log(`\n${'─'.repeat(40)}`);
 console.log(`Resultado: ${pass} passaram, ${fail} falharam.`);

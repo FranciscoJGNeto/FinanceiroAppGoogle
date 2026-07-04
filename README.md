@@ -130,8 +130,8 @@ de contas. Sai com código ≠ 0 se algo falhar (pronto para CI).
 - ✅ **Onda 1** — editar/excluir, receitas, busca
 - ✅ **Onda 2** — categorias e dashboard com gráficos
 - ✅ **Onda 3** — orçamentos (com sugestões/alerta), projeção de parcelas, recorrentes (manual)
-- ✅ **Acerto de contas** compartilhadas · **contas dinâmicas** · **backup CSV** · **importar extrato CSV**
-- 🔮 **Futuro** — recorrentes automáticos (gatilho), lembretes de vencimento
+- ✅ **Acerto de contas** · **contas dinâmicas** · **backup CSV** · **importar extrato** (auto-categoriza) · **lembretes de vencimento** (e-mail)
+- 🔮 **Futuro** — recorrentes automáticos (gatilho), metas de economia, relatórios anuais
 
 Detalhes e ideias em [docs/PLANO_FUNCIONALIDADES.md](docs/PLANO_FUNCIONALIDADES.md).
 Histórico do que já foi entregue em [docs/CHANGELOG.md](docs/CHANGELOG.md).

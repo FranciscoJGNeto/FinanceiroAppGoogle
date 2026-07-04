@@ -63,6 +63,7 @@ function loadApp(sheetsSpec) {
   Object.keys(sheetsSpec || {}).forEach(name => { sheets[name] = new Sheet(name, sheetsSpec[name].map(r => r.slice())); });
   const ss = new Spreadsheet(sheets);
   const driveFiles = [];
+  const emails = [];
 
   const mesesPt = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
   const pad = n => String(n).padStart(2, '0');
@@ -78,8 +79,15 @@ function loadApp(sheetsSpec) {
         return `${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
       }
     },
-    Session: { getScriptTimeZone: () => 'America/Sao_Paulo' },
+    Session: { getScriptTimeZone: () => 'America/Sao_Paulo', getEffectiveUser: () => ({ getEmail: () => 'teste@exemplo.com' }) },
     DriveApp: { createFile: (nome, content, mime) => { const f = { nome, content, mime, getUrl: () => 'https://drive.google.com/file/' + nome }; driveFiles.push(f); return f; } },
+    MailApp: { sendEmail: (to, subj, body) => { emails.push({ to, subj, body }); } },
+    ScriptApp: {
+      _triggers: [],
+      newTrigger: (fn) => { const t = { fn, timeBased: () => t, everyDays: () => t, atHour: () => t, create: () => { ctx.ScriptApp._triggers.push({ getHandlerFunction: () => fn, _id: Math.random() }); } }; return t; },
+      getProjectTriggers: () => ctx.ScriptApp._triggers,
+      deleteTrigger: (t) => { ctx.ScriptApp._triggers = ctx.ScriptApp._triggers.filter(x => x !== t); }
+    },
     ContentService: { MimeType: { JSON: 'JSON' }, createTextOutput: () => ({ setMimeType() { return this; } }) },
     HtmlService: {},
     console, Date, Math, JSON, String, Number, Array, Object, RegExp, parseFloat, parseInt, isNaN
@@ -91,9 +99,11 @@ function loadApp(sheetsSpec) {
   const nomes = ['addTransacao', 'updateTransacao', 'deleteTransacao', 'listTransacoes', 'getResumo',
     'getEvolucao', 'getPorCategoria', 'getSugestoesOrcamento', 'getProjecaoParcelas', 'getCompartilhados',
     'gerarRecorrentes', 'getOrcamentos', 'setOrcamento', 'deleteOrcamento',
-    'getContas', 'setConta', 'deleteConta', 'exportarBackup', 'importarTransacoes', 'migrarEstrutura'];
+    'getContas', 'setConta', 'deleteConta', 'exportarBackup', 'importarTransacoes',
+    'getLembretes', 'setLembrete', 'deleteLembrete', 'getLembretesProximos', 'verificarLembretes',
+    'instalarGatilhoLembretes', 'removerGatilhoLembretes', 'statusGatilhoLembretes', 'migrarEstrutura'];
   const api = vm.runInContext('({' + nomes.join(',') + '})', ctx);
-  return { api, ss, sheets, driveFiles };
+  return { api, ss, sheets, driveFiles, emails };
 }
 
 // Cabeçalho padrão da aba Transacoes (ordem canônica).

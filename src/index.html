@@ -860,6 +860,54 @@
       </div>
     </section>
 
+    <!-- Lembretes de vencimento -->
+    <section class="panel acc collapsed" data-acc="lembretes">
+      <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="false" aria-controls="bodyLembretes">
+        <h2>🔔 Lembretes</h2>
+        <div class="right">
+          <span class="chevron" aria-hidden="true">▾</span>
+        </div>
+      </div>
+      <div class="panelBody" id="bodyLembretes">
+        <div class="hint" style="margin-bottom:10px;">Cadastre contas com dia de vencimento e receba um <b>e-mail</b> alguns dias antes. Ative o envio automático no fim do painel.</div>
+        <div class="row2" style="margin-bottom:10px;">
+          <div>
+            <label for="lDesc">🏷️ Descrição</label>
+            <input class="field" type="text" id="lDesc" autocomplete="off" placeholder="Ex.: Aluguel" />
+          </div>
+          <div>
+            <label for="lDia">📅 Dia do vencimento</label>
+            <input class="field" type="number" id="lDia" min="1" max="31" inputmode="numeric" placeholder="Ex.: 10" />
+          </div>
+        </div>
+        <div class="row2" style="margin-bottom:10px;">
+          <div>
+            <label for="lValor">💲 Valor (opcional)</label>
+            <div class="moneyWrap">
+              <span class="prefix">R$</span>
+              <input class="field money" type="text" id="lValor" inputmode="numeric" autocomplete="off" placeholder="0,00" style="font-size:20px;" />
+            </div>
+          </div>
+          <div>
+            <label for="lAntec">⏰ Avisar dias antes</label>
+            <input class="field" type="number" id="lAntec" min="0" max="30" inputmode="numeric" value="3" />
+          </div>
+        </div>
+        <button class="btn" id="btnSalvarLembrete">🔔 Salvar lembrete</button>
+        <button class="btnGhost" id="btnCancelarLembrete" style="display:none; margin-top:8px;">✖️ Cancelar edição</button>
+        <div class="msg" id="msgLembrete"></div>
+        <div id="lembretesProx" style="margin-top:12px;"></div>
+        <div id="lembretesList" style="margin-top:12px;"></div>
+        <div style="margin-top:12px; border-top:1px solid var(--line); padding-top:12px;">
+          <div id="lembreteStatus" class="hint" style="margin-bottom:8px;">—</div>
+          <div style="display:flex; gap:10px;">
+            <button class="btnGhost" id="btnToggleGatilho" style="flex:1;">⏰ Ativar automático</button>
+            <button class="btnGhost" id="btnEnviarLembretes">✉️ Enviar agora</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Novo lançamento -->
     <section class="panel acc" data-acc="lancamento">
       <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="true" aria-controls="bodyLancamento">
@@ -1091,6 +1139,8 @@
     let orcDismiss = JSON.parse(localStorage.getItem('orcDismiss') || '[]'); // sugestões rejeitadas
     let contas = [];
     let impParsed = []; // linhas do extrato prontas para importar
+    let lembretes = [];
+    let lembreteEditando = null;
 
     // Paleta categórica validada (fundo escuro, segura p/ daltônicos)
     const CORES_CONTA = ['#3987e5', '#199e70', '#c98500', '#008300', '#9085e9', '#e66767', '#d55181', '#d95926'];
@@ -1389,6 +1439,112 @@
         })
         .withFailureHandler(err => { btn.disabled = false; setMsg('msgImportar', '❌ ' + (err?.message || err), 'err'); })
         .importarTransacoes(lista);
+    }
+
+    // ---- Lembretes de vencimento ----
+    function carregarLembretes() {
+      google.script.run.withSuccessHandler(items => { lembretes = items || []; renderLembretes(); }).withFailureHandler(() => {}).getLembretes();
+      google.script.run.withSuccessHandler(renderLembretesProx).withFailureHandler(() => {}).getLembretesProximos();
+      google.script.run.withSuccessHandler(st => atualizarStatusGatilho(st && st.ativo)).withFailureHandler(() => {}).statusGatilhoLembretes();
+    }
+
+    function renderLembretesProx(items) {
+      const el = document.getElementById('lembretesProx');
+      if (!items || !items.length) { el.innerHTML = ''; return; }
+      el.innerHTML = '<div class="chartTitle">📅 Próximos vencimentos</div>' + items.map(i => {
+        const quando = i.dias === 0 ? 'hoje' : (i.dias === 1 ? 'amanhã' : 'em ' + i.dias + ' dias');
+        const cor = i.dias <= 3 ? 'var(--warn)' : 'var(--muted)';
+        return `<div class="saldoRow"><span>🔔 ${escapeHtml(i.descricao)} · dia ${i.dia}</span><b style="color:${cor}">${i.valor ? moneyBRL(i.valor) + ' · ' : ''}${quando}</b></div>`;
+      }).join('');
+    }
+
+    function renderLembretes() {
+      const el = document.getElementById('lembretesList');
+      if (!lembretes.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;">Nenhum lembrete cadastrado.</div>'; return; }
+      el.innerHTML = lembretes.map(l => `<div class="orcRow">
+        <div class="orcTop">
+          <div class="orcName">🔔 ${escapeHtml(l.descricao)} <span class="pill">dia ${l.dia}</span>${l.valor ? ' <span class="pill">' + moneyBRL(l.valor) + '</span>' : ''}</div>
+          <div class="orcVals">avisa ${l.antecedencia}d antes</div>
+        </div>
+        <div class="orcActions">
+          <button class="miniBtn" data-lact="edit" data-desc="${escapeHtml(l.descricao)}">✏️ Editar</button>
+          <button class="miniBtn danger" data-lact="del" data-desc="${escapeHtml(l.descricao)}">🗑️ Remover</button>
+        </div>
+      </div>`).join('');
+    }
+
+    function setLembreteEditMode(on) {
+      document.getElementById('btnSalvarLembrete').textContent = on ? '💾 Salvar edição' : '🔔 Salvar lembrete';
+      document.getElementById('btnCancelarLembrete').style.display = on ? '' : 'none';
+    }
+    function cancelarEdicaoLembrete() {
+      lembreteEditando = null;
+      document.getElementById('lDesc').value = '';
+      document.getElementById('lDia').value = '';
+      document.getElementById('lValor').value = '';
+      document.getElementById('lAntec').value = 3;
+      setMsg('msgLembrete', '', 'ok');
+      setLembreteEditMode(false);
+    }
+
+    function salvarLembrete() {
+      const desc = document.getElementById('lDesc').value.trim();
+      const dia = Number(document.getElementById('lDia').value) || 0;
+      const valor = centsOfEl(document.getElementById('lValor')) / 100;
+      const antec = Number(document.getElementById('lAntec').value);
+      if (!desc) { setMsg('msgLembrete', '❌ Informe a descrição.', 'err'); return; }
+      if (!(dia >= 1 && dia <= 31)) { setMsg('msgLembrete', '❌ Informe um dia de 1 a 31.', 'err'); return; }
+      setMsg('msgLembrete', '⏳ Salvando...', 'ok');
+      google.script.run
+        .withSuccessHandler(() => { setMsg('msgLembrete', '✅ Lembrete salvo!', 'ok'); cancelarEdicaoLembrete(); carregarLembretes(); })
+        .withFailureHandler(err => setMsg('msgLembrete', '❌ ' + (err?.message || err), 'err'))
+        .setLembrete(desc, dia, valor, isNaN(antec) ? 3 : antec, true);
+    }
+
+    function onLembreteClick(e) {
+      const b = e.target.closest('button[data-lact]');
+      if (!b) return;
+      const desc = b.getAttribute('data-desc');
+      if (b.getAttribute('data-lact') === 'edit') {
+        const l = lembretes.find(x => x.descricao === desc);
+        if (!l) return;
+        lembreteEditando = desc;
+        document.getElementById('lDesc').value = l.descricao;
+        document.getElementById('lDia').value = l.dia;
+        setValorEl(document.getElementById('lValor'), l.valor);
+        document.getElementById('lAntec').value = l.antecedencia;
+        setLembreteEditMode(true);
+        document.getElementById('lDesc').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        if (!confirm(`Remover o lembrete "${desc}"?`)) return;
+        google.script.run.withSuccessHandler(carregarLembretes).withFailureHandler(err => setMsg('msgLembrete', '❌ ' + (err?.message || err), 'err')).deleteLembrete(desc);
+      }
+    }
+
+    function atualizarStatusGatilho(ativo) {
+      const btn = document.getElementById('btnToggleGatilho');
+      const st = document.getElementById('lembreteStatus');
+      btn.textContent = ativo ? '🔕 Desativar automático' : '⏰ Ativar automático';
+      st.innerHTML = ativo ? '✅ Envio automático <b>ativo</b> (checa todo dia às 8h).' : '⚪ Envio automático desativado.';
+    }
+
+    function toggleGatilho() {
+      const btn = document.getElementById('btnToggleGatilho');
+      const ativoAgora = btn.textContent.indexOf('Desativar') !== -1;
+      btn.disabled = true;
+      const fn = ativoAgora ? 'removerGatilhoLembretes' : 'instalarGatilhoLembretes';
+      google.script.run
+        .withSuccessHandler(res => { btn.disabled = false; atualizarStatusGatilho(res && res.ativo); setMsg('msgLembrete', ativoAgora ? '🔕 Automático desativado.' : '✅ Automático ativado!', 'ok'); })
+        .withFailureHandler(err => { btn.disabled = false; setMsg('msgLembrete', '❌ ' + (err?.message || err), 'err'); })
+      [fn]();
+    }
+
+    function enviarLembretesAgora() {
+      setMsg('msgLembrete', '⏳ Verificando vencimentos...', 'ok');
+      google.script.run
+        .withSuccessHandler(res => setMsg('msgLembrete', res.enviados ? `✉️ E-mail enviado com ${res.enviados} vencimento(s).` : 'Nenhum vencimento na janela de aviso agora.', 'ok'))
+        .withFailureHandler(err => setMsg('msgLembrete', '❌ ' + (err?.message || err), 'err'))
+        .verificarLembretes();
     }
 
     // ---- Backup / exportar ----
@@ -2136,6 +2292,14 @@
     document.getElementById('contasList').addEventListener('click', onContaClick);
     document.getElementById('btnBackup').addEventListener('click', exportarBackup);
 
+    // Lembretes
+    document.getElementById('lValor').addEventListener('input', (e) => { const c = centsOfEl(e.target); e.target.value = c ? formatCentavos(c) : ''; });
+    document.getElementById('btnSalvarLembrete').addEventListener('click', salvarLembrete);
+    document.getElementById('btnCancelarLembrete').addEventListener('click', cancelarEdicaoLembrete);
+    document.getElementById('lembretesList').addEventListener('click', onLembreteClick);
+    document.getElementById('btnToggleGatilho').addEventListener('click', toggleGatilho);
+    document.getElementById('btnEnviarLembretes').addEventListener('click', enviarLembretesAgora);
+
     // Importar extrato
     document.getElementById('btnPreImportar').addEventListener('click', preImportar);
     document.getElementById('btnImportar').addEventListener('click', importarExtrato);
@@ -2152,6 +2316,7 @@
     setCompart(false);
     toggleParcelas();
     carregarContas();
+    carregarLembretes();
     initAccordions();
 
     // Atalho no PC

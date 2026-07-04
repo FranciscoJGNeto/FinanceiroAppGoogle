@@ -3,6 +3,12 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v23 — Lembretes de vencimento + mais palavras-chave
+- Painel **Lembretes**: cadastrar contas com dia de vencimento, valor e antecedência; ver **próximos vencimentos**.
+- **E-mail automático** alguns dias antes (gatilho diário às 8h) — ativar/desativar pelo app; botão **Enviar agora** para testar. 1 e-mail consolidado por mês por lembrete.
+- Backend: `getLembretes/setLembrete/deleteLembrete/getLembretesProximos/verificarLembretes` + `instalar/remover/statusGatilhoLembretes` (usa `MailApp` e `ScriptApp` — requer autorização de Gmail/gatilhos na 1ª vez).
+- **Auto-categorização** ampliada: muito mais comércios/serviços BR (Rappi, Shopee, Mercado Livre, academias, pedágios, etc.) e novas categorias (Compras, Vestuário).
+
 ## v22 — Compartilhamento por lançamento + auto-categorização na importação
 - No formulário: marcar **🤝 Compartilhado (Não/Sim)** e o **% que a outra pessoa paga** (rateio próprio de cada lançamento). Colunas novas `Compartilhado`/`Rateio` (auto-criadas).
 - **Resumo e acerto de contas** passam a somar o reembolso pelo rateio de cada item (mantendo compatibilidade com o compartilhado por nome de serviço na aba `Servicos`).

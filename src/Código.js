@@ -4,6 +4,7 @@ const SHEET_SERV = 'Servicos';
 const SHEET_CONF = 'Config';
 const SHEET_SALD = 'Saldos';
 const SHEET_ORC = 'Orcamentos';
+const SHEET_LEMB = 'Lembretes';
 
 // Colunas canônicas da aba Transacoes (ordem usada ao criar/completar o cabeçalho).
 const TRANS_COLS = ['ID', 'Data', 'Conta', 'Meio', 'Descrição', 'Tipo', 'Natureza', 'Categoria',
@@ -57,14 +58,16 @@ function isCompartFlag_(v) {
 
 // Palavras-chave -> categoria, para auto-categorizar na importação de extrato.
 const CATEGORIA_KEYWORDS = {
-  'Assinaturas': ['netflix', 'spotify', 'disney', 'hbo', 'max', 'primevideo', 'amazonprime', 'youtube', 'crunchyroll', 'globoplay', 'deezer', 'applecom', 'paramount', 'star', 'canva', 'chatgpt', 'openai'],
-  'Transporte': ['uber', '99app', '99', 'cabify', 'posto', 'ipiranga', 'shell', 'petrobras', 'combustivel', 'estacionamento', 'metro', 'onibus', 'bilheteunico'],
-  'Mercado': ['mercado', 'supermerc', 'carrefour', 'paodeacucar', 'assai', 'atacadao', 'hortifruti', 'bigbox', 'extra'],
-  'Alimentação': ['ifood', 'restaurante', 'lanchonete', 'burger', 'mcdonald', 'padaria', 'pizzaria', 'subway', 'habib', 'outback'],
-  'Saúde': ['farmacia', 'drogaria', 'drogasil', 'pacheco', 'raia', 'hospital', 'clinica', 'laboratorio', 'unimed'],
-  'Contas e serviços': ['claro', 'vivo', 'timbrasil', 'tim', 'enel', 'light', 'sabesp', 'copasa', 'cemig', 'internet', 'net'],
-  'Educação': ['escola', 'faculdade', 'curso', 'udemy', 'alura'],
-  'Lazer': ['cinema', 'cinemark', 'steam', 'playstation', 'xbox', 'nintendo', 'ingresso']
+  'Assinaturas': ['netflix', 'spotify', 'disney', 'hbo', 'max', 'primevideo', 'amazonprime', 'youtube', 'crunchyroll', 'globoplay', 'deezer', 'applecom', 'appletv', 'itunes', 'paramount', 'star', 'canva', 'chatgpt', 'openai', 'notion', 'dropbox', 'googleone', 'icloud', 'linkedin', 'twitch', 'kindle', 'audible', 'mubi'],
+  'Transporte': ['uber', '99app', '99', 'cabify', 'indriver', 'posto', 'ipiranga', 'shell', 'petrobras', 'br mania', 'combustivel', 'gasolina', 'alcool', 'estacionamento', 'metro', 'onibus', 'bilheteunico', 'bilhete unico', 'sem parar', 'veloe', 'conectcar', 'pedagio', 'localiza', 'movida', 'unidas'],
+  'Mercado': ['mercado', 'supermerc', 'carrefour', 'paodeacucar', 'pao de acucar', 'assai', 'atacadao', 'atacadão', 'hortifruti', 'bigbox', 'extra', 'sams club', 'makro', 'dia ', 'zaffari', 'guanabara', 'mundial', 'sacolao'],
+  'Alimentação': ['ifood', 'rappi', 'restaurante', 'lanchonete', 'burger', 'mcdonald', 'bk ', 'burgerking', 'padaria', 'pizzaria', 'subway', 'habib', 'outback', 'starbucks', 'cacau show', 'confeitaria', 'churrascaria', 'hamburgueria', 'asubway'],
+  'Saúde': ['farmacia', 'drogaria', 'drogasil', 'pacheco', 'raia', 'droga raia', 'pague menos', 'hospital', 'clinica', 'laboratorio', 'unimed', 'amil', 'hapvida', 'academia', 'smartfit', 'gympass', 'wellhub', 'dentista'],
+  'Contas e serviços': ['claro', 'vivo', 'timbrasil', 'tim', 'oi ', 'enel', 'light', 'sabesp', 'copasa', 'cemig', 'cpfl', 'equatorial', 'comgas', 'internet', 'net ', 'vero', 'condominio', 'condomínio', 'iptu', 'seguro', 'porto seguro', 'consorcio'],
+  'Educação': ['escola', 'faculdade', 'universidade', 'curso', 'udemy', 'alura', 'duolingo', 'coursera', 'kumon', 'wizard', 'ccaa'],
+  'Lazer': ['cinema', 'cinemark', 'steam', 'playstation', 'psn', 'xbox', 'nintendo', 'ingresso', 'ingressocom', 'teatro', 'showlivre', 'ticket'],
+  'Compras': ['amazon', 'mercadolivre', 'mercado livre', 'shopee', 'aliexpress', 'magalu', 'magazine luiza', 'americanas', 'casas bahia', 'renner', 'riachuelo', 'cea', 'zara', 'centauro', 'nike', 'adidas'],
+  'Vestuário': ['calcados', 'calçados', 'moda', 'boutique', 'shoe']
 };
 
 // Sugere uma categoria a partir da descrição: primeiro pelo histórico (histMap:
@@ -877,6 +880,152 @@ function deleteOrcamento(categoria) {
   return { ok: true, message: 'Orçamento removido' };
 }
 
+// ===================== Lembretes de vencimento =====================
+// Aba Lembretes: A=Descrição, B=Dia(1-31), C=Valor, D=Antecedencia(dias), E=Ativo, F=UltimoAviso(yyyy-MM)
+
+function diaVencimento_(hoje, dia) {
+  const ultimo = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
+  return new Date(hoje.getFullYear(), hoje.getMonth(), Math.min(Math.max(Number(dia) || 1, 1), ultimo));
+}
+function diasEntre_(a, b) { return Math.round((b.getTime() - a.getTime()) / 86400000); }
+
+function getLembretes() {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEET_LEMB);
+  if (!sh || sh.getLastRow() < 2) return [];
+  return sh.getDataRange().getValues().slice(1)
+    .filter(r => String(r[0]).trim())
+    .map(r => ({
+      descricao: String(r[0]).trim(),
+      dia: Number(r[1]) || 1,
+      valor: Number(r[2]) || 0,
+      antecedencia: Number(r[3]) || 3,
+      ativo: (r[4] === '' || r[4] == null) ? true : isCompartFlag_(r[4])
+    }));
+}
+
+function setLembrete(descricao, dia, valor, antecedencia, ativo) {
+  descricao = String(descricao || '').trim();
+  if (!descricao) throw new Error('Informe a descrição do lembrete.');
+  const d = Math.min(Math.max(Math.trunc(Number(dia) || 0), 1), 31);
+  if (!d) throw new Error('Informe um dia de vencimento (1 a 31).');
+  const v = toNumBR_(valor);
+  const antec = Math.min(Math.max(Math.trunc(Number(antecedencia) || 3), 0), 30);
+  const at = (ativo === undefined) ? true : isCompartFlag_(ativo);
+
+  const ss = SpreadsheetApp.getActive();
+  let sh = ss.getSheetByName(SHEET_LEMB);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_LEMB);
+    sh.getRange('A1:F1').setValues([['Descrição', 'Dia', 'Valor', 'Antecedencia', 'Ativo', 'UltimoAviso']]);
+    sh.getRange('A1:F1').setFontWeight('bold');
+  }
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const last = sh.getLastRow();
+    const nomes = last > 1 ? sh.getRange(2, 1, last - 1, 1).getValues() : [];
+    let row = -1;
+    for (let i = 0; i < nomes.length; i++) if (norm_(nomes[i][0]) === norm_(descricao)) { row = i + 2; break; }
+    if (row === -1) sh.appendRow([descricao, d, v, antec, at, '']);
+    else sh.getRange(row, 1, 1, 5).setValues([[descricao, d, v, antec, at]]);
+  } finally {
+    lock.releaseLock();
+  }
+  return { ok: true, message: 'Lembrete salvo' };
+}
+
+function deleteLembrete(descricao) {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEET_LEMB);
+  if (!sh || sh.getLastRow() < 2) return { ok: true };
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const nomes = sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues();
+    for (let i = 0; i < nomes.length; i++) if (norm_(nomes[i][0]) === norm_(descricao)) { sh.deleteRow(i + 2); break; }
+  } finally {
+    lock.releaseLock();
+  }
+  return { ok: true, message: 'Lembrete removido' };
+}
+
+// Próximos vencimentos (para exibir no app), ordenados por proximidade.
+function getLembretesProximos() {
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  return getLembretes().filter(l => l.ativo).map(l => {
+    let venc = diaVencimento_(hoje, l.dia);
+    if (diasEntre_(hoje, venc) < 0) venc = diaVencimento_(new Date(hoje.getFullYear(), hoje.getMonth() + 1, 1), l.dia);
+    return { descricao: l.descricao, dia: l.dia, valor: l.valor, dias: diasEntre_(hoje, venc) };
+  }).sort((a, b) => a.dias - b.dias);
+}
+
+// Verifica e envia e-mail dos vencimentos na janela de antecedência (1x por mês por lembrete).
+// É o alvo do gatilho diário; também pode ser chamado manualmente ("enviar agora").
+function verificarLembretes() {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEET_LEMB);
+  if (!sh || sh.getLastRow() < 2) return { ok: true, enviados: 0 };
+
+  const tz = Session.getScriptTimeZone();
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  const ym = Utilities.formatDate(hoje, tz, 'yyyy-MM');
+  const brl = (v) => 'R$ ' + (Number(v) || 0).toFixed(2).replace('.', ',');
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    const vals = sh.getDataRange().getValues();
+    const devidos = [];
+    const marcar = [];
+    for (let i = 1; i < vals.length; i++) {
+      const r = vals[i];
+      if (!String(r[0]).trim()) continue;
+      const ativo = (r[4] === '' || r[4] == null) ? true : isCompartFlag_(r[4]);
+      if (!ativo) continue;
+      const dia = Number(r[1]) || 1;
+      const antec = Number(r[3]) || 3;
+      const venc = diaVencimento_(hoje, dia);
+      const dias = diasEntre_(hoje, venc);
+      const jaAvisou = String(r[5] || '') === ym;
+      if (dias >= 0 && dias <= antec && !jaAvisou) {
+        devidos.push({ desc: String(r[0]).trim(), dia: dia, valor: Number(r[2]) || 0, dias: dias });
+        marcar.push(i + 1);
+      }
+    }
+    if (devidos.length) {
+      const email = Session.getEffectiveUser().getEmail();
+      const linhas = devidos.map(x =>
+        `• ${x.desc}${x.valor ? ' — ' + brl(x.valor) : ''} — vence dia ${x.dia} (${x.dias === 0 ? 'hoje' : 'em ' + x.dias + ' dia(s)'})`).join('\n');
+      if (email) {
+        MailApp.sendEmail(email, '🔔 Financeiro: contas a vencer',
+          'Lembrete de vencimento:\n\n' + linhas + '\n\n— App Financeiro');
+      }
+      marcar.forEach(rowNum => sh.getRange(rowNum, 6, 1, 1).setValues([[ym]]));
+    }
+    return { ok: true, enviados: devidos.length };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// Gatilho automático diário (08h) para verificarLembretes.
+function instalarGatilhoLembretes() {
+  removerGatilhoLembretes();
+  ScriptApp.newTrigger('verificarLembretes').timeBased().everyDays(1).atHour(8).create();
+  return { ok: true, ativo: true };
+}
+function removerGatilhoLembretes() {
+  ScriptApp.getProjectTriggers().forEach(t => {
+    if (t.getHandlerFunction() === 'verificarLembretes') ScriptApp.deleteTrigger(t);
+  });
+  return { ok: true, ativo: false };
+}
+function statusGatilhoLembretes() {
+  const ativo = ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'verificarLembretes');
+  return { ativo: ativo };
+}
+
 // ===================== Backup / Exportação =====================
 
 // Formata uma célula para CSV (datas como yyyy-MM-dd; escapa aspas/vírgula/quebra).
@@ -1149,6 +1298,14 @@ function criarEstruturaPlanilha() {
     shO = ss.insertSheet(SHEET_ORC);
     shO.getRange('A1:B1').setValues([['Categoria', 'Limite']]);
     shO.getRange('A1:B1').setFontWeight('bold');
+  }
+
+  // Aba Lembretes
+  let shL = ss.getSheetByName(SHEET_LEMB);
+  if (!shL) {
+    shL = ss.insertSheet(SHEET_LEMB);
+    shL.getRange('A1:F1').setValues([['Descrição', 'Dia', 'Valor', 'Antecedencia', 'Ativo', 'UltimoAviso']]);
+    shL.getRange('A1:F1').setFontWeight('bold');
   }
 
   return 'Estrutura da planilha criada/atualizada com sucesso!';
