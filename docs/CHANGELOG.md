@@ -3,6 +3,9 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v38 — Fix do cabeçalho no celular
+- Corrigido o **cabeçalho quebrando em duas linhas** no celular quando o botão **"Hoje"** aparecia. Agora os controles ficam em **uma linha só** (sem quebra), com compactação em telas estreitas (≤560px): subtítulo escondido, botões e o rótulo do mês menores; o título encolhe com reticências antes de cortar qualquer controle.
+
 ## v37 — Backup agendado (Onda 7.7)
 - No painel **Backup**, opção de **backup automático**: um gatilho gera uma cópia **CSV no Drive** periodicamente (às 3h), com frequência **mensal** (dia 1º) ou **semanal** (segunda). Ativar/desativar pelo app.
 - Backend: `backupAgendado` + `instalar/remover/statusGatilhoBackup` (usa `ScriptApp` e guarda a frequência em `PropertiesService`).
