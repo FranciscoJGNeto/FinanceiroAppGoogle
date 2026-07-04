@@ -99,7 +99,7 @@ Só se houver gastos em outra moeda (ex.: assinaturas em USD). Provavelmente des
 | 4 | Compartilhado & lembretes | 3.2 acerto de contas, 2.4 lembretes | ✅ |
 | 5 | Fricção zero | 4.2 importar extrato (OFX/CSV), 5.1 backup (CSV/XML) | ✅ |
 | 6 | Mobile & UX | instalar na tela inicial (v24), recolher/expandir tudo (v24) | ✅ |
-| **7** | **Próximos passos** | 7.1 recorrentes auto (v26) ✅ · 7.2 metas (v27) ✅ · 7.3 relatório anual (v28) ✅ · 7.4 fatura de cartão (v29) ✅ · 7.5 regra 50/30/20 (v32) ✅ · 7.6 QIF/CSV por banco → em seguida · 7.7–7.8 | ⏳ |
+| **7** | **Próximos passos** | 7.1 recorrentes auto (v26) ✅ · 7.2 metas (v27) ✅ · 7.3 relatório anual (v28) ✅ · 7.4 fatura de cartão (v29) ✅ · 7.5 regra 50/30/20 (v32) ✅ · 7.6 QIF/CSV por banco (v35) ✅ · 7.7 backup agendado → em seguida · 7.8 bot | ⏳ |
 
 ## Onda 7 — próximos passos (em ordem de execução)
 
@@ -133,10 +133,10 @@ dia de fechamento/vencimento. Backend: `getFaturaCartao`. **Próximo da fila: 7.
 e comparar o mês com a meta (3 barras real × alvo). Aba `Classificacao` +
 `getRegra503020`/`getClassificacao`/`setClasseCategoria`. **Próximo da fila: 7.6 QIF/CSV por banco.**
 
-### 7.6 Importar mais formatos (QIF + CSV por banco) ⭐⭐ 🔨🔨
-Complementar o OFX/CSV atuais: parser **QIF** e **mapas de colunas por banco** (cada
-banco nomeia as colunas diferente) com detecção automática. Reaproveita o fluxo de
-prévia → importar já existente.
+### 7.6 Importar mais formatos (QIF + CSV por banco) ✅ (v35)
+**Feito.** Parser **QIF** + reconhecimento de **colunas por banco** no CSV (Data/Descrição/Valor
+ou **Débito/Crédito** separados), com detecção automática. Reaproveita prévia → importar.
+**Próximo da fila: 7.7 Backup agendado.**
 
 ### 7.7 Backup agendado ⭐⭐ 🔨
 Gatilho semanal/mensal que roda `exportarBackup`/`exportarBackupXML` e guarda no Drive

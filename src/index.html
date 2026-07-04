@@ -285,8 +285,8 @@
         </div>
       </div>
       <div class="panelBody" id="bodyImportar">
-        <div class="hint" style="margin-bottom:10px;">Importe o extrato em <b>OFX</b> (o "extrato OFX" que os apps dos bancos exportam — Nubank, Itaú, Bradesco, Inter, C6…) ou em <b>CSV</b> (colunas <b>Data</b>, <b>Descrição</b> e <b>Valor</b>). Escolha o arquivo ou cole o conteúdo abaixo — o formato é detectado automaticamente. Valores negativos viram despesa; positivos, receita. Duplicados (mesma data + descrição + valor) são ignorados, e cada lançamento é categorizado automaticamente.</div>
-        <input type="file" id="impFile" accept=".ofx,.csv,text/csv,application/x-ofx" class="field" style="margin-bottom:10px;" />
+        <div class="hint" style="margin-bottom:10px;">Importe o extrato em <b>OFX</b> (o "extrato OFX" dos apps de banco — Nubank, Itaú, Bradesco, Inter, C6…), <b>QIF</b> ou <b>CSV</b>. No CSV o app reconhece as colunas por banco: <b>Data</b>, <b>Descrição</b> e <b>Valor</b> — ou colunas separadas de <b>Débito/Crédito</b> (Entrada/Saída). Escolha o arquivo ou cole o conteúdo — o formato é detectado automaticamente. Valores negativos viram despesa; positivos, receita. Duplicados são ignorados e cada lançamento é categorizado automaticamente.</div>
+        <input type="file" id="impFile" accept=".ofx,.qif,.csv,text/csv,application/x-ofx" class="field" style="margin-bottom:10px;" />
         <textarea class="field" id="impTexto" rows="4" placeholder="Data,Descrição,Valor&#10;05/07/2026,Mercado,-150,00&#10;08/07/2026,Salário,3000,00"></textarea>
         <div class="row2" style="margin-top:10px;">
           <div>

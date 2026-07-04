@@ -3,6 +3,11 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v35 — Importar QIF + CSV por banco (Onda 7.6)
+- **QIF:** importação do formato QIF (exportado por vários bancos/apps de finanças) — detecção automática, registros `D`/`T`/`P`/`M`/`^`.
+- **CSV por banco:** além de colunas Data/Descrição/Valor, reconhece **colunas separadas de Débito/Crédito** (ou Entrada/Saída) e calcula o valor (crédito entra, débito sai). Mais sinônimos de cabeçalho (date, estabelecimento, detalhe…).
+- Reaproveita o fluxo prévia → importar (dedup + auto-categorização). Parsers validados por testes de sandbox.
+
 ## v34 — Ajustes do tema (transparência, textura, scroll)
 - **Cards translúcidos:** painéis, KPIs e campos agora deixam **ver a textura e o cifrão ao fundo**.
 - **Textura de papel mais visível/definida** (grão maior e mais opaco).

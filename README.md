@@ -34,7 +34,7 @@ na **sua** conta Google (nada de servidor de terceiros, nada de mensalidade).
 | **Cartão** | **Fatura prevista por cartão** (ciclo de fechamento/vencimento), não por competência |
 | **Lembretes** | Contas com vencimento → **e-mail** automático alguns dias antes (gatilho diário) |
 | **Dividir** | Acerto de contas de gastos compartilhados (quanto a outra pessoa te reembolsa) |
-| **Importar** | Extrato **OFX** (padrão dos apps de banco — Nubank, Itaú, Bradesco, Inter, C6…) **ou CSV** · detecção automática do formato · dedup · auto-categorização |
+| **Importar** | Extrato **OFX** (padrão dos apps de banco — Nubank, Itaú, Bradesco, Inter, C6…), **QIF** ou **CSV** (inclui colunas Débito/Crédito por banco) · detecção automática · dedup · auto-categorização |
 | **Backup** | Exportação para o Google Drive em **CSV** (Excel/Sheets) ou **XML** (estruturado) |
 | **Experiência** | **App com telas** — navegação por barra inferior (celular) / menu lateral (desktop), sem recarregar · atualização automática · atalho na tela inicial (Android/iOS) |
 

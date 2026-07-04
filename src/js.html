@@ -353,7 +353,40 @@
       return out;
     }
 
-    // Desenha a prévia da importação (comum a CSV e OFX).
+    // Detecta o formato QIF (exportação de vários bancos/finance apps).
+    function isQIF(text) {
+      const t = String(text || '');
+      return /^\s*!Type:/i.test(t) || (/(^|\n)D/.test(t) && /(^|\n)T/.test(t) && /(^|\n)\^/.test(t));
+    }
+
+    // Parser de QIF: registros terminam em "^"; D=data, T/U=valor, P=beneficiário, M=memo.
+    function parseQIF(text) {
+      const out = [];
+      const lines = String(text || '').split(/\r\n|\r|\n/);
+      let cur = null;
+      const flush = () => {
+        if (cur && cur.data && !isNaN(cur.valor) && cur.valor !== 0) {
+          const iso = parseDataISO(cur.data);
+          if (iso) out.push({ data: iso, descricao: (cur.desc || 'Lançamento').trim(), valor: Math.abs(cur.valor), natureza: cur.valor < 0 ? 'Despesa' : 'Receita' });
+        }
+        cur = null;
+      };
+      lines.forEach(ln => {
+        if (!ln) return;
+        const code = ln.charAt(0), val = ln.slice(1).trim();
+        if (code === '^') { flush(); return; }
+        if (code === '!') return; // cabeçalho (!Type:Bank)
+        if (!cur) cur = { data: '', valor: NaN, desc: '' };
+        if (code === 'D') cur.data = val.replace(/'/g, '/').replace(/\s+/g, '');
+        else if (code === 'T' || code === 'U') { if (isNaN(cur.valor)) cur.valor = parseValorBR(val); }
+        else if (code === 'P') cur.desc = val;
+        else if (code === 'M' && !cur.desc) cur.desc = val;
+      });
+      flush();
+      return out;
+    }
+
+    // Desenha a prévia da importação (comum a CSV, OFX e QIF).
     function renderImportPreview(invalidas, fonte) {
       const btnImp = document.getElementById('btnImportar');
       const el = document.getElementById('impPreview');
@@ -383,16 +416,27 @@
         return;
       }
 
-      // Formato CSV
+      // Formato QIF
+      if (isQIF(txt)) {
+        impParsed = parseQIF(txt);
+        if (!impParsed.length) { setMsg('msgImportar', '❌ QIF sem transações reconhecidas.', 'err'); btnImp.style.display = 'none'; return; }
+        renderImportPreview(0, 'QIF');
+        return;
+      }
+
+      // Formato CSV (com detecção de colunas por banco)
       const rows = parseCSV(txt);
       if (rows.length < 2) { setMsg('msgImportar', '❌ Arquivo vazio ou sem linhas de dados.', 'err'); btnImp.style.display = 'none'; return; }
       const header = rows[0].map(normCat);
       const find = (...cands) => header.findIndex(h => cands.some(c => h.indexOf(c) !== -1));
-      const iData = find('data');
-      const iDesc = find('descri', 'histor', 'lancament', 'memo', 'titulo');
-      const iValor = find('valor', 'montante', 'amount', 'quantia');
-      if (iData < 0 || iDesc < 0 || iValor < 0) {
-        setMsg('msgImportar', '❌ Não encontrei as colunas Data / Descrição / Valor no cabeçalho.', 'err');
+      const iData = find('data', 'date', 'dt');
+      const iDesc = find('descri', 'histor', 'lancament', 'memo', 'titulo', 'estabelecimento', 'detalhe');
+      const iValor = find('valor', 'montante', 'amount', 'quantia', 'value');
+      // Bancos que separam entrada/saída em duas colunas
+      const iDeb = iValor < 0 ? find('debito', 'saida', 'pagamento', 'debit', 'despesa') : -1;
+      const iCred = iValor < 0 ? find('credito', 'entrada', 'deposito', 'credit', 'receita') : -1;
+      if (iData < 0 || iDesc < 0 || (iValor < 0 && iDeb < 0 && iCred < 0)) {
+        setMsg('msgImportar', '❌ Não encontrei as colunas Data / Descrição / Valor (ou Débito/Crédito) no cabeçalho.', 'err');
         btnImp.style.display = 'none';
         return;
       }
@@ -401,12 +445,19 @@
         const r = rows[i];
         if (!r || (r.length === 1 && !String(r[0]).trim())) continue;
         const iso = parseDataISO(r[iData]);
-        const v = parseValorBR(r[iValor]);
+        let v;
+        if (iValor >= 0) {
+          v = parseValorBR(r[iValor]);
+        } else {
+          const deb = iDeb >= 0 ? parseValorBR(r[iDeb]) : NaN;
+          const cred = iCred >= 0 ? parseValorBR(r[iCred]) : NaN;
+          v = (isNaN(cred) ? 0 : Math.abs(cred)) - (isNaN(deb) ? 0 : Math.abs(deb)); // crédito entra, débito sai
+        }
         const desc = String(r[iDesc] || '').trim();
         if (!iso || isNaN(v) || v === 0 || !desc) { invalidas++; continue; }
         impParsed.push({ data: iso, descricao: desc, valor: Math.abs(v), natureza: v < 0 ? 'Despesa' : 'Receita' });
       }
-      renderImportPreview(invalidas, 'CSV');
+      renderImportPreview(invalidas, iValor < 0 ? 'CSV (débito/crédito)' : 'CSV');
     }
 
     function importarExtrato() {
