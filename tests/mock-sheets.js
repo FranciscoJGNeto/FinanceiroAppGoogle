@@ -102,6 +102,7 @@ function loadApp(sheetsSpec) {
     'removerGatilhoRecorrentes', 'statusGatilhoRecorrentes',
     'getOrcamentos', 'setOrcamento', 'deleteOrcamento',
     'getMetas', 'setMeta', 'deleteMeta',
+    'getRegra503020', 'getClassificacao', 'setClasseCategoria',
     'getContas', 'setConta', 'deleteConta', 'getFaturaCartao', 'exportarBackup', 'exportarBackupXML', 'importarTransacoes',
     'getLembretes', 'setLembrete', 'deleteLembrete', 'getLembretesProximos', 'verificarLembretes',
     'instalarGatilhoLembretes', 'removerGatilhoLembretes', 'statusGatilhoLembretes', 'migrarEstrutura'];

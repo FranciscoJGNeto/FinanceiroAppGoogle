@@ -55,8 +55,8 @@ Evolução mensal de gastos, gasto por categoria (rosca), receita vs. despesa, s
 ### 3.2 Acerto de contas compartilhadas ("quem deve quem") ✅ (v17; rateio por lançamento v22)
 Evoluir o "compartilhado + reembolso" atual para uma tela de acerto: total que a outra pessoa deve no mês. — **v17** painel Compartilhado (`getCompartilhados`); **v22** rateio próprio por lançamento. (Histórico de acertos/"marcar pago" ainda em aberto.)
 
-### 3.3 Metas de economia ✅ (v27) · Regra 50/30/20 ⏳ (7.5)
-Metas: definir e acompanhar economia. Regra 50/30/20: classificar gastos em Essencial/Desejo/Poupança. — **Metas feitas na v27** (Onda 7.2); **50/30/20 pendente** (Onda 7.5).
+### 3.3 Metas de economia ✅ (v27) · Regra 50/30/20 ✅ (v32)
+Metas: definir e acompanhar economia. Regra 50/30/20: classificar gastos em Essencial/Desejo/Poupança. — **Metas na v27** (Onda 7.2); **50/30/20 na v32** (Onda 7.5).
 
 ### 3.4 Fatura de cartão (ciclo de fechamento) ✅ (v29)
 Agrupar lançamentos de "Cartão" por ciclo de fechamento/vencimento, mostrando a fatura prevista de cada cartão — diferente do gasto por competência. — **Feito na v29** (Onda 7.4).
@@ -99,7 +99,7 @@ Só se houver gastos em outra moeda (ex.: assinaturas em USD). Provavelmente des
 | 4 | Compartilhado & lembretes | 3.2 acerto de contas, 2.4 lembretes | ✅ |
 | 5 | Fricção zero | 4.2 importar extrato (OFX/CSV), 5.1 backup (CSV/XML) | ✅ |
 | 6 | Mobile & UX | instalar na tela inicial (v24), recolher/expandir tudo (v24) | ✅ |
-| **7** | **Próximos passos** | 7.1 recorrentes auto (v26) ✅ · 7.2 metas (v27) ✅ · 7.3 relatório anual (v28) ✅ · 7.4 fatura de cartão (v29) ✅ · 7.5 regra 50/30/20 → em seguida · 7.6–7.8 | ⏳ |
+| **7** | **Próximos passos** | 7.1 recorrentes auto (v26) ✅ · 7.2 metas (v27) ✅ · 7.3 relatório anual (v28) ✅ · 7.4 fatura de cartão (v29) ✅ · 7.5 regra 50/30/20 (v32) ✅ · 7.6 QIF/CSV por banco → em seguida · 7.7–7.8 | ⏳ |
 
 ## Onda 7 — próximos passos (em ordem de execução)
 
@@ -128,9 +128,10 @@ Backend: `getRelatorioAnual(ano)`. **Próximo da fila: 7.4 Fatura de cartão.**
 no mês (janela fechamento anterior→atual), com data de vencimento por ciclo. Contas ganharam
 dia de fechamento/vencimento. Backend: `getFaturaCartao`. **Próximo da fila: 7.5 Regra 50/30/20.**
 
-### 7.5 Regra 50/30/20 ⭐⭐ 🔨🔨
-Classificar cada categoria em Essencial / Desejo / Poupança e comparar o mês com a
-meta 50/30/20. Um mapa categoria→classe + um painel de barras.
+### 7.5 Regra 50/30/20 ✅ (v32)
+**Feito.** Painel **⚖️ Regra 50/30/20**: classificar categorias em Essencial/Desejo/Poupança
+e comparar o mês com a meta (3 barras real × alvo). Aba `Classificacao` +
+`getRegra503020`/`getClassificacao`/`setClasseCategoria`. **Próximo da fila: 7.6 QIF/CSV por banco.**
 
 ### 7.6 Importar mais formatos (QIF + CSV por banco) ⭐⭐ 🔨🔨
 Complementar o OFX/CSV atuais: parser **QIF** e **mapas de colunas por banco** (cada

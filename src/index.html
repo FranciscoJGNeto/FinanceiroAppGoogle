@@ -1360,6 +1360,20 @@
         <div id="metasList" style="margin-top:12px;"></div>
       </div>
     </section>
+
+    <!-- Regra 50/30/20 -->
+    <section class="panel acc collapsed" data-acc="regra" data-view="planejar">
+      <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="false" aria-controls="bodyRegra">
+        <h2>⚖️ Regra 50/30/20</h2>
+        <div class="right">
+          <span class="chevron" aria-hidden="true">▾</span>
+        </div>
+      </div>
+      <div class="panelBody" id="bodyRegra">
+        <div class="hint" style="margin-bottom:10px;">Classifique cada categoria em <b>Essencial</b> (alvo 50%), <b>Desejo</b> (30%) ou <b>Poupança</b> (20%) e veja como os gastos do mês se comparam ao ideal.</div>
+        <div id="regraContent"></div>
+      </div>
+    </section>
   </div>
   </div><!-- /appMain -->
 
@@ -2075,6 +2089,63 @@
         + `<div class="compAcerto">💳 Total das faturas que fecham neste mês: <b>${moneyBRL(data.totalGeral)}</b></div>`;
     }
 
+    // ---- Regra 50/30/20 ----
+    function carregarRegra() {
+      google.script.run
+        .withSuccessHandler(renderRegra)
+        .withFailureHandler(() => { /* silencioso */ })
+        .getRegra503020(mesISOatual());
+    }
+
+    function renderRegra(data) {
+      const el = document.getElementById('regraContent');
+      if (!data || !data.total) {
+        el.innerHTML = '<div style="color:var(--muted); font-size:13px;">Sem despesas no mês para classificar.</div>';
+        return;
+      }
+      const linha = (nome, val, pct, alvo, cor) => {
+        const w = Math.max(0, Math.min(pct, 100));
+        const ok = pct <= alvo;
+        return `<div class="orcRow">
+          <div class="orcTop">
+            <div class="orcName">${nome} ${ok ? '✅' : '⚠️'}</div>
+            <div class="orcVals">${moneyBRL(val)} · <b>${pct}%</b> <span style="color:var(--muted)">/ alvo ${alvo}%</span></div>
+          </div>
+          <div class="orcBarWrap" style="position:relative;">
+            <div class="orcBar" style="width:${w.toFixed(1)}%; background:${cor}"></div>
+            <span title="alvo ${alvo}%" style="position:absolute; top:-3px; bottom:-3px; left:${alvo}%; width:2px; background:rgba(255,255,255,.55);"></span>
+          </div>
+        </div>`;
+      };
+      let html = linha('🏠 Essencial', data.buckets.essencial, data.pct.essencial, data.alvo.essencial, 'var(--primary)')
+        + linha('🎉 Desejo', data.buckets.desejo, data.pct.desejo, data.alvo.desejo, 'var(--warn)')
+        + linha('🐷 Poupança', data.buckets.poupanca, data.pct.poupanca, data.alvo.poupanca, 'var(--ok)');
+      if (data.buckets.naoClassificado > 0) {
+        html += `<div class="hint" style="margin:8px 0;">❔ Não classificado: <b>${moneyBRL(data.buckets.naoClassificado)}</b> (${data.pct.naoClassificado}%) — use os seletores abaixo.</div>`;
+      }
+      html += '<div class="chartTitle" style="margin-top:12px;">🏷️ Classificar categorias do mês</div>';
+      html += data.categorias.map(c => {
+        const opt = (v, l) => `<option value="${v}"${c.classe === v ? ' selected' : ''}>${l}</option>`;
+        return `<div class="saldoRow">
+          <span>${escapeHtml(c.categoria)} <span class="pill">${moneyBRL(c.total)}</span></span>
+          <select class="field" data-regra-cat="${escapeHtml(c.categoria)}" style="width:auto; padding:7px 8px; font-size:13px;">
+            ${opt('', '—')}${opt('essencial', 'Essencial')}${opt('desejo', 'Desejo')}${opt('poupanca', 'Poupança')}
+          </select>
+        </div>`;
+      }).join('');
+      el.innerHTML = html;
+    }
+
+    function onRegraChange(e) {
+      const sel = e.target.closest('select[data-regra-cat]');
+      if (!sel) return;
+      const cat = sel.getAttribute('data-regra-cat');
+      google.script.run
+        .withSuccessHandler(() => carregarRegra())
+        .withFailureHandler(err => alert((err && err.message) || err))
+        .setClasseCategoria(cat, sel.value);
+    }
+
     // ---- Orçamentos por categoria (gasto vs limite) ----
     function carregarOrcamentos() {
       google.script.run
@@ -2493,6 +2564,7 @@
       carregarSugestoes(mesISO);
       carregarMetas();
       carregarFatura();
+      carregarRegra();
 
       google.script.run
         .withSuccessHandler(renderProjecao)
@@ -2901,6 +2973,7 @@
     document.getElementById('btnSalvarMeta').addEventListener('click', salvarMeta);
     document.getElementById('btnCancelarMeta').addEventListener('click', cancelarEdicaoMeta);
     document.getElementById('metasList').addEventListener('click', onMetaClick);
+    document.getElementById('regraContent').addEventListener('change', onRegraChange);
 
     // Contas
     document.getElementById('contaSaldo').addEventListener('input', (e) => {

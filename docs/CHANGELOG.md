@@ -3,6 +3,12 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v32 — Regra 50/30/20 (Onda 7.5)
+- Novo painel **⚖️ Regra 50/30/20** (tela Planejar): classifique cada categoria em **Essencial** (alvo 50%), **Desejo** (30%) ou **Poupança** (20%) e veja **3 barras com o real × o alvo** (marcador na meta), além do que está **não classificado**.
+- Classificação feita **na hora** por um seletor ao lado de cada categoria do mês.
+- Backend: aba `Classificacao` + `getRegra503020`/`getClassificacao`/`setClasseCategoria`.
+- Testes: **114 checagens**.
+
 ## v31 — Tema preto neumórfico + seletor de mês no cabeçalho
 - **Novo visual:** fundo **totalmente preto** com **textura de papel** (ruído SVG inline), superfícies em **relevo neumórfico** e campos/KPIs **debossed** (afundados) em tons escuros, com um **cifrão ($) em relevo** como marca d'água ao fundo. Tudo self-contained (sem imagens externas — compatível com o sandbox do Apps Script).
 - **Seletor de mês no cabeçalho:** setas ‹ › para trocar de mês de **qualquer tela**; o rótulo do mês leva ao resumo. (Substitui o botão "recolher tudo" no topo.)

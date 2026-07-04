@@ -6,6 +6,7 @@ const SHEET_SALD = 'Saldos';
 const SHEET_ORC = 'Orcamentos';
 const SHEET_LEMB = 'Lembretes';
 const SHEET_META = 'Metas';
+const SHEET_CLASS = 'Classificacao';
 
 // Colunas canônicas da aba Transacoes (ordem usada ao criar/completar o cabeçalho).
 const TRANS_COLS = ['ID', 'Data', 'Conta', 'Meio', 'Descrição', 'Tipo', 'Natureza', 'Categoria',
@@ -1095,6 +1096,99 @@ function deleteMeta(id) {
   return { ok: true, message: 'Meta removida' };
 }
 
+// ===================== Regra 50/30/20 =====================
+// Aba Classificacao: A=Categoria, B=Classe (Essencial | Desejo | Poupança)
+
+const CLASSES_503020 = { essencial: 'Essencial', desejo: 'Desejo', poupanca: 'Poupança' };
+
+// Normaliza a classe informada para 'essencial' | 'desejo' | 'poupanca' | '' (sem classe).
+function classeNorm_(v) {
+  const n = norm_(v);
+  if (n === 'essencial' || n === 'essenciais' || n === 'necessidade' || n === 'necessidades') return 'essencial';
+  if (n === 'desejo' || n === 'desejos' || n === 'superfluo' || n === 'superfluos') return 'desejo';
+  if (n === 'poupanca' || n === 'investimento' || n === 'investimentos') return 'poupanca';
+  return '';
+}
+
+// Lista as categorias já classificadas.
+function getClassificacao() {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEET_CLASS);
+  if (!sh || sh.getLastRow() < 2) return [];
+  return sh.getDataRange().getValues().slice(1)
+    .filter(r => String(r[0]).trim())
+    .map(r => ({ categoria: String(r[0]).trim(), classe: classeNorm_(r[1]) }))
+    .filter(o => o.classe);
+}
+
+// Define/atualiza a classe de uma categoria (classe vazia remove a classificação).
+function setClasseCategoria(categoria, classe) {
+  categoria = String(categoria || '').trim();
+  if (!categoria) throw new Error('Informe a categoria.');
+  const cl = classeNorm_(classe);
+
+  const ss = SpreadsheetApp.getActive();
+  let sh = ss.getSheetByName(SHEET_CLASS);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_CLASS);
+    sh.getRange('A1:B1').setValues([['Categoria', 'Classe']]);
+    sh.getRange('A1:B1').setFontWeight('bold');
+  }
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const last = sh.getLastRow();
+    const nomes = last > 1 ? sh.getRange(2, 1, last - 1, 1).getValues() : [];
+    let row = -1;
+    for (let i = 0; i < nomes.length; i++) { if (norm_(nomes[i][0]) === norm_(categoria)) { row = i + 2; break; } }
+    if (!cl) {
+      if (row !== -1) sh.deleteRow(row);
+      return { ok: true, message: 'Classificação removida' };
+    }
+    const label = CLASSES_503020[cl];
+    if (row === -1) sh.appendRow([categoria, label]);
+    else sh.getRange(row, 1, 1, 2).setValues([[categoria, label]]);
+  } finally {
+    lock.releaseLock();
+  }
+  return { ok: true, message: 'Classificação salva' };
+}
+
+// Compara os gastos do mês com a regra 50/30/20 (Essencial/Desejo/Poupança).
+function getRegra503020(mesISO) {
+  const cats = getPorCategoria(mesISO); // despesas do mês por categoria (desc)
+  const mapCl = {};
+  getClassificacao().forEach(o => { mapCl[norm_(o.categoria)] = o.classe; });
+
+  const buckets = { essencial: 0, desejo: 0, poupanca: 0, naoclassificado: 0 };
+  const categorias = cats.map(c => {
+    const cl = mapCl[norm_(c.categoria)] || '';
+    buckets[cl || 'naoclassificado'] += c.total;
+    return { categoria: c.categoria, total: c.total, classe: cl };
+  });
+  const total = round2_(cats.reduce((a, c) => a + c.total, 0));
+  const pct = (v) => total > 0 ? Math.round((v / total) * 100) : 0;
+
+  return {
+    total: total,
+    buckets: {
+      essencial: round2_(buckets.essencial),
+      desejo: round2_(buckets.desejo),
+      poupanca: round2_(buckets.poupanca),
+      naoClassificado: round2_(buckets.naoclassificado)
+    },
+    pct: {
+      essencial: pct(buckets.essencial),
+      desejo: pct(buckets.desejo),
+      poupanca: pct(buckets.poupanca),
+      naoClassificado: pct(buckets.naoclassificado)
+    },
+    alvo: { essencial: 50, desejo: 30, poupanca: 20 },
+    categorias: categorias
+  };
+}
+
 // ===================== Lembretes de vencimento =====================
 // Aba Lembretes: A=Descrição, B=Dia(1-31), C=Valor, D=Antecedencia(dias), E=Ativo, F=UltimoAviso(yyyy-MM)
 
@@ -1641,6 +1735,14 @@ function criarEstruturaPlanilha() {
     shM = ss.insertSheet(SHEET_META);
     shM.getRange('A1:F1').setValues([['ID', 'Descrição', 'Tipo', 'Alvo', 'Prazo', 'CriadoEm']]);
     shM.getRange('A1:F1').setFontWeight('bold');
+  }
+
+  // Aba Classificacao (regra 50/30/20)
+  let shCl = ss.getSheetByName(SHEET_CLASS);
+  if (!shCl) {
+    shCl = ss.insertSheet(SHEET_CLASS);
+    shCl.getRange('A1:B1').setValues([['Categoria', 'Classe']]);
+    shCl.getRange('A1:B1').setFontWeight('bold');
   }
 
   return 'Estrutura da planilha criada/atualizada com sucesso!';

@@ -240,6 +240,28 @@ group('metas de economia — total (acumulado desde criação + meses restantes)
   eq(metas[0].mesesRestantes, 5, 'de jul a dez = 5 meses restantes');
 }
 
+group('regra 50/30/20 — classificação + buckets/percentuais');
+{
+  const { api } = loadApp(baseTrans([
+    txRow({ id: '1', data: new Date(2026, 6, 2), descricao: 'Aluguel', natureza: 'Despesa', categoria: 'Moradia', valor: 500 }),
+    txRow({ id: '2', data: new Date(2026, 6, 3), descricao: 'Cinema', natureza: 'Despesa', categoria: 'Lazer', valor: 200 }),
+    txRow({ id: '3', data: new Date(2026, 6, 4), descricao: 'Aporte', natureza: 'Despesa', categoria: 'Investimentos', valor: 300 })
+  ]));
+  api.setClasseCategoria('Moradia', 'Essencial');
+  api.setClasseCategoria('Lazer', 'Desejo');
+  api.setClasseCategoria('Investimentos', 'Poupança');
+  api.setClasseCategoria('Moradia', 'essencial'); // upsert normalizado (não duplica)
+  eq(api.getClassificacao().length, 3, 'upsert não duplica (3 classes)');
+  const r = api.getRegra503020('2026-07-01');
+  eq(r.total, 1000, 'total de despesas do mês');
+  eq([r.buckets.essencial, r.buckets.desejo, r.buckets.poupanca], [500, 200, 300], 'somas por classe');
+  eq([r.pct.essencial, r.pct.desejo, r.pct.poupanca], [50, 20, 30], 'percentuais (50/20/30)');
+  eq(r.buckets.naoClassificado, 0, 'nada sem classe');
+  api.setClasseCategoria('Lazer', ''); // remove classificação
+  const r2 = api.getRegra503020('2026-07-01');
+  eq(r2.buckets.naoClassificado, 200, 'Lazer volta para não classificado');
+}
+
 group('getCompartilhados — por serviço (legado) e reembolso');
 {
   const { api } = loadApp({
