@@ -808,6 +808,32 @@ function deleteOrcamento(categoria) {
   return { ok: true, message: 'Orçamento removido' };
 }
 
+// ===================== Backup / Exportação =====================
+
+// Formata uma célula para CSV (datas como yyyy-MM-dd; escapa aspas/vírgula/quebra).
+function csvCell_(v) {
+  let s;
+  if (v instanceof Date) s = Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  else s = String(v == null ? '' : v);
+  if (/[",\r\n;]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+
+// Exporta TODAS as transações para um CSV no Google Drive e devolve o link.
+function exportarBackup() {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEET_TRANS);
+  if (!sh) throw new Error('Aba "Transacoes" não encontrada na planilha');
+
+  const vals = sh.getDataRange().getValues();
+  const csv = vals.map(row => row.map(csvCell_).join(',')).join('\r\n');
+  const tz = Session.getScriptTimeZone();
+  const nome = 'financeiro-backup-' + Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd-HHmm') + '.csv';
+  // BOM para acentos abrirem certo no Excel
+  const file = DriveApp.createFile(nome, '﻿' + csv, 'text/csv');
+  return { ok: true, nome: nome, url: file.getUrl(), linhas: Math.max(vals.length - 1, 0) };
+}
+
 // ===================== Contas (dinâmicas, via aba Saldos) =====================
 
 // Lista as contas cadastradas (aba Saldos: A=Conta, B=Saldo).

@@ -62,6 +62,7 @@ function loadApp(sheetsSpec) {
   const sheets = {};
   Object.keys(sheetsSpec || {}).forEach(name => { sheets[name] = new Sheet(name, sheetsSpec[name].map(r => r.slice())); });
   const ss = new Spreadsheet(sheets);
+  const driveFiles = [];
 
   const mesesPt = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
   const pad = n => String(n).padStart(2, '0');
@@ -78,6 +79,7 @@ function loadApp(sheetsSpec) {
       }
     },
     Session: { getScriptTimeZone: () => 'America/Sao_Paulo' },
+    DriveApp: { createFile: (nome, content, mime) => { const f = { nome, content, mime, getUrl: () => 'https://drive.google.com/file/' + nome }; driveFiles.push(f); return f; } },
     ContentService: { MimeType: { JSON: 'JSON' }, createTextOutput: () => ({ setMimeType() { return this; } }) },
     HtmlService: {},
     console, Date, Math, JSON, String, Number, Array, Object, RegExp, parseFloat, parseInt, isNaN
@@ -89,9 +91,9 @@ function loadApp(sheetsSpec) {
   const nomes = ['addTransacao', 'updateTransacao', 'deleteTransacao', 'listTransacoes', 'getResumo',
     'getEvolucao', 'getPorCategoria', 'getSugestoesOrcamento', 'getProjecaoParcelas', 'getCompartilhados',
     'gerarRecorrentes', 'getOrcamentos', 'setOrcamento', 'deleteOrcamento',
-    'getContas', 'setConta', 'deleteConta', 'migrarEstrutura'];
+    'getContas', 'setConta', 'deleteConta', 'exportarBackup', 'migrarEstrutura'];
   const api = vm.runInContext('({' + nomes.join(',') + '})', ctx);
-  return { api, ss, sheets };
+  return { api, ss, sheets, driveFiles };
 }
 
 // Cabeçalho padrão da aba Transacoes (ordem canônica).

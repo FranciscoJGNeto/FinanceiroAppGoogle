@@ -3,6 +3,11 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v19 — Backup / exportação (CSV)
+- Painel **Backup**: gera um **CSV com todos os lançamentos** no Google Drive e devolve o link.
+- CSV com BOM (acentos no Excel) e escaping correto (vírgulas/aspas); datas em `yyyy-MM-dd`.
+- Backend: `exportarBackup()` (usa `DriveApp` — requer autorização da permissão de Drive na 1ª vez).
+
 ## v18 — Contas dinâmicas
 - **Contas gerenciáveis no app** (painel Contas): criar/editar/remover, com saldo — usa a aba `Saldos` como fonte.
 - Seletor de conta no formulário **populado dinamicamente** (não mais fixo em Inter/Itaú/Conta Simples).

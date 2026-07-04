@@ -806,6 +806,21 @@
       </div>
     </section>
 
+    <!-- Backup / Exportar -->
+    <section class="panel acc" data-acc="backup">
+      <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="true" aria-controls="bodyBackup">
+        <h2>💾 Backup</h2>
+        <div class="right">
+          <span class="chevron" aria-hidden="true">▾</span>
+        </div>
+      </div>
+      <div class="panelBody" id="bodyBackup">
+        <div class="hint" style="margin-bottom:10px;">Gera um arquivo <b>CSV com todos os lançamentos</b> no seu Google Drive — uma cópia de segurança que você pode baixar quando quiser.</div>
+        <button class="btn" id="btnBackup">💾 Exportar backup (CSV no Drive)</button>
+        <div class="msg" id="msgBackup"></div>
+      </div>
+    </section>
+
     <!-- Novo lançamento -->
     <section class="panel acc" data-acc="lancamento">
       <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="true" aria-controls="bodyLancamento">
@@ -1200,6 +1215,27 @@
         `<div class="projTotal">Total compartilhado: <b>${moneyBRL(data.total)}</b></div>
          <div class="compAcerto">💸 A outra pessoa te reembolsa: <b>${moneyBRL(data.reembolso)}</b> <span class="sugSub">(${pctOutra}% do compartilhado)</span></div>
          <div style="margin-top:12px;">${lista}</div>`;
+    }
+
+    // ---- Backup / exportar ----
+    function exportarBackup() {
+      const btn = document.getElementById('btnBackup');
+      btn.disabled = true;
+      setMsg('msgBackup', '⏳ Gerando backup no Drive...', 'ok');
+      google.script.run
+        .withSuccessHandler(res => {
+          btn.disabled = false;
+          const el = document.getElementById('msgBackup');
+          el.style.display = 'block';
+          el.className = 'msg ok';
+          el.innerHTML = `✅ Backup criado (${res.linhas} lançamento(s)): <b>${escapeHtml(res.nome)}</b><br>`
+            + `<a href="${res.url}" target="_blank" rel="noopener" style="color:var(--primary); font-weight:700;">📂 Abrir no Google Drive</a>`;
+        })
+        .withFailureHandler(err => {
+          btn.disabled = false;
+          setMsg('msgBackup', '❌ Erro ao gerar backup: ' + (err?.message || err), 'err');
+        })
+        .exportarBackup();
     }
 
     // ---- Contas (dinâmicas) ----
@@ -1884,6 +1920,7 @@
     });
     document.getElementById('btnSalvarConta').addEventListener('click', salvarConta);
     document.getElementById('contasList').addEventListener('click', onContaClick);
+    document.getElementById('btnBackup').addEventListener('click', exportarBackup);
 
     // Estado inicial do formulário
     setNatureza('Despesa');

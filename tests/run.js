@@ -192,6 +192,20 @@ group('contas — cadastro dinâmico (upsert, delete)');
   eq(api.getContas().length, 1, 'delete removeu 1');
 }
 
+group('exportarBackup — CSV no Drive (com escaping)');
+{
+  const { api, driveFiles } = loadApp(baseTrans([
+    txRow({ id: '1', data: new Date(2026, 6, 3), conta: 'Inter', descricao: 'Mercado, feira', natureza: 'Despesa', valor: 150.75 })
+  ]));
+  const res = api.exportarBackup();
+  ok(/^financeiro-backup-.*\.csv$/.test(res.nome), 'nome do arquivo no padrão financeiro-backup-*.csv');
+  eq(res.linhas, 1, 'contou 1 lançamento');
+  ok(driveFiles.length === 1, 'criou 1 arquivo no Drive (mock)');
+  const csv = driveFiles[0].content;
+  ok(csv.indexOf('"Mercado, feira"') !== -1, 'descrição com vírgula fica entre aspas no CSV');
+  ok(csv.indexOf('2026-07-03') !== -1, 'data formatada como yyyy-MM-dd');
+}
+
 // ---------------------------------------------------------------------------
 console.log(`\n${'─'.repeat(40)}`);
 console.log(`Resultado: ${pass} passaram, ${fail} falharam.`);
