@@ -3,6 +3,11 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v20 — Correção de contas + saldos por conta
+- **Bug corrigido:** o campo de saldo da conta tinha o mesmo `id` (`cSaldo`) do KPI "Saldo Atual" → o saldo digitado era ignorado e **salvava sempre 0**. Input renomeado para `contaSaldo`.
+- Novo bloco **Saldos por conta** no Resumo: lista cada conta cadastrada com seu saldo + total (aparece mesmo sem lançamentos).
+- Contas com lançamentos continuam aparecendo na rosca da Análise.
+
 ## v19 — Backup / exportação (CSV)
 - Painel **Backup**: gera um **CSV com todos os lançamentos** no Google Drive e devolve o link.
 - CSV com BOM (acentos no Excel) e escaping correto (vírgulas/aspas); datas em `yyyy-MM-dd`.

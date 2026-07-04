@@ -533,6 +533,13 @@
     .projTotal { font-size: 14px; }
     .projTotal b { color: var(--warn); }
 
+    /* Saldos por conta (resumo) */
+    .saldoRow { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+    .saldoRow:last-child { border-bottom: 0; }
+    .saldoRow b { font-variant-numeric: tabular-nums; }
+    .saldoRow.total { margin-top: 4px; border-top: 1px solid var(--line); border-bottom: 0; padding-top: 8px; }
+    .saldoRow.total b { color: var(--ok); }
+
     /* Acerto de contas */
     .compAcerto { margin-top: 8px; font-size: 14px; padding: 10px 12px; border-radius: 12px;
       border: 1px solid rgba(34, 197, 94, .4); background: rgba(34, 197, 94, .08); }
@@ -724,6 +731,8 @@
           </div>
         </div>
 
+        <div id="saldosConta" style="margin-top:12px;"></div>
+
         <div class="msg" id="msgResumo"></div>
       </div>
     </section>
@@ -793,10 +802,10 @@
             <input class="field" type="text" id="cNome" autocomplete="off" placeholder="Ex.: Nubank" />
           </div>
           <div>
-            <label for="cSaldo">💵 Saldo atual</label>
+            <label for="contaSaldo">💵 Saldo atual</label>
             <div class="moneyWrap">
               <span class="prefix">R$</span>
-              <input class="field money" type="text" id="cSaldo" inputmode="numeric" autocomplete="off" placeholder="0,00" style="font-size:20px;" />
+              <input class="field money" type="text" id="contaSaldo" inputmode="numeric" autocomplete="off" placeholder="0,00" style="font-size:20px;" />
             </div>
           </div>
         </div>
@@ -1241,9 +1250,20 @@
     // ---- Contas (dinâmicas) ----
     function carregarContas() {
       google.script.run
-        .withSuccessHandler(items => { contas = items || []; popularSelectContas(); renderContas(); })
+        .withSuccessHandler(items => { contas = items || []; popularSelectContas(); renderContas(); renderSaldosConta(); })
         .withFailureHandler(() => { /* silencioso */ })
         .getContas();
+    }
+
+    // Saldos por conta (no resumo) — inclui toda conta cadastrada, mesmo sem lançamentos
+    function renderSaldosConta() {
+      const el = document.getElementById('saldosConta');
+      if (!el) return;
+      if (!contas.length) { el.innerHTML = ''; return; }
+      const total = contas.reduce((a, c) => a + (Number(c.saldo) || 0), 0);
+      el.innerHTML = '<div class="chartTitle">💵 Saldos por conta</div>'
+        + contas.map(c => `<div class="saldoRow"><span>🏦 ${escapeHtml(c.conta)}</span><b>${moneyBRL(c.saldo)}</b></div>`).join('')
+        + `<div class="saldoRow total"><span>Total</span><b>${moneyBRL(total)}</b></div>`;
     }
 
     function popularSelectContas() {
@@ -1277,14 +1297,14 @@
 
     function salvarConta() {
       const nome = document.getElementById('cNome').value.trim();
-      const saldo = centsOfEl(document.getElementById('cSaldo')) / 100;
+      const saldo = centsOfEl(document.getElementById('contaSaldo')) / 100;
       if (!nome) { setMsg('msgConta', '❌ Informe o nome da conta.', 'err'); return; }
       setMsg('msgConta', '⏳ Salvando...', 'ok');
       google.script.run
         .withSuccessHandler(() => {
           setMsg('msgConta', '✅ Conta salva!', 'ok');
           document.getElementById('cNome').value = '';
-          document.getElementById('cSaldo').value = '';
+          document.getElementById('contaSaldo').value = '';
           carregarContas();
           refresh(); // saldo entra no resumo/previsão
         })
@@ -1298,7 +1318,7 @@
       const nome = b.getAttribute('data-nome');
       if (b.getAttribute('data-cact') === 'edit') {
         document.getElementById('cNome').value = nome;
-        setValorEl(document.getElementById('cSaldo'), Number(b.getAttribute('data-saldo')));
+        setValorEl(document.getElementById('contaSaldo'), Number(b.getAttribute('data-saldo')));
         setMsg('msgConta', '', 'ok');
         document.getElementById('cNome').scrollIntoView({ behavior: 'smooth', block: 'center' });
       } else {
@@ -1914,7 +1934,7 @@
     document.getElementById('orcSugestoes').addEventListener('click', onSugClick);
 
     // Contas
-    document.getElementById('cSaldo').addEventListener('input', (e) => {
+    document.getElementById('contaSaldo').addEventListener('input', (e) => {
       const c = centsOfEl(e.target);
       e.target.value = c ? formatCentavos(c) : '';
     });
