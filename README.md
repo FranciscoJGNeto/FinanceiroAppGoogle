@@ -25,7 +25,7 @@ na **sua** conta Google (nada de servidor de terceiros, nada de mensalidade).
 
 | Área | Recursos |
 |------|----------|
-| **Lançar** | Despesas **e** receitas · máscara de moeda (é só digitar números) · categorias com sugestões · parcelas · observações |
+| **Lançar** | Despesas **e** receitas · máscara de moeda · categorias · parcelas · **compartilhado com % próprio** · observações |
 | **Gerenciar** | Editar e excluir qualquer lançamento · busca/filtro instantâneo · **contas dinâmicas** (crie/edite as suas) |
 | **Entender** | Resumo do mês (totais por conta, gasto compartilhado, reembolso, previsão de saldo, % do salário) |
 | **Visualizar** | Dashboard com gráficos: rosca por conta · evolução de 6 meses · barras por categoria |
@@ -33,8 +33,9 @@ na **sua** conta Google (nada de servidor de terceiros, nada de mensalidade).
 | **Dividir** | Acerto de contas de gastos compartilhados (quanto a outra pessoa te reembolsa) |
 | **Experiência** | Painéis em acordeão que lembram o estado · atualização automática · instalável na tela inicial (Android/iOS) |
 
-> 💡 **Gasto compartilhado:** marque serviços que você divide com alguém (ex.: streamings)
-> e o app calcula automaticamente o **reembolso** e o seu gasto real ajustado.
+> 💡 **Gasto compartilhado:** marque um lançamento como compartilhado e informe o **% que a outra
+> pessoa paga** — o app calcula o **reembolso** e o seu gasto real ajustado. Na importação de extrato,
+> os lançamentos são **categorizados automaticamente** (pelo histórico e por palavras-chave).
 
 ## 📸 Telas
 

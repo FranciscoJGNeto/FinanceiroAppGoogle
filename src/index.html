@@ -567,6 +567,7 @@
     .segment button[aria-pressed="true"] { color: #fff; }
     .segment button.seg-desp[aria-pressed="true"] { background: linear-gradient(180deg, #ef4444, #dc2626); }
     .segment button.seg-rec[aria-pressed="true"] { background: linear-gradient(180deg, var(--ok), #16a34a); }
+    .segment button.seg-neu[aria-pressed="true"] { background: rgba(255, 255, 255, .14); }
 
     /* Campo de valor com prefixo R$ */
     .moneyWrap { position: relative; }
@@ -918,6 +919,20 @@
           </datalist>
         </div>
 
+        <!-- Compartilhado -->
+        <div id="compartBlock" style="margin-bottom:12px;">
+          <label>🤝 Compartilhado com alguém?</label>
+          <div class="segment" id="segCompart">
+            <button type="button" class="seg-neu" data-comp="0" aria-pressed="true">Não</button>
+            <button type="button" class="seg-rec" data-comp="1" aria-pressed="false">Sim</button>
+          </div>
+          <input type="hidden" id="tCompart" value="0" />
+          <div id="rateioWrap" style="display:none; margin-top:10px;">
+            <label for="tRateio">📊 % que a outra pessoa paga (reembolsa)</label>
+            <input class="field" type="number" id="tRateio" min="1" max="100" inputmode="numeric" placeholder="Ex.: 50" value="50" />
+          </div>
+        </div>
+
         <!-- Data / Conta / Meio -->
         <div class="row">
           <div>
@@ -1131,12 +1146,28 @@
       document.querySelectorAll('#segNatureza button').forEach(b => {
         b.setAttribute('aria-pressed', b.getAttribute('data-nat') === nat ? 'true' : 'false');
       });
+      // Compartilhado só faz sentido em despesa
+      const cb = document.getElementById('compartBlock');
+      if (cb) {
+        if (nat === 'Receita') { cb.style.display = 'none'; setCompart(false); }
+        else cb.style.display = '';
+      }
     }
 
     // ---- Parcelas só aparecem quando Tipo = Parcelado ----
     function toggleParcelas() {
       const show = document.getElementById('tTipo').value === 'Parcelado';
       document.getElementById('parcelasRow').style.display = show ? 'grid' : 'none';
+    }
+
+    // ---- Compartilhado (Sim/Não + % rateio) ----
+    function setCompart(on) {
+      const v = on ? '1' : '0';
+      document.getElementById('tCompart').value = v;
+      document.querySelectorAll('#segCompart button').forEach(b => {
+        b.setAttribute('aria-pressed', b.getAttribute('data-comp') === v ? 'true' : 'false');
+      });
+      document.getElementById('rateioWrap').style.display = on ? 'block' : 'none';
     }
 
     // ---- Gráficos em SVG (paleta categórica validada p/ fundo escuro) ----
@@ -1246,8 +1277,8 @@
       const pctOutra = Math.round((data.rateio || 0) * 100);
       const lista = itens.map(i => `<div class="orcRow">
         <div class="orcTop">
-          <div class="orcName">${escapeHtml(i.descricao)} <span class="pill">🏦 ${escapeHtml(i.conta)}</span></div>
-          <div class="orcVals">${moneyBRL(i.valor)}</div>
+          <div class="orcName">${escapeHtml(i.descricao)} <span class="pill">🏦 ${escapeHtml(i.conta)}</span> <span class="pill">${Math.round((i.rateio || 0) * 100)}%</span></div>
+          <div class="orcVals">${moneyBRL(i.valor)} → ${moneyBRL(i.reembolso)}</div>
         </div>
       </div>`).join('');
       el.innerHTML =
@@ -1870,7 +1901,9 @@
       const selConta = document.getElementById('tConta');
       if (selConta.options.length) selConta.selectedIndex = 0;
       document.getElementById('tData').value = new Date().toISOString().slice(0, 10);
+      document.getElementById('tRateio').value = 50;
       setNatureza('Despesa');
+      setCompart(false);
       toggleParcelas();
       setMsg('msgSalvar', '', 'ok');
       document.getElementById('tDesc').focus();
@@ -1904,6 +1937,8 @@
       document.getElementById('tMeio').value = r.meio || 'Conta';
       document.getElementById('tTipo').value = r.tipo || 'Único';
       setNatureza(r.natureza || 'Despesa');
+      document.getElementById('tRateio').value = r.rateio ? Math.round(r.rateio * 100) : 50;
+      setCompart(!!r.compartilhado);
       document.getElementById('tParcAtual').value = r.parcelaAtual || '';
       document.getElementById('tParcTotal').value = r.parcelaTotal || '';
       toggleParcelas();
@@ -1963,6 +1998,8 @@
         categoria: document.getElementById('tCategoria').value.trim(),
         tipo: document.getElementById('tTipo').value,
         natureza: document.getElementById('tNatureza').value,
+        compartilhado: document.getElementById('tCompart').value === '1',
+        rateio: (Number(document.getElementById('tRateio').value) || 0) / 100,
         parcelaAtual: document.getElementById('tParcAtual').value,
         parcelaTotal: document.getElementById('tParcTotal').value,
         valor: valorCentavos() / 100,
@@ -2074,6 +2111,12 @@
     // Mostrar/ocultar parcelas conforme o Tipo
     document.getElementById('tTipo').addEventListener('change', toggleParcelas);
 
+    // Toggle Compartilhado (Não/Sim)
+    document.getElementById('segCompart').addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-comp]');
+      if (b) setCompart(b.getAttribute('data-comp') === '1');
+    });
+
     // Orçamentos: máscara do limite, salvar e editar/remover
     document.getElementById('oLimite').addEventListener('input', (e) => {
       const c = centsOfEl(e.target);
@@ -2106,6 +2149,7 @@
 
     // Estado inicial do formulário
     setNatureza('Despesa');
+    setCompart(false);
     toggleParcelas();
     carregarContas();
     initAccordions();

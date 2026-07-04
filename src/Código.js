@@ -7,7 +7,7 @@ const SHEET_ORC = 'Orcamentos';
 
 // Colunas canônicas da aba Transacoes (ordem usada ao criar/completar o cabeçalho).
 const TRANS_COLS = ['ID', 'Data', 'Conta', 'Meio', 'Descrição', 'Tipo', 'Natureza', 'Categoria',
-  'ParcelaAtual', 'ParcelaTotal', 'Valor', 'Observação', 'CriadoEm'];
+  'Compartilhado', 'Rateio', 'ParcelaAtual', 'ParcelaTotal', 'Valor', 'Observação', 'CriadoEm'];
 
 // ===================== Helpers genéricos =====================
 
@@ -48,6 +48,37 @@ function numFrom_(v, def) {
   return isNaN(n) ? def : n;
 }
 
+// Interpreta um valor como "compartilhado?" (aceita boolean, "sim", "true", etc.).
+function isCompartFlag_(v) {
+  if (v === true) return true;
+  const s = norm_(v);
+  return s === 'true' || s === 'sim' || s === '1' || s === 'x' || s === 'verdadeiro';
+}
+
+// Palavras-chave -> categoria, para auto-categorizar na importação de extrato.
+const CATEGORIA_KEYWORDS = {
+  'Assinaturas': ['netflix', 'spotify', 'disney', 'hbo', 'max', 'primevideo', 'amazonprime', 'youtube', 'crunchyroll', 'globoplay', 'deezer', 'applecom', 'paramount', 'star', 'canva', 'chatgpt', 'openai'],
+  'Transporte': ['uber', '99app', '99', 'cabify', 'posto', 'ipiranga', 'shell', 'petrobras', 'combustivel', 'estacionamento', 'metro', 'onibus', 'bilheteunico'],
+  'Mercado': ['mercado', 'supermerc', 'carrefour', 'paodeacucar', 'assai', 'atacadao', 'hortifruti', 'bigbox', 'extra'],
+  'Alimentação': ['ifood', 'restaurante', 'lanchonete', 'burger', 'mcdonald', 'padaria', 'pizzaria', 'subway', 'habib', 'outback'],
+  'Saúde': ['farmacia', 'drogaria', 'drogasil', 'pacheco', 'raia', 'hospital', 'clinica', 'laboratorio', 'unimed'],
+  'Contas e serviços': ['claro', 'vivo', 'timbrasil', 'tim', 'enel', 'light', 'sabesp', 'copasa', 'cemig', 'internet', 'net'],
+  'Educação': ['escola', 'faculdade', 'curso', 'udemy', 'alura'],
+  'Lazer': ['cinema', 'cinemark', 'steam', 'playstation', 'xbox', 'nintendo', 'ingresso']
+};
+
+// Sugere uma categoria a partir da descrição: primeiro pelo histórico (histMap:
+// descrição normalizada -> categoria), depois por palavras-chave conhecidas.
+function categorizarAuto_(descricao, histMap) {
+  const nd = norm_(descricao);
+  if (!nd) return '';
+  if (histMap && histMap[nd]) return histMap[nd];
+  for (const cat in CATEGORIA_KEYWORDS) {
+    if (CATEGORIA_KEYWORDS[cat].some(k => nd.indexOf(k) !== -1)) return cat;
+  }
+  return '';
+}
+
 // Ano*100 + mês, a partir de uma data (ou null se inválida).
 function toYM_(v) {
   const dt = v instanceof Date ? v : new Date(v);
@@ -67,6 +98,8 @@ function colMapTrans_(normHeader) {
     tipo: ['tipo'],
     natureza: ['natureza'],
     categoria: ['categoria'],
+    compartilhado: ['compartilhado'],
+    rateio: ['rateio'],
     parcelaAtual: ['parcelaatual'],
     parcelaTotal: ['parcelatotal'],
     valor: ['valor'],
@@ -191,7 +224,18 @@ function validarTransacao_(t) {
   }
 
   const natureza = norm_(t && t.natureza) === 'receita' ? 'Receita' : 'Despesa';
-  return { descricao, valor, tipo, pAtual, pTotal, natureza };
+
+  // Compartilhamento por lançamento (só faz sentido em despesa)
+  const compartilhado = natureza === 'Despesa' && isCompartFlag_(t && t.compartilhado);
+  let rateio = '';
+  if (compartilhado) {
+    let rt = Number(t && t.rateio);
+    if (isNaN(rt) || rt <= 0) rt = 0.5;   // padrão 50%
+    if (rt > 1) rt = rt / 100;            // aceita porcentagem (ex.: 50)
+    rateio = Math.max(0, Math.min(rt, 1));
+  }
+
+  return { descricao, valor, tipo, pAtual, pTotal, natureza, compartilhado, rateio };
 }
 
 // Localiza a linha (1-based) de uma transação pelo ID; -1 se não achar.
@@ -229,6 +273,8 @@ function addTransacao(t) {
     set('tipo', v.tipo);
     set('natureza', v.natureza);
     set('categoria', String((t && t.categoria) || '').trim());
+    set('compartilhado', v.compartilhado ? true : '');
+    set('rateio', v.rateio);
     set('parcelaAtual', v.pAtual);
     set('parcelaTotal', v.pTotal);
     set('valor', v.valor);
@@ -270,6 +316,8 @@ function updateTransacao(id, t) {
     set('tipo', v.tipo);
     set('natureza', v.natureza);
     set('categoria', String((t && t.categoria) || '').trim());
+    set('compartilhado', v.compartilhado ? true : '');
+    set('rateio', v.rateio);
     set('parcelaAtual', v.pAtual);
     set('parcelaTotal', v.pTotal);
     set('valor', v.valor);
@@ -344,6 +392,8 @@ function listTransacoes(mesISO) {
         tipo: String(col(r, 'tipo') || ''),
         natureza: natureza,
         categoria: String(col(r, 'categoria') || ''),
+        compartilhado: isCompartFlag_(col(r, 'compartilhado')),
+        rateio: Number(col(r, 'rateio')) || '',
         parcela: (pa && pt) ? `${pa}/${pt}` : '',
         parcelaAtual: pa || '',
         parcelaTotal: pt || '',
@@ -405,15 +455,7 @@ function getResumo(mesISO) {
       .map(r => String(r[0]).trim().toLowerCase());
   }
 
-  const totalCompart = rows.reduce((acc, r) => {
-    if (isReceita(r)) return acc; // só despesas podem ser compartilhadas
-    const desc = String(col(r, 'descricao') || '').trim().toLowerCase();
-    if (!desc) return acc; // ignora descrições vazias (evita falso positivo)
-    if (compartilhados.some(comp => comp && desc.includes(comp))) {
-      return acc + (Number(col(r, 'valor')) || 0);
-    }
-    return acc;
-  }, 0);
+  // (o total compartilhado é calculado abaixo, após ler o rateio padrão da Config)
 
   // Configurações por chave (com fallback para B3/B5 por compatibilidade)
   const cfg = getConfigMap_(shC);
@@ -429,6 +471,26 @@ function getResumo(mesISO) {
   }
   rateio = numFrom_(rateio, 0.5);
 
+  // Compartilhado: por flag do lançamento OU por nome de serviço (legado).
+  // Reembolso usa o rateio do próprio lançamento; se não houver, o rateio padrão.
+  let totalCompart = 0;
+  let reembolso = 0;
+  rows.forEach(r => {
+    if (isReceita(r)) return;
+    const desc = String(col(r, 'descricao') || '').trim().toLowerCase();
+    const explicit = isCompartFlag_(col(r, 'compartilhado'));
+    const legado = desc && compartilhados.some(comp => comp && desc.includes(comp));
+    if (!explicit && !legado) return;
+    const v = Number(col(r, 'valor')) || 0;
+    let rt = Number(col(r, 'rateio'));
+    if (!(rt > 0)) rt = rateio;
+    if (rt > 1) rt = rt / 100;
+    totalCompart += v;
+    reembolso += v * rt;
+  });
+  totalCompart = round2_(totalCompart);
+  reembolso = round2_(reembolso);
+
   // Saldo atual (soma da coluna B da aba Saldos)
   let saldoAtual = 0;
   if (shD && shD.getLastRow() > 1) {
@@ -442,7 +504,6 @@ function getResumo(mesISO) {
 
   // Resumo final
   const totalGeral = round2_(porConta.reduce((a, x) => a + x.total, 0));
-  const reembolso = round2_(totalCompart * rateio);
   const totalAjustado = round2_(totalGeral - reembolso);
   const pctSalario = salario > 0 ? totalAjustado / salario : 0;
   // Previsão inclui salário fixo (Config) + receitas extras lançadas no mês
@@ -679,8 +740,12 @@ function getCompartilhados(mesISO) {
       .map(r => String(r[0]).trim().toLowerCase());
   }
 
+  const cfg = getConfigMap_(shC);
+  const rateioPadrao = numFrom_(cfg.rateio, 0.5);
+
   const itens = [];
   let total = 0;
+  let reembolso = 0;
   for (let i = 1; i < vals.length; i++) {
     const r = vals[i];
     if (toYM_(col(r, 'data')) !== ymTarget) continue;
@@ -688,17 +753,21 @@ function getCompartilhados(mesISO) {
     const desc = String(col(r, 'descricao') || '').trim();
     if (!desc) continue;
     const dl = desc.toLowerCase();
-    if (compartilhados.some(c => c && dl.includes(c))) {
-      const v = Number(col(r, 'valor')) || 0;
-      total += v;
-      itens.push({ descricao: desc, conta: String(col(r, 'conta') || ''), valor: round2_(v) });
-    }
+    const explicit = isCompartFlag_(col(r, 'compartilhado'));
+    const legado = compartilhados.some(c => c && dl.includes(c));
+    if (!explicit && !legado) continue;
+    const v = Number(col(r, 'valor')) || 0;
+    let rt = Number(col(r, 'rateio'));
+    if (!(rt > 0)) rt = rateioPadrao;
+    if (rt > 1) rt = rt / 100;
+    total += v;
+    reembolso += v * rt;
+    itens.push({ descricao: desc, conta: String(col(r, 'conta') || ''), valor: round2_(v), rateio: rt, reembolso: round2_(v * rt) });
   }
 
-  const cfg = getConfigMap_(shC);
-  const rateio = numFrom_(cfg.rateio, 0.5);
   itens.sort((a, b) => b.valor - a.valor);
-  return { itens: itens, total: round2_(total), rateio: rateio, reembolso: round2_(total * rateio) };
+  const rateioEfetivo = total > 0 ? reembolso / total : rateioPadrao;
+  return { itens: itens, total: round2_(total), rateio: rateioEfetivo, reembolso: round2_(reembolso) };
 }
 
 // ===================== Orçamentos por categoria =====================
@@ -852,9 +921,12 @@ function importarTransacoes(lista) {
     const vals = sh.getDataRange().getValues();
     const col = (r, f) => (map[f] != null ? r[map[f]] : '');
 
-    // Índice das transações já existentes (para dedup)
+    // Índice das transações já existentes (dedup) + histórico p/ auto-categorizar
     const existentes = {};
+    const histMap = {};
     for (let i = 1; i < vals.length; i++) {
+      const catExist = String(col(vals[i], 'categoria') || '').trim();
+      if (catExist) { const kc = norm_(col(vals[i], 'descricao')); if (kc) histMap[kc] = catExist; }
       const dv = col(vals[i], 'data');
       if (!dv) continue;
       const dt = dv instanceof Date ? dv : new Date(dv);
@@ -887,7 +959,9 @@ function importarTransacoes(lista) {
       setc('descricao', descricao);
       setc('tipo', 'Único');
       setc('natureza', norm_(t && t.natureza) === 'receita' ? 'Receita' : 'Despesa');
-      setc('categoria', String((t && t.categoria) || '').trim());
+      let categoria = String((t && t.categoria) || '').trim();
+      if (!categoria) categoria = categorizarAuto_(descricao, histMap);
+      setc('categoria', categoria);
       setc('valor', valor);
       setc('obs', String((t && t.obs) || ''));
       setc('criadoEm', new Date());

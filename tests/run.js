@@ -162,7 +162,7 @@ group('orçamentos — upsert, validação, delete');
   eq(api.getOrcamentos().length, 1, 'delete removeu 1');
 }
 
-group('getCompartilhados — lista e reembolso');
+group('getCompartilhados — por serviço (legado) e reembolso');
 {
   const { api } = loadApp({
     Transacoes: [HEADER.slice(),
@@ -175,6 +175,39 @@ group('getCompartilhados — lista e reembolso');
   const c = api.getCompartilhados('2026-07-01');
   eq(c.total, 40, 'total compartilhado = 40 (só Disney+)');
   eq(c.reembolso, 20, 'reembolso = 40 * 0.5');
+}
+
+group('compartilhado POR LANÇAMENTO (flag + rateio próprio)');
+{
+  const { api } = loadApp({ Transacoes: [HEADER.slice()], Config: [['Configuração', 'Valor'], ['% reembolso padrão', 0.5]] });
+  // Assinatura compartilhada 70% + despesa normal
+  api.addTransacao({ data: '2026-07-05', conta: 'Inter', descricao: 'Notion', natureza: 'Despesa', valor: '100', compartilhado: true, rateio: 0.7 });
+  api.addTransacao({ data: '2026-07-06', conta: 'Inter', descricao: 'Almoço', natureza: 'Despesa', valor: '30' });
+  const r = api.getResumo('2026-07-01');
+  eq(r.totalCompart, 100, 'totalCompart = 100 (só o Notion)');
+  eq(r.reembolso, 70, 'reembolso = 100 * 0.7 (rateio do próprio lançamento)');
+  eq(r.totalAjustado, 60, 'ajustado = 130 - 70');
+  const lst = api.listTransacoes('2026-07-01');
+  const notion = lst.find(x => x.descricao === 'Notion');
+  eq([notion.compartilhado, notion.rateio], [true, 0.7], 'listTransacoes devolve compartilhado/rateio');
+}
+
+group('importarTransacoes — auto-categorização');
+{
+  const { api } = loadApp(baseTrans([
+    // histórico: já categorizou "Padaria do Zé" como Alimentação
+    txRow({ id: 'h', data: new Date(2026, 5, 1), descricao: 'Padaria do Zé', natureza: 'Despesa', categoria: 'Alimentação', valor: 12 })
+  ]));
+  api.importarTransacoes([
+    { data: '2026-07-02', descricao: 'NETFLIX.COM', valor: 55.9, conta: 'Inter', natureza: 'Despesa' }, // keyword -> Assinaturas
+    { data: '2026-07-03', descricao: 'UBER *TRIP', valor: 20, conta: 'Inter', natureza: 'Despesa' },     // keyword -> Transporte
+    { data: '2026-07-04', descricao: 'Padaria do Zé', valor: 15, conta: 'Inter', natureza: 'Despesa' }   // histórico -> Alimentação
+  ]);
+  const lst = api.listTransacoes('2026-07-01');
+  const byDesc = d => lst.find(x => x.descricao === d);
+  eq(byDesc('NETFLIX.COM').categoria, 'Assinaturas', 'Netflix -> Assinaturas (keyword)');
+  eq(byDesc('UBER *TRIP').categoria, 'Transporte', 'Uber -> Transporte (keyword)');
+  eq(byDesc('Padaria do Zé').categoria, 'Alimentação', 'Padaria -> Alimentação (histórico)');
 }
 
 group('contas — cadastro dinâmico (upsert, delete)');

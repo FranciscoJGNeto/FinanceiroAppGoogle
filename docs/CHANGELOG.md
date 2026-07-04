@@ -3,6 +3,11 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v22 — Compartilhamento por lançamento + auto-categorização na importação
+- No formulário: marcar **🤝 Compartilhado (Não/Sim)** e o **% que a outra pessoa paga** (rateio próprio de cada lançamento). Colunas novas `Compartilhado`/`Rateio` (auto-criadas).
+- **Resumo e acerto de contas** passam a somar o reembolso pelo rateio de cada item (mantendo compatibilidade com o compartilhado por nome de serviço na aba `Servicos`).
+- **Importação auto-categoriza** cada lançamento: primeiro pelo seu histórico (descrição já categorizada), depois por palavras-chave de serviços/comércios comuns (Netflix→Assinaturas, Uber→Transporte, etc.).
+
 ## v21 — Importar extrato (CSV) + UX da edição de conta
 - Novo painel **Importar extrato**: cola/anexa um CSV (Data, Descrição, Valor), pré-visualiza e importa em lote. Negativo = despesa, positivo = receita; **dedup** por data+descrição+valor. Backend: `importarTransacoes(lista)`.
 - Parser tolerante: delimitador `,` ou `;`, campos com aspas, valores `1.234,56`/`(50,00)`, datas `dd/mm/aaaa` e `aaaa-mm-dd`.
