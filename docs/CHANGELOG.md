@@ -3,6 +3,11 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v21 — Importar extrato (CSV) + UX da edição de conta
+- Novo painel **Importar extrato**: cola/anexa um CSV (Data, Descrição, Valor), pré-visualiza e importa em lote. Negativo = despesa, positivo = receita; **dedup** por data+descrição+valor. Backend: `importarTransacoes(lista)`.
+- Parser tolerante: delimitador `,` ou `;`, campos com aspas, valores `1.234,56`/`(50,00)`, datas `dd/mm/aaaa` e `aaaa-mm-dd`.
+- **UX:** ao editar uma conta, o botão vira **"Salvar edição de conta"** e aparece **Cancelar**.
+
 ## v20 — Correção de contas + saldos por conta
 - **Bug corrigido:** o campo de saldo da conta tinha o mesmo `id` (`cSaldo`) do KPI "Saldo Atual" → o saldo digitado era ignorado e **salvava sempre 0**. Input renomeado para `contaSaldo`.
 - Novo bloco **Saldos por conta** no Resumo: lista cada conta cadastrada com seu saldo + total (aparece mesmo sem lançamentos).

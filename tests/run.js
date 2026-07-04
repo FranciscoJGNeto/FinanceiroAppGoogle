@@ -206,6 +206,24 @@ group('exportarBackup — CSV no Drive (com escaping)');
   ok(csv.indexOf('2026-07-03') !== -1, 'data formatada como yyyy-MM-dd');
 }
 
+group('importarTransacoes — lote e dedup');
+{
+  const { api } = loadApp(baseTrans([
+    txRow({ id: 'x', data: new Date(2026, 6, 5), conta: 'Inter', descricao: 'Mercado', natureza: 'Despesa', valor: 150 })
+  ]));
+  const res = api.importarTransacoes([
+    { data: '2026-07-05', descricao: 'Mercado', valor: 150, conta: 'Inter', natureza: 'Despesa' }, // duplicado
+    { data: '2026-07-06', descricao: 'Uber', valor: 30, conta: 'Inter', natureza: 'Despesa' },
+    { data: '2026-07-07', descricao: 'Salário', valor: 3000, conta: 'Inter', natureza: 'Receita' },
+    { data: '2026-07-08', descricao: '', valor: 10, conta: 'Inter' } // inválida (sem descrição)
+  ]);
+  eq([res.importadas, res.ignoradas], [2, 2], 'importa 2 (Uber, Salário); ignora duplicado e inválida');
+  const jul = api.listTransacoes('2026-07-01');
+  eq(jul.length, 3, 'julho passa a ter 3 (Mercado + 2 importadas)');
+  const rec = jul.find(x => x.descricao === 'Salário');
+  eq(rec.natureza, 'Receita', 'natureza da receita importada preservada');
+}
+
 // ---------------------------------------------------------------------------
 console.log(`\n${'─'.repeat(40)}`);
 console.log(`Resultado: ${pass} passaram, ${fail} falharam.`);

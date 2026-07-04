@@ -91,7 +91,7 @@ function loadApp(sheetsSpec) {
   const nomes = ['addTransacao', 'updateTransacao', 'deleteTransacao', 'listTransacoes', 'getResumo',
     'getEvolucao', 'getPorCategoria', 'getSugestoesOrcamento', 'getProjecaoParcelas', 'getCompartilhados',
     'gerarRecorrentes', 'getOrcamentos', 'setOrcamento', 'deleteOrcamento',
-    'getContas', 'setConta', 'deleteConta', 'exportarBackup', 'migrarEstrutura'];
+    'getContas', 'setConta', 'deleteConta', 'exportarBackup', 'importarTransacoes', 'migrarEstrutura'];
   const api = vm.runInContext('({' + nomes.join(',') + '})', ctx);
   return { api, ss, sheets, driveFiles };
 }

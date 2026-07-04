@@ -834,6 +834,74 @@ function exportarBackup() {
   return { ok: true, nome: nome, url: file.getUrl(), linhas: Math.max(vals.length - 1, 0) };
 }
 
+// Importa uma lista de transações (ex.: extrato), em lote, evitando duplicar
+// (chave: data + descrição + valor). Retorna quantas importou/ignorou.
+function importarTransacoes(lista) {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEET_TRANS);
+  if (!sh) throw new Error('Aba "Transacoes" não encontrada na planilha');
+  if (!lista || !lista.length) return { ok: true, importadas: 0, ignoradas: 0 };
+
+  const tz = Session.getScriptTimeZone();
+  const keyOf = (iso, desc, valor) => iso + '|' + norm_(desc) + '|' + Math.round((Number(valor) || 0) * 100);
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const map = ensureColunasTrans_(sh);
+    const vals = sh.getDataRange().getValues();
+    const col = (r, f) => (map[f] != null ? r[map[f]] : '');
+
+    // Índice das transações já existentes (para dedup)
+    const existentes = {};
+    for (let i = 1; i < vals.length; i++) {
+      const dv = col(vals[i], 'data');
+      if (!dv) continue;
+      const dt = dv instanceof Date ? dv : new Date(dv);
+      if (isNaN(dt)) continue;
+      const iso = Utilities.formatDate(dt, tz, 'yyyy-MM-dd');
+      existentes[keyOf(iso, col(vals[i], 'descricao'), col(vals[i], 'valor'))] = true;
+    }
+
+    const nCols = sh.getLastColumn();
+    const novas = [];
+    let importadas = 0;
+    let ignoradas = 0;
+
+    lista.forEach(t => {
+      const descricao = String((t && t.descricao) || '').trim();
+      const valor = toNumBR_(t && t.valor);
+      if (!descricao || !(valor > 0)) { ignoradas++; return; }
+      const dataObj = parseLocalDate_(t && t.data);
+      const iso = Utilities.formatDate(dataObj, tz, 'yyyy-MM-dd');
+      const k = keyOf(iso, descricao, valor);
+      if (existentes[k]) { ignoradas++; return; }
+      existentes[k] = true;
+
+      const row = new Array(nCols).fill('');
+      const setc = (campo, val) => { if (map[campo] != null) row[map[campo]] = val; };
+      setc('id', Utilities.getUuid());
+      setc('data', dataObj);
+      setc('conta', String((t && t.conta) || '').trim());
+      setc('meio', String((t && t.meio) || 'Conta'));
+      setc('descricao', descricao);
+      setc('tipo', 'Único');
+      setc('natureza', norm_(t && t.natureza) === 'receita' ? 'Receita' : 'Despesa');
+      setc('categoria', String((t && t.categoria) || '').trim());
+      setc('valor', valor);
+      setc('obs', String((t && t.obs) || ''));
+      setc('criadoEm', new Date());
+      novas.push(row);
+      importadas++;
+    });
+
+    if (novas.length) sh.getRange(sh.getLastRow() + 1, 1, novas.length, nCols).setValues(novas);
+    return { ok: true, importadas: importadas, ignoradas: ignoradas };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 // ===================== Contas (dinâmicas, via aba Saldos) =====================
 
 // Lista as contas cadastradas (aba Saldos: A=Conta, B=Saldo).

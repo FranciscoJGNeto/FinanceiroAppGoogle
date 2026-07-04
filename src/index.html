@@ -810,6 +810,7 @@
           </div>
         </div>
         <button class="btn" id="btnSalvarConta">🏦 Salvar conta</button>
+        <button class="btnGhost" id="btnCancelarConta" style="display:none; margin-top:8px;">✖️ Cancelar edição</button>
         <div class="msg" id="msgConta"></div>
         <div id="contasList" style="margin-top:12px;"></div>
       </div>
@@ -827,6 +828,34 @@
         <div class="hint" style="margin-bottom:10px;">Gera um arquivo <b>CSV com todos os lançamentos</b> no seu Google Drive — uma cópia de segurança que você pode baixar quando quiser.</div>
         <button class="btn" id="btnBackup">💾 Exportar backup (CSV no Drive)</button>
         <div class="msg" id="msgBackup"></div>
+      </div>
+    </section>
+
+    <!-- Importar extrato -->
+    <section class="panel acc collapsed" data-acc="importar">
+      <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="false" aria-controls="bodyImportar">
+        <h2>📥 Importar extrato</h2>
+        <div class="right">
+          <span class="chevron" aria-hidden="true">▾</span>
+        </div>
+      </div>
+      <div class="panelBody" id="bodyImportar">
+        <div class="hint" style="margin-bottom:10px;">Cole o CSV do extrato (ou escolha um arquivo). Precisa ter colunas de <b>Data</b>, <b>Descrição</b> e <b>Valor</b>. Valores negativos viram despesa; positivos, receita. Duplicados (mesma data + descrição + valor) são ignorados.</div>
+        <input type="file" id="impFile" accept=".csv,text/csv" class="field" style="margin-bottom:10px;" />
+        <textarea class="field" id="impTexto" rows="4" placeholder="Data,Descrição,Valor&#10;05/07/2026,Mercado,-150,00&#10;08/07/2026,Salário,3000,00"></textarea>
+        <div class="row2" style="margin-top:10px;">
+          <div>
+            <label for="impConta">🏦 Conta destino</label>
+            <select class="field" id="impConta"></select>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button class="btnGhost" id="btnPreImportar" style="width:100%;">🔎 Pré-visualizar</button>
+          </div>
+        </div>
+        <div id="impPreview" style="margin-top:10px;"></div>
+        <button class="btn" id="btnImportar" style="display:none; margin-top:10px;">📥 Importar</button>
+        <div class="msg" id="msgImportar"></div>
       </div>
     </section>
 
@@ -1046,6 +1075,7 @@
     let sugestoes = [];
     let orcDismiss = JSON.parse(localStorage.getItem('orcDismiss') || '[]'); // sugestões rejeitadas
     let contas = [];
+    let impParsed = []; // linhas do extrato prontas para importar
 
     // Paleta categórica validada (fundo escuro, segura p/ daltônicos)
     const CORES_CONTA = ['#3987e5', '#199e70', '#c98500', '#008300', '#9085e9', '#e66767', '#d55181', '#d95926'];
@@ -1226,6 +1256,110 @@
          <div style="margin-top:12px;">${lista}</div>`;
     }
 
+    // ---- Importar extrato (CSV) ----
+    function parseCSV(text) {
+      text = String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+      if (!text) return [];
+      const primeira = text.split('\n')[0];
+      const delim = (primeira.split(';').length > primeira.split(',').length) ? ';' : ',';
+      const rows = []; let row = []; let cur = ''; let inQ = false;
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (inQ) {
+          if (ch === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else inQ = false; }
+          else cur += ch;
+        } else {
+          if (ch === '"') inQ = true;
+          else if (ch === delim) { row.push(cur); cur = ''; }
+          else if (ch === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+          else cur += ch;
+        }
+      }
+      row.push(cur); rows.push(row);
+      return rows;
+    }
+
+    function parseValorBR(s) {
+      s = String(s == null ? '' : s).trim();
+      if (!s) return NaN;
+      const neg = /^-/.test(s) || /^\(.*\)$/.test(s);
+      s = s.replace(/[^\d.,]/g, '');
+      if (s.indexOf(',') !== -1 && s.indexOf('.') !== -1) s = s.replace(/\./g, '').replace(',', '.');
+      else if (s.indexOf(',') !== -1) s = s.replace(',', '.');
+      const n = parseFloat(s);
+      if (isNaN(n)) return NaN;
+      return neg ? -n : n;
+    }
+
+    function parseDataISO(s) {
+      s = String(s == null ? '' : s).trim();
+      let m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+      if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+      m = /^(\d{1,2})[\/.](\d{1,2})[\/.](\d{2,4})/.exec(s);
+      if (m) { let y = m[3]; if (y.length === 2) y = '20' + y; return `${y}-${String(m[2]).padStart(2, '0')}-${String(m[1]).padStart(2, '0')}`; }
+      return null;
+    }
+
+    function preImportar() {
+      const rows = parseCSV(document.getElementById('impTexto').value);
+      const btnImp = document.getElementById('btnImportar');
+      if (rows.length < 2) { setMsg('msgImportar', '❌ CSV vazio ou sem linhas de dados.', 'err'); btnImp.style.display = 'none'; return; }
+      const header = rows[0].map(normCat);
+      const find = (...cands) => header.findIndex(h => cands.some(c => h.indexOf(c) !== -1));
+      const iData = find('data');
+      const iDesc = find('descri', 'histor', 'lancament', 'memo', 'titulo');
+      const iValor = find('valor', 'montante', 'amount', 'quantia');
+      if (iData < 0 || iDesc < 0 || iValor < 0) {
+        setMsg('msgImportar', '❌ Não encontrei as colunas Data / Descrição / Valor no cabeçalho.', 'err');
+        btnImp.style.display = 'none';
+        return;
+      }
+      impParsed = []; let invalidas = 0;
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r || (r.length === 1 && !String(r[0]).trim())) continue;
+        const iso = parseDataISO(r[iData]);
+        const v = parseValorBR(r[iValor]);
+        const desc = String(r[iDesc] || '').trim();
+        if (!iso || isNaN(v) || v === 0 || !desc) { invalidas++; continue; }
+        impParsed.push({ data: iso, descricao: desc, valor: Math.abs(v), natureza: v < 0 ? 'Despesa' : 'Receita' });
+      }
+      const el = document.getElementById('impPreview');
+      if (!impParsed.length) {
+        el.innerHTML = '<div style="color:var(--muted);font-size:13px;">Nenhuma linha válida encontrada.</div>';
+        btnImp.style.display = 'none';
+        return;
+      }
+      const amostra = impParsed.slice(0, 5).map(t =>
+        `<div class="saldoRow"><span>${escapeHtml(t.data)} · ${escapeHtml(t.descricao)} <span class="pill">${t.natureza === 'Despesa' ? '🔴' : '🟢'}</span></span><b>${moneyBRL(t.valor)}</b></div>`
+      ).join('');
+      el.innerHTML = `<div class="chartTitle">Prévia: ${impParsed.length} lançamento(s)${invalidas ? ` · ${invalidas} linha(s) ignorada(s)` : ''}</div>`
+        + amostra + (impParsed.length > 5 ? `<div class="hint">…e mais ${impParsed.length - 5}.</div>` : '');
+      setMsg('msgImportar', '', 'ok');
+      btnImp.style.display = '';
+    }
+
+    function importarExtrato() {
+      if (!impParsed.length) { setMsg('msgImportar', '❌ Pré-visualize primeiro.', 'err'); return; }
+      const conta = document.getElementById('impConta').value;
+      const lista = impParsed.map(t => Object.assign({}, t, { conta: conta }));
+      setMsg('msgImportar', '⏳ Importando...', 'ok');
+      const btn = document.getElementById('btnImportar');
+      btn.disabled = true;
+      google.script.run
+        .withSuccessHandler(res => {
+          btn.disabled = false;
+          setMsg('msgImportar', `✅ ${res.importadas} importada(s)` + (res.ignoradas ? ` · ${res.ignoradas} já existiam/ignoradas` : '') + '.', 'ok');
+          document.getElementById('impTexto').value = '';
+          document.getElementById('impPreview').innerHTML = '';
+          btn.style.display = 'none';
+          impParsed = [];
+          refresh();
+        })
+        .withFailureHandler(err => { btn.disabled = false; setMsg('msgImportar', '❌ ' + (err?.message || err), 'err'); })
+        .importarTransacoes(lista);
+    }
+
     // ---- Backup / exportar ----
     function exportarBackup() {
       const btn = document.getElementById('btnBackup');
@@ -1267,14 +1401,16 @@
     }
 
     function popularSelectContas() {
-      const sel = document.getElementById('tConta');
-      const atual = sel.value;
-      if (contas.length === 0) {
-        sel.innerHTML = '<option value="">(cadastre uma conta)</option>';
-        return;
-      }
-      sel.innerHTML = contas.map(c => `<option value="${escapeHtml(c.conta)}">${escapeHtml(c.conta)}</option>`).join('');
-      if (atual) setSelectValue(sel, atual);
+      const opts = contas.length
+        ? contas.map(c => `<option value="${escapeHtml(c.conta)}">${escapeHtml(c.conta)}</option>`).join('')
+        : '<option value="">(cadastre uma conta)</option>';
+      ['tConta', 'impConta'].forEach(id => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        const atual = sel.value;
+        sel.innerHTML = opts;
+        if (atual) setSelectValue(sel, atual);
+      });
     }
 
     function renderContas() {
@@ -1295,6 +1431,18 @@
       </div>`).join('');
     }
 
+    function setContaEditMode(on) {
+      document.getElementById('btnSalvarConta').textContent = on ? '💾 Salvar edição de conta' : '🏦 Salvar conta';
+      document.getElementById('btnCancelarConta').style.display = on ? '' : 'none';
+    }
+
+    function cancelarEdicaoConta() {
+      document.getElementById('cNome').value = '';
+      document.getElementById('contaSaldo').value = '';
+      setMsg('msgConta', '', 'ok');
+      setContaEditMode(false);
+    }
+
     function salvarConta() {
       const nome = document.getElementById('cNome').value.trim();
       const saldo = centsOfEl(document.getElementById('contaSaldo')) / 100;
@@ -1305,6 +1453,7 @@
           setMsg('msgConta', '✅ Conta salva!', 'ok');
           document.getElementById('cNome').value = '';
           document.getElementById('contaSaldo').value = '';
+          setContaEditMode(false);
           carregarContas();
           refresh(); // saldo entra no resumo/previsão
         })
@@ -1320,6 +1469,7 @@
         document.getElementById('cNome').value = nome;
         setValorEl(document.getElementById('contaSaldo'), Number(b.getAttribute('data-saldo')));
         setMsg('msgConta', '', 'ok');
+        setContaEditMode(true);
         document.getElementById('cNome').scrollIntoView({ behavior: 'smooth', block: 'center' });
       } else {
         if (!confirm(`Remover a conta "${nome}"?\nAs transações já lançadas nela não são alteradas.`)) return;
@@ -1939,8 +2089,20 @@
       e.target.value = c ? formatCentavos(c) : '';
     });
     document.getElementById('btnSalvarConta').addEventListener('click', salvarConta);
+    document.getElementById('btnCancelarConta').addEventListener('click', cancelarEdicaoConta);
     document.getElementById('contasList').addEventListener('click', onContaClick);
     document.getElementById('btnBackup').addEventListener('click', exportarBackup);
+
+    // Importar extrato
+    document.getElementById('btnPreImportar').addEventListener('click', preImportar);
+    document.getElementById('btnImportar').addEventListener('click', importarExtrato);
+    document.getElementById('impFile').addEventListener('change', (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      const rd = new FileReader();
+      rd.onload = () => { document.getElementById('impTexto').value = rd.result; };
+      rd.readAsText(f);
+    });
 
     // Estado inicial do formulário
     setNatureza('Despesa');
