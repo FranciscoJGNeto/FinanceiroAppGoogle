@@ -3,6 +3,14 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v28 — Relatório anual (Onda 7.3)
+- Novo painel **📅 Relatório anual**: visão do ano inteiro com **seletor de ano** (só anos com dados).
+  - KPIs: receitas, despesas, saldo e **média mensal** de despesa.
+  - Gráfico **Receitas × Despesas por mês** (barras agrupadas verde/vermelho, 12 meses).
+  - **Despesas por categoria** do ano e **maiores gastos** (top 10).
+- Backend: `getRelatorioAnual(ano)` (totais por mês/categoria, top gastos, média, lista de anos).
+- Testes: **99 checagens** (totais, exclusão de outros anos, categorias, top, média).
+
 ## v27 — Metas de economia (Onda 7.2)
 - Novo painel **🏆 Metas de economia**: defina quanto quer guardar (economia = **receitas − despesas**).
   - **Meta mensal:** guardar R$ X por mês; progresso = economia do mês atual.

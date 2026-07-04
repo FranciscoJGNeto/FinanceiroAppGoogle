@@ -768,6 +768,29 @@
       </div>
     </section>
 
+    <!-- Relatório anual -->
+    <section class="panel acc collapsed" data-acc="relatorio">
+      <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="false" aria-controls="bodyRelatorio">
+        <h2>📅 Relatório anual</h2>
+        <div class="right">
+          <span class="chevron" aria-hidden="true">▾</span>
+        </div>
+      </div>
+      <div class="panelBody" id="bodyRelatorio">
+        <div class="row2" style="margin-bottom:12px; align-items:end;">
+          <div>
+            <label for="relAno">📆 Ano</label>
+            <select class="field" id="relAno"></select>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button class="btnGhost" id="btnRelAtualizar" style="width:100%;">🔄 Atualizar</button>
+          </div>
+        </div>
+        <div id="relContent"></div>
+      </div>
+    </section>
+
     <!-- Parcelas futuras -->
     <section class="panel acc" data-acc="parcelas">
       <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="true" aria-controls="bodyParcelas">
@@ -1348,6 +1371,71 @@
           <div class="catVal">${moneyBRL(i.total)}</div>
         </div>`;
       }).join('');
+    }
+
+    // ---- Relatório anual ----
+    // Barras agrupadas: receitas (verde) x despesas (vermelho) por mês.
+    function renderAnualMeses(el, meses) {
+      const W = 340, H = 170, padX = 10, padTop = 14, padBot = 26;
+      const max = Math.max(1, ...meses.map(m => Math.max(m.receitas, m.despesas)));
+      const slot = (W - padX * 2) / 12;
+      const bw = Math.min(slot * 0.34, 11);
+      let g = `<line x1="${padX}" y1="${H - padBot}" x2="${W - padX}" y2="${H - padBot}" stroke="rgba(255,255,255,.12)" stroke-width="1"/>`;
+      meses.forEach((m, i) => {
+        const x0 = padX + i * slot + slot / 2;
+        const hr = (m.receitas / max) * (H - padTop - padBot);
+        const hd = (m.despesas / max) * (H - padTop - padBot);
+        const xr = x0 - bw - 1, xd = x0 + 1;
+        g += `<rect x="${xr.toFixed(1)}" y="${(H - padBot - hr).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(hr, 0).toFixed(1)}" rx="2" fill="#199e70"><title>${escapeHtml(m.label)} · receitas: ${moneyBRL(m.receitas)}</title></rect>`;
+        g += `<rect x="${xd.toFixed(1)}" y="${(H - padBot - hd).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(hd, 0).toFixed(1)}" rx="2" fill="#e66767"><title>${escapeHtml(m.label)} · despesas: ${moneyBRL(m.despesas)}</title></rect>`;
+        g += `<text x="${x0.toFixed(1)}" y="${H - 9}" text-anchor="middle" fill="rgba(255,255,255,.55)" font-size="8">${escapeHtml(m.label)}</text>`;
+      });
+      el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img" aria-label="Receitas e despesas por mês">${g}</svg>`;
+    }
+
+    function renderRelatorio(data) {
+      const el = document.getElementById('relContent');
+      if (!data) { el.innerHTML = ''; return; }
+      const t = data.totais || {};
+      if (!(t.receitas || t.despesas)) {
+        el.innerHTML = `<div style="color:var(--muted); font-size:13px;">Sem lançamentos em ${data.ano}.</div>`;
+        return;
+      }
+      const kpis = `<div class="kpis" style="margin-bottom:14px;">
+        <div class="kpi"><div class="name">🟢 Receitas</div><div class="val">${moneyBRL(t.receitas)}</div></div>
+        <div class="kpi"><div class="name">🔴 Despesas</div><div class="val">${moneyBRL(t.despesas)}</div></div>
+        <div class="kpi"><div class="name">💰 Saldo</div><div class="val ${t.saldo >= 0 ? 'pos' : ''}">${moneyBRL(t.saldo)}</div></div>
+        <div class="kpi"><div class="name">📊 Média/mês (despesa)</div><div class="val">${moneyBRL(data.mediaMensalDespesa)}</div><div class="small">${data.mesesComMovimento} mês(es) com movimento</div></div>
+      </div>`;
+      const topGastos = (data.topGastos || []).map(g =>
+        `<div class="saldoRow"><span>${escapeHtml(g.data)} · ${escapeHtml(g.descricao)} <span class="pill">${escapeHtml(g.categoria)}</span></span><b>${moneyBRL(g.valor)}</b></div>`
+      ).join('');
+      el.innerHTML = kpis
+        + `<div class="chartBlock"><div class="chartTitle">📊 Receitas × Despesas por mês</div>`
+        + `<div class="legend" style="flex-direction:row; gap:14px; margin-bottom:6px; min-width:0;"><span class="lgi"><span class="dot" style="background:#199e70"></span>Receitas</span><span class="lgi"><span class="dot" style="background:#e66767"></span>Despesas</span></div>`
+        + `<div id="relMeses"></div></div>`
+        + `<div class="chartBlock"><div class="chartTitle">🗂️ Despesas por categoria (ano)</div><div id="relCat"></div></div>`
+        + (topGastos ? `<div class="chartBlock"><div class="chartTitle">🔝 Maiores gastos do ano</div>${topGastos}</div>` : '');
+      renderAnualMeses(document.getElementById('relMeses'), data.meses);
+      renderCategorias(document.getElementById('relCat'), data.porCategoria);
+    }
+
+    function carregarRelatorio(ano) {
+      const sel = document.getElementById('relAno');
+      const alvo = ano || sel.value || String(new Date().getFullYear());
+      document.getElementById('relContent').innerHTML = '<div style="color:var(--muted); font-size:13px;">⏳ Carregando...</div>';
+      google.script.run
+        .withSuccessHandler(data => {
+          const anos = (data.anos && data.anos.length) ? data.anos.slice() : [];
+          if (!anos.includes(data.ano)) anos.unshift(data.ano);
+          const atual = String(data.ano);
+          sel.innerHTML = anos.map(a => `<option value="${a}"${String(a) === atual ? ' selected' : ''}>${a}</option>`).join('');
+          renderRelatorio(data);
+        })
+        .withFailureHandler(err => {
+          document.getElementById('relContent').innerHTML = '<div class="msg err" style="display:block;">❌ ' + (err?.message || err) + '</div>';
+        })
+        .getRelatorioAnual(Number(alvo));
     }
 
     // ---- Parcelas futuras (projeção) ----
@@ -2532,6 +2620,10 @@
     document.getElementById('btnRecorrentes').addEventListener('click', gerarRecorrentes);
     document.getElementById('btnToggleGatilhoRec').addEventListener('click', toggleGatilhoRec);
 
+    // Relatório anual
+    document.getElementById('btnRelAtualizar').addEventListener('click', () => carregarRelatorio());
+    document.getElementById('relAno').addEventListener('change', (e) => carregarRelatorio(e.target.value));
+
     // Máscara de moeda: reformata a cada tecla
     document.getElementById('tValor').addEventListener('input', (e) => {
       const c = valorCentavos();
@@ -2612,6 +2704,7 @@
     carregarContas();
     carregarLembretes();
     carregarStatusGatilhoRec();
+    carregarRelatorio();
     initAccordions();
 
     // Atalho no PC

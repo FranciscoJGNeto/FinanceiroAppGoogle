@@ -97,7 +97,7 @@ function loadApp(sheetsSpec) {
   vm.runInContext(code, ctx);
 
   const nomes = ['addTransacao', 'updateTransacao', 'deleteTransacao', 'listTransacoes', 'getResumo',
-    'getEvolucao', 'getPorCategoria', 'getSugestoesOrcamento', 'getProjecaoParcelas', 'getCompartilhados',
+    'getEvolucao', 'getPorCategoria', 'getRelatorioAnual', 'getSugestoesOrcamento', 'getProjecaoParcelas', 'getCompartilhados',
     'gerarRecorrentes', 'verificarRecorrentes', 'instalarGatilhoRecorrentes',
     'removerGatilhoRecorrentes', 'statusGatilhoRecorrentes',
     'getOrcamentos', 'setOrcamento', 'deleteOrcamento',

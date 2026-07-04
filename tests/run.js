@@ -104,6 +104,29 @@ group('getEvolucao — despesas por mês');
   eq(ev[ev.length - 2].total, 200, 'junho = 200');
 }
 
+group('getRelatorioAnual — totais por mês, categoria, top e média');
+{
+  const { api } = loadApp(baseTrans([
+    txRow({ id: '1', data: new Date(2026, 0, 10), descricao: 'Salário', natureza: 'Receita', valor: 3000 }),
+    txRow({ id: '2', data: new Date(2026, 0, 15), descricao: 'Aluguel', natureza: 'Despesa', categoria: 'Moradia', valor: 1200 }),
+    txRow({ id: '3', data: new Date(2026, 6, 5), descricao: 'Mercado', natureza: 'Despesa', categoria: 'Mercado', valor: 800 }),
+    txRow({ id: '4', data: new Date(2025, 11, 20), descricao: 'AnoAnterior', natureza: 'Despesa', categoria: 'Outros', valor: 500 })
+  ]));
+  const rel = api.getRelatorioAnual(2026);
+  eq(rel.ano, 2026, 'ano correto');
+  eq(rel.meses.length, 12, '12 meses');
+  eq(rel.totais.receitas, 3000, 'receitas do ano (só 2026)');
+  eq(rel.totais.despesas, 2000, 'despesas do ano = 1200 + 800 (exclui 2025)');
+  eq(rel.totais.saldo, 1000, 'saldo = 3000 - 2000');
+  eq(rel.meses[0].despesas, 1200, 'janeiro = 1200');
+  eq(rel.meses[6].despesas, 800, 'julho = 800');
+  eq(rel.porCategoria[0].categoria, 'Moradia', 'maior categoria = Moradia');
+  eq(rel.topGastos[0].valor, 1200, 'maior gasto = 1200');
+  eq(rel.mesesComMovimento, 2, '2 meses com movimento (jan, jul)');
+  eq(rel.mediaMensalDespesa, 1000, 'média = 2000/2 meses com movimento');
+  ok(rel.anos.indexOf(2026) !== -1 && rel.anos.indexOf(2025) !== -1, 'lista anos disponíveis (2025 e 2026)');
+}
+
 group('getSugestoesOrcamento — média, exclui já orçados');
 {
   const { api } = loadApp({

@@ -587,6 +587,67 @@ function getPorCategoria(mesISO) {
     .sort((a, b) => b.total - a.total);
 }
 
+// Relatório anual: totais por mês (receita/despesa/saldo), por categoria,
+// maiores gastos e médias — para a visão do ano inteiro.
+function getRelatorioAnual(ano) {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEET_TRANS);
+  if (!sh) throw new Error('Aba "Transacoes" não encontrada na planilha');
+
+  const y = Number(ano) || new Date().getFullYear();
+  const vals = sh.getDataRange().getValues();
+  const map = vals.length ? colMapTrans_(vals[0].map(norm_)) : {};
+  const col = (r, f) => (map[f] != null ? r[map[f]] : '');
+  const tz = Session.getScriptTimeZone();
+
+  const meses = [];
+  for (let m = 0; m < 12; m++) {
+    meses.push({ mes: m + 1, label: Utilities.formatDate(new Date(y, m, 1), tz, 'MMM'), receitas: 0, despesas: 0, saldo: 0 });
+  }
+  const catAcc = {};
+  const gastos = [];
+  const anosSet = {};
+  let totReceitas = 0, totDespesas = 0;
+
+  for (let i = 1; i < vals.length; i++) {
+    const r = vals[i];
+    const dv = col(r, 'data');
+    if (!dv) continue;
+    const dt = dv instanceof Date ? dv : new Date(dv);
+    if (isNaN(dt)) continue;
+    anosSet[dt.getFullYear()] = true;
+    if (dt.getFullYear() !== y) continue;
+
+    const v = Number(col(r, 'valor')) || 0;
+    const mi = dt.getMonth();
+    if (norm_(col(r, 'natureza')) === 'receita') {
+      meses[mi].receitas += v; totReceitas += v;
+    } else {
+      meses[mi].despesas += v; totDespesas += v;
+      const cat = String(col(r, 'categoria') || '').trim() || 'Sem categoria';
+      catAcc[cat] = (catAcc[cat] || 0) + v;
+      gastos.push({ data: Utilities.formatDate(dt, tz, 'yyyy-MM-dd'), descricao: String(col(r, 'descricao') || ''), categoria: cat, valor: v });
+    }
+  }
+
+  meses.forEach(m => { m.saldo = round2_(m.receitas - m.despesas); m.receitas = round2_(m.receitas); m.despesas = round2_(m.despesas); });
+  const porCategoria = Object.keys(catAcc).map(k => ({ categoria: k, total: round2_(catAcc[k]) })).sort((a, b) => b.total - a.total);
+  const topGastos = gastos.sort((a, b) => b.valor - a.valor).slice(0, 10).map(g => ({ data: g.data, descricao: g.descricao, categoria: g.categoria, valor: round2_(g.valor) }));
+  const mesesComMov = meses.filter(m => m.despesas > 0 || m.receitas > 0).length || 1;
+  const anos = Object.keys(anosSet).map(Number).sort((a, b) => b - a);
+
+  return {
+    ano: y,
+    anos: anos,
+    meses: meses,
+    porCategoria: porCategoria,
+    topGastos: topGastos,
+    totais: { receitas: round2_(totReceitas), despesas: round2_(totDespesas), saldo: round2_(totReceitas - totDespesas) },
+    mediaMensalDespesa: round2_(totDespesas / mesesComMov),
+    mesesComMovimento: mesesComMov
+  };
+}
+
 // Projeta as parcelas em aberto do mês selecionado para os próximos meses.
 // Para cada transação "Parcelado" com parcelaAtual < parcelaTotal, considera que
 // faltam (total - atual) parcelas de mesmo valor, uma por mês seguinte.

@@ -99,7 +99,7 @@ Só se houver gastos em outra moeda (ex.: assinaturas em USD). Provavelmente des
 | 4 | Compartilhado & lembretes | 3.2 acerto de contas, 2.4 lembretes | ✅ |
 | 5 | Fricção zero | 4.2 importar extrato (OFX/CSV), 5.1 backup (CSV/XML) | ✅ |
 | 6 | Mobile & UX | instalar na tela inicial (v24), recolher/expandir tudo (v24) | ✅ |
-| **7** | **Próximos passos** | 7.1 recorrentes auto (v26) ✅ · 7.2 metas (v27) ✅ · 7.3 relatório anual → em seguida · 7.4–7.8 | ⏳ |
+| **7** | **Próximos passos** | 7.1 recorrentes auto (v26) ✅ · 7.2 metas (v27) ✅ · 7.3 relatório anual (v28) ✅ · 7.4 fatura de cartão → em seguida · 7.5–7.8 | ⏳ |
 
 ## Onda 7 — próximos passos (em ordem de execução)
 
@@ -118,10 +118,10 @@ e **totais** ("juntar R$ Y até MM/AAAA", com meses restantes). Progresso = rece
 despesas (do mês ou acumulado desde a criação). Aba `Metas` + `getMetas`/`setMeta`/`deleteMeta`.
 **Próximo da fila: 7.3 Relatório anual.**
 
-### 7.3 Relatório anual ⭐⭐⭐ 🔨🔨
-Visão do ano: total por mês, por categoria, receita × despesa, maiores gastos, média
-mensal. Reaproveita `getEvolucao`/`getPorCategoria` estendidos para 12 meses; renderiza
-com os gráficos SVG existentes. Opção de exportar o resumo (CSV/XML) via backup.
+### 7.3 Relatório anual ✅ (v28)
+**Feito.** Painel **📅 Relatório anual** com seletor de ano: KPIs (receitas/despesas/saldo/média),
+gráfico receitas × despesas por mês, despesas por categoria e maiores gastos do ano.
+Backend: `getRelatorioAnual(ano)`. **Próximo da fila: 7.4 Fatura de cartão.**
 
 ### 7.4 Fatura de cartão (ciclo de fechamento) ⭐⭐⭐ 🔨🔨🔨
 Agrupar lançamentos de "Cartão" por ciclo de fechamento/vencimento e mostrar a fatura
