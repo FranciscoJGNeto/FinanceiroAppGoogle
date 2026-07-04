@@ -1194,6 +1194,8 @@
 
       document.getElementById('subMes').textContent = ymLabel(m);
       document.getElementById('pillMes').textContent = '📅 ' + ymLabel(m);
+      // Botão "Hoje" só aparece quando não estamos no mês atual
+      document.getElementById('btnMesHoje').style.display = (m === defaultMonth()) ? 'none' : '';
 
       setMsg('msgResumo', '', 'ok');
       setMsg('msgLista', '', 'ok');
@@ -1649,6 +1651,10 @@
     document.getElementById('btnMesPrev').addEventListener('click', () => shiftMonth(-1));
     document.getElementById('btnMesNext').addEventListener('click', () => shiftMonth(1));
     document.getElementById('pillMes').addEventListener('click', () => showView('inicio'));
+    document.getElementById('btnMesHoje').addEventListener('click', () => {
+      document.getElementById('mes').value = defaultMonth();
+      refresh();
+    });
     document.getElementById('btnBackup').addEventListener('click', () => exportarBackup('csv'));
     document.getElementById('btnBackupXml').addEventListener('click', () => exportarBackup('xml'));
 

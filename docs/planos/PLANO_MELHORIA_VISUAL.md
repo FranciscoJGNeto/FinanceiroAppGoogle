@@ -5,8 +5,13 @@
 > ✅ acordeões → **v8** (recolher/expandir tudo → **v24**; correção do recolher no desktop → **v25**) ·
 > ✅ **#6** gráficos/dashboard + paleta acessível → **v9** (correção das cores SVG → **v10**) ·
 > ✅ **#10** teclados/mobile (enterkeyhint) → **v7** ·
-> ✅ **#7** navegação por telas (app SPA com barra inferior/sidebar) → **v30**.
-> ⏳ Pendentes — **#1** tokens de design · **#3** ícones SVG no lugar de emojis · **#4** toasts/skeleton · **#8** tema claro · **#9** a11y completa (parcial).
+> ✅ **#7** navegação por telas (app SPA com barra inferior/sidebar) → **v30** ·
+> ✅ **tema escuro neumórfico** (fundo preto + textura de papel + cifrão em relevo, superfícies translúcidas, tokens `--nm-*`) → **v31**/**v34** ·
+> ✅ troca de mês no cabeçalho + botão **"Hoje"** → **v31**/**v36**.
+> ⏳ Pendentes — **#1** tokens de design (espaçamento/tipografia) · **#3** ícones SVG no lugar de emojis · **#4** toasts/skeleton · **#8** tema claro · **#9** a11y completa (parcial).
+
+> **Obs.:** o "Mockup textual" abaixo é histórico (layout antigo de acordeão único com contas
+> fixas); a UI atual é o app com telas + tema neumórfico descrito no CHANGELOG.
 
 Objetivo: elevar o app de "funcional" para "agradável e legível", mantendo a identidade escura atual e sem exigir build (compatível com Apps Script).
 

@@ -3,6 +3,10 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v36 — Voltar ao mês atual + docs atualizados
+- **Botão "Hoje"** no cabeçalho: ao navegar por outros meses, aparece um botão que **volta ao mês atual** com um toque (fica escondido quando já é o mês corrente).
+- **Documentação atualizada** para o estado atual: a transição de "uma página com vários acordeões" para o **app com telas (navegação SPA)**, o tema neumórfico e a divisão do frontend em `index/styles/js` foram refletidos em `ANALISE_PROJETO`, `README` e no plano visual.
+
 ## v35 — Importar QIF + CSV por banco (Onda 7.6)
 - **QIF:** importação do formato QIF (exportado por vários bancos/apps de finanças) — detecção automática, registros `D`/`T`/`P`/`M`/`^`.
 - **CSV por banco:** além de colunas Data/Descrição/Valor, reconhece **colunas separadas de Débito/Crédito** (ou Entrada/Saída) e calcula o valor (crédito entra, débito sai). Mais sinônimos de cabeçalho (date, estabelecimento, detalhe…).

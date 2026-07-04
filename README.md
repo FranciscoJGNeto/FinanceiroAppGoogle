@@ -36,7 +36,7 @@ na **sua** conta Google (nada de servidor de terceiros, nada de mensalidade).
 | **Dividir** | Acerto de contas de gastos compartilhados (quanto a outra pessoa te reembolsa) |
 | **Importar** | Extrato **OFX** (padrão dos apps de banco — Nubank, Itaú, Bradesco, Inter, C6…), **QIF** ou **CSV** (inclui colunas Débito/Crédito por banco) · detecção automática · dedup · auto-categorização |
 | **Backup** | Exportação para o Google Drive em **CSV** (Excel/Sheets) ou **XML** (estruturado) |
-| **Experiência** | **App com telas** — navegação por barra inferior (celular) / menu lateral (desktop), sem recarregar · atualização automática · atalho na tela inicial (Android/iOS) |
+| **Experiência** | **App com telas** — navegação por barra inferior (celular) / menu lateral (desktop), sem recarregar · **tema escuro neumórfico** · troca de mês no cabeçalho com botão **"Hoje"** · atalho na tela inicial (Android/iOS) |
 
 > 💡 **Gasto compartilhado:** marque um lançamento como compartilhado e informe o **% que a outra
 > pessoa paga** — o app calcula o **reembolso** e o seu gasto real ajustado. Na importação de extrato,
@@ -55,8 +55,8 @@ na **sua** conta Google (nada de servidor de terceiros, nada de mensalidade).
 
 ```
 ┌──────────────────────────┐   google.script.run    ┌───────────────────────┐
-│  index.html (navegador)  │ ─────────────────────► │  Código.js (servidor) │
-│  UI + gráficos SVG       │ ◄───────────────────── │  regras de negócio     │
+│   frontend (navegador)   │ ─────────────────────► │  Código.js (servidor) │
+│  index + styles + js     │ ◄───────────────────── │  regras de negócio     │
 └──────────────────────────┘     (assíncrono)        └──────────┬────────────┘
                                                                  │ SpreadsheetApp
                                                                  ▼
@@ -64,12 +64,18 @@ na **sua** conta Google (nada de servidor de terceiros, nada de mensalidade).
                                                       │     Google Sheets      │
                                                       │ Transacoes · Servicos  │
                                                       │ Config · Saldos ·      │
-                                                      │ Orcamentos             │
+                                                      │ Orcamentos · Lembretes │
+                                                      │ Metas · Classificacao  │
                                                       └───────────────────────┘
 ```
 
-- **Sem build, sem dependências externas** — os gráficos são SVG feitos à mão, então
-  funciona dentro do sandbox do Apps Script e offline (na tela inicial).
+- **App com telas (SPA):** os painéis são agrupados em telas trocadas por JavaScript
+  (barra inferior no celular / menu lateral no desktop), **sem recarregar**. O código do
+  frontend é dividido em `index.html` (estrutura), `styles.html` (CSS) e `js.html` (JS),
+  unidos no servidor via `include()`.
+- **Sem build, sem dependências externas** — os gráficos são SVG feitos à mão e o **tema
+  escuro neumórfico** (fundo preto + textura + cifrão em relevo) é 100% inline, então
+  funciona dentro do sandbox do Apps Script.
 - **Robusto a mudanças na planilha:** as colunas são lidas por **nome do cabeçalho**,
   não por posição fixa. Cada transação tem um **ID** único (permite editar/excluir).
 - **Privacidade:** publicado com acesso `MYSELF` — só a conta dona abre o app.
