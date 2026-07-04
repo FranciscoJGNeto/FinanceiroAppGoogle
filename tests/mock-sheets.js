@@ -102,7 +102,7 @@ function loadApp(sheetsSpec) {
     'removerGatilhoRecorrentes', 'statusGatilhoRecorrentes',
     'getOrcamentos', 'setOrcamento', 'deleteOrcamento',
     'getMetas', 'setMeta', 'deleteMeta',
-    'getContas', 'setConta', 'deleteConta', 'exportarBackup', 'exportarBackupXML', 'importarTransacoes',
+    'getContas', 'setConta', 'deleteConta', 'getFaturaCartao', 'exportarBackup', 'exportarBackupXML', 'importarTransacoes',
     'getLembretes', 'setLembrete', 'deleteLembrete', 'getLembretesProximos', 'verificarLembretes',
     'instalarGatilhoLembretes', 'removerGatilhoLembretes', 'statusGatilhoLembretes', 'migrarEstrutura'];
   const api = vm.runInContext('({' + nomes.join(',') + '})', ctx);

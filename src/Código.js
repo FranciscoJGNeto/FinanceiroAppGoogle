@@ -1383,28 +1383,42 @@ function importarTransacoes(lista) {
 
 // ===================== Contas (dinâmicas, via aba Saldos) =====================
 
-// Lista as contas cadastradas (aba Saldos: A=Conta, B=Saldo).
+// Lista as contas cadastradas (aba Saldos: A=Conta, B=Saldo, C=Fechamento, D=Vencimento).
+// Fechamento/Vencimento (dia 1-31) são opcionais — usados para a fatura de cartão.
 function getContas() {
   const ss = SpreadsheetApp.getActive();
   const sh = ss.getSheetByName(SHEET_SALD);
   if (!sh || sh.getLastRow() < 2) return [];
   return sh.getDataRange().getValues().slice(1)
     .filter(r => String(r[0]).trim())
-    .map(r => ({ conta: String(r[0]).trim(), saldo: Number(r[1]) || 0 }));
+    .map(r => ({ conta: String(r[0]).trim(), saldo: Number(r[1]) || 0, fechamento: Number(r[2]) || 0, vencimento: Number(r[3]) || 0 }));
 }
 
-// Cria/atualiza uma conta e seu saldo (upsert por nome, ignora acento/caixa).
-function setConta(nome, saldo) {
+// Normaliza um dia do mês (0 = não informado; 1..31 caso contrário).
+function diaMes_(v) {
+  const n = Math.round(Number(v) || 0);
+  if (!(n >= 1)) return 0;
+  return Math.min(n, 31);
+}
+
+// Cria/atualiza uma conta (upsert por nome, ignora acento/caixa).
+// saldo pode ser 0/negativo; fechamento/vencimento são opcionais (dia do cartão).
+function setConta(nome, saldo, fechamento, vencimento) {
   nome = String(nome || '').trim();
   if (!nome) throw new Error('Informe o nome da conta.');
-  const s = toNumBR_(saldo); // saldo pode ser 0 ou negativo
+  const s = toNumBR_(saldo);
+  const fech = diaMes_(fechamento);
+  const venc = diaMes_(vencimento);
 
   const ss = SpreadsheetApp.getActive();
   let sh = ss.getSheetByName(SHEET_SALD);
   if (!sh) {
     sh = ss.insertSheet(SHEET_SALD);
-    sh.getRange('A1:B1').setValues([['Conta', 'Saldo']]);
-    sh.getRange('A1:B1').setFontWeight('bold');
+    sh.getRange('A1:D1').setValues([['Conta', 'Saldo', 'Fechamento', 'Vencimento']]);
+    sh.getRange('A1:D1').setFontWeight('bold');
+  } else {
+    const hdr = sh.getRange(1, 1, 1, 4).getValues()[0];
+    if (!hdr[2] || !hdr[3]) sh.getRange('C1:D1').setValues([['Fechamento', 'Vencimento']]);
   }
 
   const lock = LockService.getScriptLock();
@@ -1416,8 +1430,8 @@ function setConta(nome, saldo) {
     for (let i = 0; i < nomes.length; i++) {
       if (norm_(nomes[i][0]) === norm_(nome)) { row = i + 2; break; }
     }
-    if (row === -1) sh.appendRow([nome, s]);
-    else sh.getRange(row, 1, 1, 2).setValues([[nome, s]]);
+    if (row === -1) sh.appendRow([nome, s, fech, venc]);
+    else sh.getRange(row, 1, 1, 4).setValues([[nome, s, fech, venc]]);
   } finally {
     lock.releaseLock();
   }
@@ -1440,6 +1454,63 @@ function deleteConta(nome) {
     lock.releaseLock();
   }
   return { ok: true, message: 'Conta removida' };
+}
+
+// ===================== Fatura de cartão =====================
+
+// Fatura prevista de cada cartão (contas com dia de fechamento configurado), no ciclo
+// que FECHA no mês de referência. Agrupa os lançamentos "Cartão" da conta no período
+// (fechamento anterior, fechamento atual], e calcula o vencimento (por ciclo, não por
+// competência). Contas sem fechamento configurado não entram.
+function getFaturaCartao(mesISO) {
+  const ss = SpreadsheetApp.getActive();
+  const shT = ss.getSheetByName(SHEET_TRANS);
+  if (!shT) throw new Error('Aba "Transacoes" não encontrada na planilha');
+
+  const cartoesCfg = getContas().filter(c => c.fechamento > 0);
+  if (!cartoesCfg.length) return { cartoes: [], semConfig: true };
+
+  const base = mesISO ? parseLocalDate_(mesISO) : new Date();
+  const tz = Session.getScriptTimeZone();
+  const vals = shT.getDataRange().getValues();
+  const map = vals.length ? colMapTrans_(vals[0].map(norm_)) : {};
+  const col = (r, f) => (map[f] != null ? r[map[f]] : '');
+  const clampDay = (y, m, d) => new Date(y, m, Math.min(d, new Date(y, m + 1, 0).getDate()));
+
+  const cartoes = cartoesCfg.map(c => {
+    const F = c.fechamento, V = c.vencimento || F;
+    const closeThis = clampDay(base.getFullYear(), base.getMonth(), F);
+    const closePrev = clampDay(base.getFullYear(), base.getMonth() - 1, F);
+    // vencimento = 1ª ocorrência do dia V em/depois do fechamento
+    let due = clampDay(closeThis.getFullYear(), closeThis.getMonth(), V);
+    if (due < closeThis) due = clampDay(closeThis.getFullYear(), closeThis.getMonth() + 1, V);
+
+    let total = 0;
+    const itens = [];
+    for (let i = 1; i < vals.length; i++) {
+      const r = vals[i];
+      if (norm_(col(r, 'meio')) !== 'cartao') continue;
+      if (norm_(col(r, 'conta')) !== norm_(c.conta)) continue;
+      if (norm_(col(r, 'natureza')) === 'receita') continue;
+      const dv = col(r, 'data');
+      if (!dv) continue;
+      const dt = dv instanceof Date ? dv : new Date(dv);
+      if (isNaN(dt) || !(dt > closePrev && dt <= closeThis)) continue;
+      const v = Number(col(r, 'valor')) || 0;
+      total += v;
+      itens.push({ data: Utilities.formatDate(dt, tz, 'yyyy-MM-dd'), descricao: String(col(r, 'descricao') || ''), categoria: String(col(r, 'categoria') || ''), valor: round2_(v) });
+    }
+    itens.sort((a, b) => (a.data < b.data ? -1 : (a.data > b.data ? 1 : 0)));
+    return {
+      conta: c.conta, fechamento: F, vencimento: V,
+      fechamentoData: Utilities.formatDate(closeThis, tz, 'yyyy-MM-dd'),
+      vencimentoData: Utilities.formatDate(due, tz, 'yyyy-MM-dd'),
+      total: round2_(total), qtd: itens.length, itens: itens
+    };
+  });
+
+  const totalGeral = round2_(cartoes.reduce((a, c) => a + c.total, 0));
+  return { cartoes: cartoes, semConfig: false, totalGeral: totalGeral };
 }
 
 // ===================== Estrutura / manutenção =====================
@@ -1535,12 +1606,12 @@ function criarEstruturaPlanilha() {
     shC.getRange('A1:B1').setFontWeight('bold');
   }
 
-  // Aba Saldos
+  // Aba Saldos (C/D = fechamento/vencimento do cartão, opcionais)
   let shD = ss.getSheetByName(SHEET_SALD);
   if (!shD) {
     shD = ss.insertSheet(SHEET_SALD);
-    shD.getRange('A1:B1').setValues([['Conta', 'Saldo']]);
-    shD.getRange('A1:B1').setFontWeight('bold');
+    shD.getRange('A1:D1').setValues([['Conta', 'Saldo', 'Fechamento', 'Vencimento']]);
+    shD.getRange('A1:D1').setFontWeight('bold');
     shD.getRange('A2:B4').setValues([
       ['Itaú', 0],
       ['Inter', 0],

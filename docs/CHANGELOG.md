@@ -3,6 +3,12 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v29 — Fatura de cartão (Onda 7.4)
+- Novo painel **💳 Fatura de cartão**: mostra a **fatura prevista de cada cartão** no ciclo que **fecha no mês selecionado** — agrupa os lançamentos com meio **Cartão** na janela (fechamento anterior, fechamento atual], com data de fechamento e **vencimento por ciclo** (não por competência).
+- **Contas** ganham **dia de fechamento e vencimento** (opcionais). A aba `Saldos` passa a ter colunas `Fechamento`/`Vencimento` (auto-criadas). Contas-cartão aparecem com um selo (💳 fecha dia X · vence Y).
+- Backend: `getFaturaCartao(mesISO)` + `setConta`/`getContas` estendidos.
+- Testes: **108 checagens** (janela do ciclo, exclusão de débito e ciclos vizinhos, cálculo do vencimento).
+
 ## v28 — Relatório anual (Onda 7.3)
 - Novo painel **📅 Relatório anual**: visão do ano inteiro com **seletor de ano** (só anos com dados).
   - KPIs: receitas, despesas, saldo e **média mensal** de despesa.

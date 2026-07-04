@@ -58,8 +58,8 @@ Evoluir o "compartilhado + reembolso" atual para uma tela de acerto: total que a
 ### 3.3 Metas de economia ✅ (v27) · Regra 50/30/20 ⏳ (7.5)
 Metas: definir e acompanhar economia. Regra 50/30/20: classificar gastos em Essencial/Desejo/Poupança. — **Metas feitas na v27** (Onda 7.2); **50/30/20 pendente** (Onda 7.5).
 
-### 3.4 Fatura de cartão (ciclo de fechamento) ⏳ (7.4)
-Agrupar lançamentos de "Cartão" por ciclo de fechamento/vencimento, mostrando a fatura prevista de cada cartão — diferente do gasto por competência. — **Pendente** (Onda 7.4).
+### 3.4 Fatura de cartão (ciclo de fechamento) ✅ (v29)
+Agrupar lançamentos de "Cartão" por ciclo de fechamento/vencimento, mostrando a fatura prevista de cada cartão — diferente do gasto por competência. — **Feito na v29** (Onda 7.4).
 
 ---
 
@@ -99,7 +99,7 @@ Só se houver gastos em outra moeda (ex.: assinaturas em USD). Provavelmente des
 | 4 | Compartilhado & lembretes | 3.2 acerto de contas, 2.4 lembretes | ✅ |
 | 5 | Fricção zero | 4.2 importar extrato (OFX/CSV), 5.1 backup (CSV/XML) | ✅ |
 | 6 | Mobile & UX | instalar na tela inicial (v24), recolher/expandir tudo (v24) | ✅ |
-| **7** | **Próximos passos** | 7.1 recorrentes auto (v26) ✅ · 7.2 metas (v27) ✅ · 7.3 relatório anual (v28) ✅ · 7.4 fatura de cartão → em seguida · 7.5–7.8 | ⏳ |
+| **7** | **Próximos passos** | 7.1 recorrentes auto (v26) ✅ · 7.2 metas (v27) ✅ · 7.3 relatório anual (v28) ✅ · 7.4 fatura de cartão (v29) ✅ · 7.5 regra 50/30/20 → em seguida · 7.6–7.8 | ⏳ |
 
 ## Onda 7 — próximos passos (em ordem de execução)
 
@@ -123,10 +123,10 @@ despesas (do mês ou acumulado desde a criação). Aba `Metas` + `getMetas`/`set
 gráfico receitas × despesas por mês, despesas por categoria e maiores gastos do ano.
 Backend: `getRelatorioAnual(ano)`. **Próximo da fila: 7.4 Fatura de cartão.**
 
-### 7.4 Fatura de cartão (ciclo de fechamento) ⭐⭐⭐ 🔨🔨🔨
-Agrupar lançamentos de "Cartão" por ciclo de fechamento/vencimento e mostrar a fatura
-prevista de cada cartão (por vencimento, não por competência). Precisa guardar
-fechamento/vencimento por conta-cartão.
+### 7.4 Fatura de cartão (ciclo de fechamento) ✅ (v29)
+**Feito.** Painel **💳 Fatura de cartão**: agrupa lançamentos "Cartão" pelo ciclo que fecha
+no mês (janela fechamento anterior→atual), com data de vencimento por ciclo. Contas ganharam
+dia de fechamento/vencimento. Backend: `getFaturaCartao`. **Próximo da fila: 7.5 Regra 50/30/20.**
 
 ### 7.5 Regra 50/30/20 ⭐⭐ 🔨🔨
 Classificar cada categoria em Essencial / Desejo / Poupança e comparar o mês com a

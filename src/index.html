@@ -839,10 +839,35 @@
             </div>
           </div>
         </div>
+        <div class="hint" style="margin-bottom:8px;">💳 Se a conta for um <b>cartão de crédito</b>, informe o dia de fechamento e de vencimento para ver a fatura prevista (deixe 0 se não for cartão).</div>
+        <div class="row2" style="margin-bottom:12px;">
+          <div>
+            <label for="cFech">📆 Dia de fechamento</label>
+            <input class="field" type="number" id="cFech" min="0" max="31" inputmode="numeric" autocomplete="off" placeholder="Ex.: 28" />
+          </div>
+          <div>
+            <label for="cVenc">📅 Dia de vencimento</label>
+            <input class="field" type="number" id="cVenc" min="0" max="31" inputmode="numeric" autocomplete="off" placeholder="Ex.: 7" />
+          </div>
+        </div>
         <button class="btn" id="btnSalvarConta">🏦 Salvar conta</button>
         <button class="btnGhost" id="btnCancelarConta" style="display:none; margin-top:8px;">✖️ Cancelar edição</button>
         <div class="msg" id="msgConta"></div>
         <div id="contasList" style="margin-top:12px;"></div>
+      </div>
+    </section>
+
+    <!-- Fatura de cartão -->
+    <section class="panel acc collapsed" data-acc="fatura">
+      <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="false" aria-controls="bodyFatura">
+        <h2>💳 Fatura de cartão</h2>
+        <div class="right">
+          <span class="chevron" aria-hidden="true">▾</span>
+        </div>
+      </div>
+      <div class="panelBody" id="bodyFatura">
+        <div class="hint" style="margin-bottom:10px;">Fatura prevista de cada cartão no ciclo que <b>fecha no mês selecionado</b> (lançamentos com meio <b>Cartão</b>, agrupados por fechamento/vencimento). Configure os dias na aba <b>Contas</b>.</div>
+        <div id="faturaContent"></div>
       </div>
     </section>
 
@@ -1804,16 +1829,19 @@
         el.innerHTML = '<div style="color:var(--muted); font-size:13px;">Nenhuma conta cadastrada. Crie a primeira acima.</div>';
         return;
       }
-      el.innerHTML = contas.map(c => `<div class="orcRow">
+      el.innerHTML = contas.map(c => {
+        const cartao = c.fechamento > 0 ? ` <span class="pill">💳 fecha dia ${c.fechamento}${c.vencimento ? ' · vence ' + c.vencimento : ''}</span>` : '';
+        return `<div class="orcRow">
         <div class="orcTop">
-          <div class="orcName">🏦 ${escapeHtml(c.conta)}</div>
+          <div class="orcName">🏦 ${escapeHtml(c.conta)}${cartao}</div>
           <div class="orcVals">saldo: ${moneyBRL(c.saldo)}</div>
         </div>
         <div class="orcActions">
-          <button class="miniBtn" data-cact="edit" data-nome="${escapeHtml(c.conta)}" data-saldo="${c.saldo}">✏️ Editar</button>
+          <button class="miniBtn" data-cact="edit" data-nome="${escapeHtml(c.conta)}" data-saldo="${c.saldo}" data-fech="${c.fechamento || 0}" data-venc="${c.vencimento || 0}">✏️ Editar</button>
           <button class="miniBtn danger" data-cact="del" data-nome="${escapeHtml(c.conta)}">🗑️ Remover</button>
         </div>
-      </div>`).join('');
+      </div>`;
+      }).join('');
     }
 
     function setContaEditMode(on) {
@@ -1824,6 +1852,8 @@
     function cancelarEdicaoConta() {
       document.getElementById('cNome').value = '';
       document.getElementById('contaSaldo').value = '';
+      document.getElementById('cFech').value = '';
+      document.getElementById('cVenc').value = '';
       setMsg('msgConta', '', 'ok');
       setContaEditMode(false);
     }
@@ -1831,19 +1861,20 @@
     function salvarConta() {
       const nome = document.getElementById('cNome').value.trim();
       const saldo = centsOfEl(document.getElementById('contaSaldo')) / 100;
+      const fech = Number(document.getElementById('cFech').value) || 0;
+      const venc = Number(document.getElementById('cVenc').value) || 0;
       if (!nome) { setMsg('msgConta', '❌ Informe o nome da conta.', 'err'); return; }
       setMsg('msgConta', '⏳ Salvando...', 'ok');
       google.script.run
         .withSuccessHandler(() => {
           setMsg('msgConta', '✅ Conta salva!', 'ok');
-          document.getElementById('cNome').value = '';
-          document.getElementById('contaSaldo').value = '';
-          setContaEditMode(false);
+          cancelarEdicaoConta();
           carregarContas();
+          carregarFatura();
           refresh(); // saldo entra no resumo/previsão
         })
         .withFailureHandler(err => setMsg('msgConta', '❌ ' + (err?.message || err), 'err'))
-        .setConta(nome, saldo);
+        .setConta(nome, saldo, fech, venc);
     }
 
     function onContaClick(e) {
@@ -1853,16 +1884,53 @@
       if (b.getAttribute('data-cact') === 'edit') {
         document.getElementById('cNome').value = nome;
         setValorEl(document.getElementById('contaSaldo'), Number(b.getAttribute('data-saldo')));
+        document.getElementById('cFech').value = Number(b.getAttribute('data-fech')) || '';
+        document.getElementById('cVenc').value = Number(b.getAttribute('data-venc')) || '';
         setMsg('msgConta', '', 'ok');
         setContaEditMode(true);
         document.getElementById('cNome').scrollIntoView({ behavior: 'smooth', block: 'center' });
       } else {
         if (!confirm(`Remover a conta "${nome}"?\nAs transações já lançadas nela não são alteradas.`)) return;
         google.script.run
-          .withSuccessHandler(() => { carregarContas(); refresh(); })
+          .withSuccessHandler(() => { carregarContas(); carregarFatura(); refresh(); })
           .withFailureHandler(err => setMsg('msgConta', '❌ ' + (err?.message || err), 'err'))
           .deleteConta(nome);
       }
+    }
+
+    // ---- Fatura de cartão ----
+    function carregarFatura() {
+      google.script.run
+        .withSuccessHandler(renderFatura)
+        .withFailureHandler(() => { /* silencioso */ })
+        .getFaturaCartao(mesISOatual());
+    }
+
+    function renderFatura(data) {
+      const el = document.getElementById('faturaContent');
+      if (!data || data.semConfig) {
+        el.innerHTML = '<div style="color:var(--muted); font-size:13px;">Nenhum cartão configurado. Na aba <b>Contas</b>, informe o <b>dia de fechamento</b> (e vencimento) de uma conta para ver a fatura aqui.</div>';
+        return;
+      }
+      const cartoes = (data.cartoes || []).filter(c => c.qtd > 0 || c.total > 0);
+      if (!cartoes.length) {
+        el.innerHTML = '<div style="color:var(--muted); font-size:13px;">Sem lançamentos de cartão no ciclo que fecha neste mês.</div>';
+        return;
+      }
+      el.innerHTML = cartoes.map(c => {
+        const itens = c.itens.map(i =>
+          `<div class="saldoRow"><span>${escapeHtml(i.data)} · ${escapeHtml(i.descricao)}${i.categoria ? ' <span class="pill">' + escapeHtml(i.categoria) + '</span>' : ''}</span><b>${moneyBRL(i.valor)}</b></div>`
+        ).join('');
+        return `<div class="orcRow" style="margin-bottom:14px;">
+          <div class="orcTop">
+            <div class="orcName">💳 ${escapeHtml(c.conta)}</div>
+            <div class="orcVals"><b>${moneyBRL(c.total)}</b> · ${c.qtd} lançamento(s)</div>
+          </div>
+          <div class="orcVals" style="text-align:left; margin-bottom:8px;">🔒 Fecha em <b>${escapeHtml(c.fechamentoData)}</b> · 📅 vence em <b>${escapeHtml(c.vencimentoData)}</b></div>
+          ${itens}
+        </div>`;
+      }).join('')
+        + `<div class="compAcerto">💳 Total das faturas que fecham neste mês: <b>${moneyBRL(data.totalGeral)}</b></div>`;
     }
 
     // ---- Orçamentos por categoria (gasto vs limite) ----
@@ -2257,6 +2325,7 @@
       carregarOrcamentos();
       carregarSugestoes(mesISO);
       carregarMetas();
+      carregarFatura();
 
       google.script.run
         .withSuccessHandler(renderProjecao)

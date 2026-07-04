@@ -303,6 +303,37 @@ group('contas — cadastro dinâmico (upsert, delete)');
   eq(api.getContas().length, 1, 'delete removeu 1');
 }
 
+group('fatura de cartão — ciclo por fechamento/vencimento');
+{
+  const { api } = loadApp(baseTrans([
+    txRow({ id: 'a', data: new Date(2026, 6, 10), conta: 'Nubank', meio: 'Cartão', descricao: 'Compra1', natureza: 'Despesa', valor: 100 }),
+    txRow({ id: 'b', data: new Date(2026, 5, 29), conta: 'Nubank', meio: 'Cartão', descricao: 'Compra2', natureza: 'Despesa', valor: 50 }),
+    txRow({ id: 'c', data: new Date(2026, 5, 20), conta: 'Nubank', meio: 'Cartão', descricao: 'CicloAnterior', natureza: 'Despesa', valor: 999 }),
+    txRow({ id: 'd', data: new Date(2026, 6, 28), conta: 'Nubank', meio: 'Cartão', descricao: 'NoFechamento', natureza: 'Despesa', valor: 30 }),
+    txRow({ id: 'e', data: new Date(2026, 6, 29), conta: 'Nubank', meio: 'Cartão', descricao: 'ProxCiclo', natureza: 'Despesa', valor: 77 }),
+    txRow({ id: 'f', data: new Date(2026, 6, 15), conta: 'Nubank', meio: 'Conta', descricao: 'DebitoNaoEntra', natureza: 'Despesa', valor: 200 })
+  ]));
+  api.setConta('Nubank', '0', 28, 7);
+  const cfg = api.getContas().find(c => c.conta === 'Nubank');
+  eq([cfg.fechamento, cfg.vencimento], [28, 7], 'conta guarda fechamento/vencimento');
+  const fat = api.getFaturaCartao('2026-07-01');
+  eq(fat.semConfig, false, 'há cartão configurado');
+  eq(fat.cartoes.length, 1, '1 cartão na fatura');
+  const nu = fat.cartoes[0];
+  eq(nu.total, 180, 'fatura = 100+50+30 (janela (28/jun, 28/jul]; exclui débito e ciclos vizinhos)');
+  eq(nu.qtd, 3, '3 lançamentos na fatura');
+  eq(nu.fechamentoData, '2026-07-28', 'fecha em 28/jul');
+  eq(nu.vencimentoData, '2026-08-07', 'vence em 07/ago (1ª ocorrência após o fechamento)');
+  eq(fat.totalGeral, 180, 'total geral das faturas');
+}
+
+group('fatura de cartão — sem cartão configurado');
+{
+  const { api } = loadApp(baseTrans([]));
+  api.setConta('Carteira', '100'); // sem dia de fechamento
+  eq(api.getFaturaCartao('2026-07-01').semConfig, true, 'sem fechamento → semConfig=true');
+}
+
 group('exportarBackup — CSV no Drive (com escaping)');
 {
   const { api, driveFiles } = loadApp(baseTrans([
