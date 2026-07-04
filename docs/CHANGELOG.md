@@ -3,6 +3,11 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v31 — Tema preto neumórfico + seletor de mês no cabeçalho
+- **Novo visual:** fundo **totalmente preto** com **textura de papel** (ruído SVG inline), superfícies em **relevo neumórfico** e campos/KPIs **debossed** (afundados) em tons escuros, com um **cifrão ($) em relevo** como marca d'água ao fundo. Tudo self-contained (sem imagens externas — compatível com o sandbox do Apps Script).
+- **Seletor de mês no cabeçalho:** setas ‹ › para trocar de mês de **qualquer tela**; o rótulo do mês leva ao resumo. (Substitui o botão "recolher tudo" no topo.)
+- Tokens de sombra neumórfica (`--nm-out`/`--nm-in`) aplicados a painéis, botões, campos, KPIs e à navegação.
+
 ## v30 — Navegação por telas (app SPA)
 - O app deixou de ser um **scroll único** de acordeões e virou um **app com telas**: os painéis foram agrupados em 5 telas trocadas por JavaScript, **sem recarregar**.
   - **Celular:** barra de navegação **inferior** (🏠 Início · ➕ Lançar · 📊 Análise · 🎯 Planejar · ⚙️ Config).
