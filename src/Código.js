@@ -1407,6 +1407,35 @@ function exportarBackupXML() {
   return { ok: true, nome: nome, url: file.getUrl(), linhas: Math.max(vals.length - 1, 0) };
 }
 
+// ---- Backup agendado (gatilho) ----
+// Rodado pelo gatilho: gera um backup CSV no Drive (cópia periódica de segurança).
+function backupAgendado() {
+  return exportarBackup();
+}
+
+// Ativa o backup automático (semanal ou mensal). Guarda a frequência nas propriedades.
+function instalarGatilhoBackup(freq) {
+  removerGatilhoBackup();
+  freq = (String(freq || 'mensal').toLowerCase() === 'semanal') ? 'semanal' : 'mensal';
+  const b = ScriptApp.newTrigger('backupAgendado').timeBased();
+  if (freq === 'semanal') b.everyWeeks(1).onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(3).create();
+  else b.onMonthDay(1).atHour(3).create();
+  PropertiesService.getScriptProperties().setProperty('backupFreq', freq);
+  return { ok: true, ativo: true, freq: freq };
+}
+function removerGatilhoBackup() {
+  ScriptApp.getProjectTriggers().forEach(t => {
+    if (t.getHandlerFunction() === 'backupAgendado') ScriptApp.deleteTrigger(t);
+  });
+  PropertiesService.getScriptProperties().deleteProperty('backupFreq');
+  return { ok: true, ativo: false, freq: '' };
+}
+function statusGatilhoBackup() {
+  const ativo = ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'backupAgendado');
+  const freq = PropertiesService.getScriptProperties().getProperty('backupFreq') || '';
+  return { ativo: ativo, freq: freq };
+}
+
 // Importa uma lista de transações (ex.: extrato), em lote, evitando duplicar
 // (chave: data + descrição + valor). Retorna quantas importou/ignorou.
 function importarTransacoes(lista) {

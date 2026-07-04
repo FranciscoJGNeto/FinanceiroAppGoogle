@@ -28,8 +28,8 @@ na **sua** conta Google (nada de servidor de terceiros, nada de mensalidade).
 | **Lançar** | Despesas **e** receitas · máscara de moeda · categorias · parcelas · **compartilhado com % próprio** · observações |
 | **Gerenciar** | Editar e excluir qualquer lançamento · busca/filtro instantâneo · **contas dinâmicas** (crie/edite as suas) |
 | **Entender** | Resumo do mês (totais por conta, gasto compartilhado, reembolso, previsão de saldo, % do salário) |
-| **Visualizar** | Dashboard com gráficos: rosca por conta · evolução de 6 meses · barras por categoria |
-| **Planejar** | Orçamento por categoria (com sugestões e alerta de estouro) · projeção de parcelas · **recorrentes automáticos** (gatilho mensal) |
+| **Visualizar** | Dashboard: rosca por conta · evolução de 6 meses · barras por categoria · **relatório anual** (receita × despesa por mês, top gastos) |
+| **Planejar** | Orçamento por categoria (sugestões + alerta de estouro) · projeção de parcelas · **recorrentes automáticos** (gatilho mensal) · **regra 50/30/20** (Essencial/Desejo/Poupança) |
 | **Metas** | Metas de economia **mensais** ("guardar R$ X/mês") e **totais** ("juntar R$ Y até um prazo") com barra de progresso |
 | **Cartão** | **Fatura prevista por cartão** (ciclo de fechamento/vencimento), não por competência |
 | **Lembretes** | Contas com vencimento → **e-mail** automático alguns dias antes (gatilho diário) |
@@ -140,10 +140,11 @@ Script **mockada** — ou seja, valida a lógica **sem tocar em nenhuma planilha
 node tests/run.js
 ```
 
-São **68 checagens** cobrindo parsing de valores, mapeamento por cabeçalho, resumo,
-CRUD, categorias, evolução, orçamentos (com sugestões), projeção de parcelas,
-recorrentes, acerto de contas, importação (dedup/auto-categoria), lembretes e
-backup (CSV/XML). Sai com código ≠ 0 se algo falhar (pronto para CI).
+São **114 checagens** cobrindo parsing de valores, mapeamento por cabeçalho, resumo,
+CRUD, categorias, evolução, **relatório anual**, orçamentos (com sugestões), projeção de
+parcelas, recorrentes (manual e gatilho), **metas**, **fatura de cartão**, **regra 50/30/20**,
+acerto de contas, importação (dedup/auto-categoria), lembretes e backup (CSV/XML). Sai com
+código ≠ 0 se algo falhar (pronto para CI).
 
 ## 🛠️ Stack
 
@@ -159,8 +160,8 @@ backup (CSV/XML). Sai com código ≠ 0 se algo falhar (pronto para CI).
 - ✅ **Onda 2** — categorias e dashboard com gráficos
 - ✅ **Onda 3** — orçamentos (com sugestões/alerta), projeção de parcelas, recorrentes
 - ✅ **Onda 4–5** — acerto de contas · contas dinâmicas · backup CSV/XML · importar OFX/CSV · lembretes (e-mail)
-- ✅ **Onda 6** — instalar na tela inicial · recolher/expandir tudo · **app com telas (navegação)**
-- 🔄 **Onda 7 (em andamento)** — ✅ recorrentes automáticos · ✅ metas de economia · ✅ relatório anual · ✅ fatura de cartão · ⏳ 50/30/20 · QIF/CSV por banco · backup agendado · bot Telegram
+- ✅ **Onda 6** — instalar na tela inicial · **app com telas (navegação)** · **tema escuro neumórfico** · troca de mês com botão "Hoje"
+- 🔄 **Onda 7 (em andamento)** — ✅ recorrentes automáticos · ✅ metas de economia · ✅ relatório anual · ✅ fatura de cartão · ✅ regra 50/30/20 · ✅ importar QIF/CSV por banco · ✅ backup agendado · ⏳ bot Telegram
 - 🧭 **Arquitetura** — caminhos para PWA instalável de verdade, multiusuário e offline em [docs/arquitetura/](docs/arquitetura/)
 
 Roadmap detalhado (com a versão de cada entrega) em [docs/planos/PLANO_FUNCIONALIDADES.md](docs/planos/PLANO_FUNCIONALIDADES.md).

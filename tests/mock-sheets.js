@@ -84,10 +84,12 @@ function loadApp(sheetsSpec) {
     MailApp: { sendEmail: (to, subj, body) => { emails.push({ to, subj, body }); } },
     ScriptApp: {
       _triggers: [],
-      newTrigger: (fn) => { const t = { fn, timeBased: () => t, everyDays: () => t, onMonthDay: () => t, atHour: () => t, create: () => { ctx.ScriptApp._triggers.push({ getHandlerFunction: () => fn, _id: Math.random() }); } }; return t; },
+      WeekDay: { MONDAY: 'MONDAY' },
+      newTrigger: (fn) => { const t = { fn, timeBased: () => t, everyDays: () => t, everyWeeks: () => t, onWeekDay: () => t, onMonthDay: () => t, atHour: () => t, create: () => { ctx.ScriptApp._triggers.push({ getHandlerFunction: () => fn, _id: Math.random() }); } }; return t; },
       getProjectTriggers: () => ctx.ScriptApp._triggers,
       deleteTrigger: (t) => { ctx.ScriptApp._triggers = ctx.ScriptApp._triggers.filter(x => x !== t); }
     },
+    PropertiesService: (() => { const store = {}; const api = { getProperty: (k) => (k in store ? store[k] : null), setProperty: (k, v) => { store[k] = String(v); return api; }, deleteProperty: (k) => { delete store[k]; return api; } }; return { getScriptProperties: () => api }; })(),
     ContentService: { MimeType: { JSON: 'JSON' }, createTextOutput: () => ({ setMimeType() { return this; } }) },
     HtmlService: {},
     console, Date, Math, JSON, String, Number, Array, Object, RegExp, parseFloat, parseInt, isNaN
@@ -104,6 +106,7 @@ function loadApp(sheetsSpec) {
     'getMetas', 'setMeta', 'deleteMeta',
     'getRegra503020', 'getClassificacao', 'setClasseCategoria',
     'getContas', 'setConta', 'deleteConta', 'getFaturaCartao', 'exportarBackup', 'exportarBackupXML', 'importarTransacoes',
+    'backupAgendado', 'instalarGatilhoBackup', 'removerGatilhoBackup', 'statusGatilhoBackup',
     'getLembretes', 'setLembrete', 'deleteLembrete', 'getLembretesProximos', 'verificarLembretes',
     'instalarGatilhoLembretes', 'removerGatilhoLembretes', 'statusGatilhoLembretes', 'migrarEstrutura'];
   const api = vm.runInContext('({' + nomes.join(',') + '})', ctx);

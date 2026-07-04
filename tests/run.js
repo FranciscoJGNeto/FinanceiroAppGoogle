@@ -262,6 +262,24 @@ group('regra 50/30/20 — classificação + buckets/percentuais');
   eq(r2.buckets.naoClassificado, 200, 'Lazer volta para não classificado');
 }
 
+group('backup agendado — gatilho (instalar/status/remover) + execução');
+{
+  const { api, driveFiles } = loadApp(baseTrans([
+    txRow({ id: '1', data: new Date(2026, 6, 3), conta: 'Inter', descricao: 'Mercado', natureza: 'Despesa', valor: 50 })
+  ]));
+  eq(api.statusGatilhoBackup().ativo, false, 'começa sem gatilho');
+  const ins = api.instalarGatilhoBackup('semanal');
+  eq([ins.ativo, ins.freq], [true, 'semanal'], 'instala gatilho semanal');
+  const st = api.statusGatilhoBackup();
+  eq([st.ativo, st.freq], [true, 'semanal'], 'status reflete ativo + frequência');
+  api.instalarGatilhoBackup('mensal'); // troca de frequência não duplica
+  eq(api.statusGatilhoBackup().freq, 'mensal', 'reinstalar troca a frequência (idempotente)');
+  const res = api.backupAgendado(); // execução do gatilho gera backup
+  ok(res && res.ok === true && driveFiles.length === 1, 'backupAgendado gera 1 arquivo no Drive');
+  eq(api.removerGatilhoBackup().ativo, false, 'remove gatilho');
+  eq([api.statusGatilhoBackup().ativo, api.statusGatilhoBackup().freq], [false, ''], 'status volta a inativo e limpa frequência');
+}
+
 group('getCompartilhados — por serviço (legado) e reembolso');
 {
   const { api } = loadApp({

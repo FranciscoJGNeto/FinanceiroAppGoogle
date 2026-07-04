@@ -78,8 +78,8 @@ Foto do recibo salva no Google Drive, link na transação. — **Pendente** (bai
 
 ## Nível 5 — Estrutura e confiança
 
-### 5.1 Backup/exportação ✅ (v19 CSV; v24 XML) · agendado ⏳ (7.7)
-Exportar todos os lançamentos; cópia automática periódica da planilha (trigger). — **v19** backup CSV no Drive; **v24** backup XML. Backup **agendado** (gatilho) pendente (Onda 7.7).
+### 5.1 Backup/exportação ✅ (v19 CSV; v24 XML; agendado v37)
+Exportar todos os lançamentos; cópia automática periódica (trigger). — **v19** CSV no Drive; **v24** XML; **v37** backup **agendado** (gatilho semanal/mensal).
 
 ### 5.2 Multiusuário (casal) ⏳ (arquitetura)
 Cada pessoa lança; visão individual e conjunta; integra com o acerto de contas (3.2). Depende do modelo de acesso/auth. — **Não cabe no Apps Script atual**; ver [planos alternativos](../arquitetura/PLANOS_ALTERNATIVOS.md) (Supabase).
@@ -99,7 +99,7 @@ Só se houver gastos em outra moeda (ex.: assinaturas em USD). Provavelmente des
 | 4 | Compartilhado & lembretes | 3.2 acerto de contas, 2.4 lembretes | ✅ |
 | 5 | Fricção zero | 4.2 importar extrato (OFX/CSV), 5.1 backup (CSV/XML) | ✅ |
 | 6 | Mobile & UX | instalar na tela inicial (v24), recolher/expandir tudo (v24) | ✅ |
-| **7** | **Próximos passos** | 7.1 recorrentes auto (v26) ✅ · 7.2 metas (v27) ✅ · 7.3 relatório anual (v28) ✅ · 7.4 fatura de cartão (v29) ✅ · 7.5 regra 50/30/20 (v32) ✅ · 7.6 QIF/CSV por banco (v35) ✅ · 7.7 backup agendado → em seguida · 7.8 bot | ⏳ |
+| **7** | **Próximos passos** | 7.1 recorrentes auto (v26) ✅ · 7.2 metas (v27) ✅ · 7.3 relatório anual (v28) ✅ · 7.4 fatura de cartão (v29) ✅ · 7.5 regra 50/30/20 (v32) ✅ · 7.6 QIF/CSV por banco (v35) ✅ · 7.7 backup agendado (v37) ✅ · 7.8 bot Telegram → em seguida | ⏳ |
 
 ## Onda 7 — próximos passos (em ordem de execução)
 
@@ -138,9 +138,10 @@ e comparar o mês com a meta (3 barras real × alvo). Aba `Classificacao` +
 ou **Débito/Crédito** separados), com detecção automática. Reaproveita prévia → importar.
 **Próximo da fila: 7.7 Backup agendado.**
 
-### 7.7 Backup agendado ⭐⭐ 🔨
-Gatilho semanal/mensal que roda `exportarBackup`/`exportarBackupXML` e guarda no Drive
-(ou envia por e-mail). Reaproveita as funções de backup e a UI de gatilho.
+### 7.7 Backup agendado ✅ (v37)
+**Feito.** Gatilho **semanal/mensal** (`backupAgendado`) que roda o backup CSV no Drive.
+Ativar/desativar + escolher a frequência no painel Backup; a frequência fica em
+`PropertiesService`. **Próximo da fila: 7.8 Bot Telegram (lançar por mensagem).**
 
 ### 7.8 Lançamento rápido por bot (Telegram) ⭐⭐⭐ 🔨🔨🔨
 Bot que recebe "Mercado 85,90 Inter" e grava via `doPost` (webhook). Fricção zero para

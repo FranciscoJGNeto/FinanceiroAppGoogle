@@ -610,6 +610,34 @@
       else runner.exportarBackup();
     }
 
+    // ---- Backup agendado (gatilho) ----
+    function carregarStatusBackup() {
+      google.script.run
+        .withSuccessHandler(atualizarStatusBackup)
+        .withFailureHandler(() => { /* silencioso */ })
+        .statusGatilhoBackup();
+    }
+    function atualizarStatusBackup(st) {
+      const ativo = st && st.ativo;
+      const btn = document.getElementById('btnToggleBackup');
+      const el = document.getElementById('backupStatus');
+      btn.textContent = ativo ? '🚫 Desativar automático' : '⏰ Ativar automático';
+      if (ativo && st.freq) document.getElementById('backupFreq').value = st.freq;
+      const quando = st && st.freq === 'semanal' ? 'toda segunda-feira' : 'todo dia 1º do mês';
+      el.innerHTML = ativo ? `✅ Backup automático <b>ativo</b> (${quando}, às 3h).` : '⚪ Backup automático desativado.';
+    }
+    function toggleBackup() {
+      const btn = document.getElementById('btnToggleBackup');
+      const ativoAgora = btn.textContent.indexOf('Desativar') !== -1;
+      const freq = document.getElementById('backupFreq').value;
+      btn.disabled = true;
+      const runner = google.script.run
+        .withSuccessHandler(res => { btn.disabled = false; atualizarStatusBackup(res); setMsg('msgBackup', ativoAgora ? '🚫 Backup automático desativado.' : '✅ Backup automático ativado!', 'ok'); })
+        .withFailureHandler(err => { btn.disabled = false; setMsg('msgBackup', '❌ ' + (err?.message || err), 'err'); });
+      if (ativoAgora) runner.removerGatilhoBackup();
+      else runner.instalarGatilhoBackup(freq);
+    }
+
     // ---- Contas (dinâmicas) ----
     function carregarContas() {
       google.script.run
@@ -1657,6 +1685,7 @@
     });
     document.getElementById('btnBackup').addEventListener('click', () => exportarBackup('csv'));
     document.getElementById('btnBackupXml').addEventListener('click', () => exportarBackup('xml'));
+    document.getElementById('btnToggleBackup').addEventListener('click', toggleBackup);
 
     // Lembretes
     document.getElementById('lValor').addEventListener('input', (e) => { const c = centsOfEl(e.target); e.target.value = c ? formatCentavos(c) : ''; });
@@ -1684,6 +1713,7 @@
     carregarContas();
     carregarLembretes();
     carregarStatusGatilhoRec();
+    carregarStatusBackup();
     carregarRelatorio();
     initAccordions();
 

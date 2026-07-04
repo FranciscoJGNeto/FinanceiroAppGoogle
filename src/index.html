@@ -274,6 +274,24 @@
           <button class="btn" id="btnBackupXml">🗂️ Backup XML</button>
         </div>
         <div class="msg" id="msgBackup"></div>
+
+        <div style="margin-top:14px; border-top:1px solid var(--line); padding-top:12px;">
+          <div class="hint" style="margin-bottom:8px;">⏰ <b>Backup automático:</b> um gatilho gera uma cópia CSV no seu Drive periodicamente (às 3h).</div>
+          <div id="backupStatus" class="hint" style="margin-bottom:8px;">—</div>
+          <div class="row2" style="align-items:end;">
+            <div>
+              <label for="backupFreq">🔁 Frequência</label>
+              <select class="field" id="backupFreq">
+                <option value="mensal">Mensal (dia 1º)</option>
+                <option value="semanal">Semanal (segunda)</option>
+              </select>
+            </div>
+            <div>
+              <label>&nbsp;</label>
+              <button class="btnGhost" id="btnToggleBackup" style="width:100%;">⏰ Ativar automático</button>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 

@@ -3,6 +3,12 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v37 — Backup agendado (Onda 7.7)
+- No painel **Backup**, opção de **backup automático**: um gatilho gera uma cópia **CSV no Drive** periodicamente (às 3h), com frequência **mensal** (dia 1º) ou **semanal** (segunda). Ativar/desativar pelo app.
+- Backend: `backupAgendado` + `instalar/remover/statusGatilhoBackup` (usa `ScriptApp` e guarda a frequência em `PropertiesService`).
+- Testes: **121 checagens** (instalar/status/remover + troca de frequência + execução do gatilho).
+- **README atualizado** (contagem de testes 68→114→121, roadmap da Onda 7, tabela de recursos com relatório anual e 50/30/20).
+
 ## v36 — Voltar ao mês atual + docs atualizados
 - **Botão "Hoje"** no cabeçalho: ao navegar por outros meses, aparece um botão que **volta ao mês atual** com um toque (fica escondido quando já é o mês corrente).
 - **Documentação atualizada** para o estado atual: a transição de "uma página com vários acordeões" para o **app com telas (navegação SPA)**, o tema neumórfico e a divisão do frontend em `index/styles/js` foram refletidos em `ANALISE_PROJETO`, `README` e no plano visual.
