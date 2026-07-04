@@ -3,6 +3,11 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v34 — Ajustes do tema (transparência, textura, scroll)
+- **Cards translúcidos:** painéis, KPIs e campos agora deixam **ver a textura e o cifrão ao fundo**.
+- **Textura de papel mais visível/definida** (grão maior e mais opaco).
+- **Corrigido o scroll horizontal no celular:** o cabeçalho usava `margin` negativa sendo filho direto do `body` (ficava mais largo que a tela); agora sem overflow (+ `overflow-x: clip` de segurança, preservando o cabeçalho fixo).
+
 ## v33 — Código do frontend dividido em parciais (include)
 - O `index.html` (~2.900 linhas) foi **dividido em 3 arquivos** servidos juntos via template do Apps Script: **`index.html`** (só a estrutura/markup), **`styles.html`** (todo o CSS) e **`js.html`** (todo o JS).
 - `doGet` passou a usar `HtmlService.createTemplateFromFile('index').evaluate()` + a função `include()`; a página final é idêntica para o usuário (um único HTML), só a organização do código mudou.
