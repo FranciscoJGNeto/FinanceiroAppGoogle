@@ -1,6 +1,9 @@
 # Plano de Correções — Financeiro (Francisco)
 
-> ✅ **Status: CONCLUÍDO (v4–v5).** Todos os bugs abaixo foram corrigidos, testados e publicados. Documento mantido como registro. Ver [CHANGELOG.md](../CHANGELOG.md).
+> ✅ **Status: CONCLUÍDO.** Onde entrou no [CHANGELOG.md](../CHANGELOG.md): os **bugs** deste documento
+> (setHeaders no manifest, parser decimal, off-by-one de fuso, reembolso/centavos, `LockService`,
+> escape de HTML) foram corrigidos na **v4**; a **fundação de robustez** (mapeamento por cabeçalho,
+> ID por transação, validação server-side, config por chave) veio na **v5**. Documento mantido como registro.
 
 Erros encontrados em `Código.js` e `index.html`, ordenados por severidade, com plano de correção.
 

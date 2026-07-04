@@ -2,6 +2,10 @@
 
 Solicitado em 2026-07-03. Executado em ordem; cada item marcado ao concluir.
 
+> **Onde entrou no [CHANGELOG.md](../CHANGELOG.md):** todo este lote foi entregue na **v24**
+> (instalar no celular, recolher/expandir tudo, backup XML, importar OFX). A correção do
+> "recolher" da Análise no desktop saiu na **v25**.
+
 ## Contexto / limitação importante (app "instalável" no celular)
 
 O app roda **dentro de um iframe sandbox** servido pelo Google Apps Script

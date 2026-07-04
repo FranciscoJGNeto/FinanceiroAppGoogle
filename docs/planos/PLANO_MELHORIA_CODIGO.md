@@ -1,6 +1,12 @@
 # Plano de Melhoria e Atualização de Código — Financeiro
 
-> **Status:** ✅ Já feitos — mapeamento por cabeçalho (A1), ID por transação (A2), validação server-side (B1), CRUD completo (B2), constantes/enums parciais, **testes (B7 — suíte Node em `tests/`)**, Git/GitHub (E2). ⏳ Pendentes — cache (B3), split em módulos (B4), PWA real/migração (D1). Ver [CHANGELOG.md](../CHANGELOG.md).
+> **Status (onde entrou no [CHANGELOG.md](../CHANGELOG.md)):**
+> ✅ **A1** mapeamento por cabeçalho → **v5** · ✅ **A2** ID+CriadoEm por transação → **v5** ·
+> ✅ **A3** coluna Categoria → **v11** · ✅ **A4** valor sempre número → **v4/v5** ·
+> ✅ **B1** validação server-side → **v5** · ✅ **B2** CRUD (editar/excluir) → **v6** ·
+> ✅ **B6** logging/erro (Stackdriver) → ligado no `appsscript.json` · ✅ **B7** testes (suíte Node) → **v17** (ampliada até **v28**) ·
+> ✅ **E2** Git/GitHub → reorg inicial.
+> ⏳ Pendentes — **B3** cache · **B4** split em módulos · **B5** enums pelo backend · **C1** separar HTML/CSS/JS · **C2** camada `api` com Promise · **D1** PWA real/migração (ver [planos alternativos](../arquitetura/PLANOS_ALTERNATIVOS.md)) · **E3** script de deploy.
 
 Foca em robustez, manutenibilidade e evolução da arquitetura. Complementa o `PLANO_CORRECOES.md` (que trata dos bugs). Prioridade: 🟢 Alto/baixo esforço · 🟡 Médio · 🔵 Estratégico.
 
