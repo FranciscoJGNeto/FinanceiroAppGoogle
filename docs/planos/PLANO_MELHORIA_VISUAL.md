@@ -4,8 +4,9 @@
 > ✅ **#2** cores despesa/receita + barra do % salário → **v6** · ✅ **#5** máscara de moeda → **v7** ·
 > ✅ acordeões → **v8** (recolher/expandir tudo → **v24**; correção do recolher no desktop → **v25**) ·
 > ✅ **#6** gráficos/dashboard + paleta acessível → **v9** (correção das cores SVG → **v10**) ·
-> ✅ **#10** teclados/mobile (enterkeyhint) → **v7**.
-> ⏳ Pendentes — **#1** tokens de design · **#3** ícones SVG no lugar de emojis · **#4** toasts/skeleton · **#7** hierarquia dos KPIs · **#8** tema claro · **#9** a11y completa (parcial).
+> ✅ **#10** teclados/mobile (enterkeyhint) → **v7** ·
+> ✅ **#7** navegação por telas (app SPA com barra inferior/sidebar) → **v30**.
+> ⏳ Pendentes — **#1** tokens de design · **#3** ícones SVG no lugar de emojis · **#4** toasts/skeleton · **#8** tema claro · **#9** a11y completa (parcial).
 
 Objetivo: elevar o app de "funcional" para "agradável e legível", mantendo a identidade escura atual e sem exigir build (compatível com Apps Script).
 

@@ -3,6 +3,14 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v30 — Navegação por telas (app SPA)
+- O app deixou de ser um **scroll único** de acordeões e virou um **app com telas**: os painéis foram agrupados em 5 telas trocadas por JavaScript, **sem recarregar**.
+  - **Celular:** barra de navegação **inferior** (🏠 Início · ➕ Lançar · 📊 Análise · 🎯 Planejar · ⚙️ Config).
+  - **Desktop:** a mesma navegação vira **menu lateral** (sidebar).
+- Agrupamento: **Início** (resumo) · **Lançar** (novo lançamento + transações) · **Análise** (gráficos, relatório anual, parcelas, fatura, compartilhado) · **Planejar** (orçamentos, metas, lembretes) · **Config** (contas, importar, backup).
+- A tela ativa é **lembrada** (localStorage); a barra "Salvar" fixa aparece só na tela **Lançar**.
+- Tudo isso continua em **um único HTML servido** (sem múltiplas páginas/recarregamento) — só a organização visual mudou. Base para depois dividir o código em parciais via `include()` (item C1 do plano de código).
+
 ## v29 — Fatura de cartão (Onda 7.4)
 - Novo painel **💳 Fatura de cartão**: mostra a **fatura prevista de cada cartão** no ciclo que **fecha no mês selecionado** — agrupa os lançamentos com meio **Cartão** na janela (fechamento anterior, fechamento atual], com data de fechamento e **vencimento por ciclo** (não por competência).
 - **Contas** ganham **dia de fechamento e vencimento** (opcionais). A aba `Saldos` passa a ter colunas `Fechamento`/`Vencimento` (auto-criadas). Contas-cartão aparecem com um selo (💳 fecha dia X · vence Y).

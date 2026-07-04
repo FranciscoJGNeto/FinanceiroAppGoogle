@@ -68,7 +68,7 @@
     .wrap {
       max-width: 1100px;
       margin: 0 auto;
-      padding: 14px 14px calc(110px + env(safe-area-inset-bottom));
+      padding: 14px 14px calc(126px + env(safe-area-inset-bottom));
     }
 
     /* App header com status bar safe area */
@@ -410,17 +410,54 @@
       color: rgba(255, 255, 255, .90);
     }
 
-    /* Sticky action bar for mobile */
+    /* Sticky action bar for mobile (só na tela "Lançar", acima da barra de navegação) */
     .actionBar {
       position: fixed;
       left: 0;
       right: 0;
-      bottom: 0;
-      padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+      bottom: calc(58px + env(safe-area-inset-bottom));
+      padding: 12px 14px;
       background: linear-gradient(180deg, rgba(11, 18, 32, .20), rgba(11, 18, 32, .92));
       border-top: 1px solid var(--line);
       backdrop-filter: blur(10px);
+      display: none;
+      z-index: 140;
     }
+    body[data-view="lancar"] .actionBar { display: block; }
+
+    /* Navegação por telas (SPA): barra inferior no celular */
+    .tabbar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 150;
+      display: flex;
+      background: rgba(11, 18, 32, .96);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid var(--line);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .tabbar button {
+      flex: 1;
+      background: none;
+      border: 0;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 8px 2px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      transition: color .15s;
+    }
+    .tabbar button .ic { font-size: 20px; line-height: 1; }
+    .tabbar button[aria-current="page"] { color: var(--primary); }
+    .tabbar button:active { color: var(--text); }
 
     .actionBarInner {
       max-width: 1100px;
@@ -584,12 +621,53 @@
       }
 
       .actionBar {
-        display: none;
+        display: none !important;
       }
+
+      /* Navegação vira menu lateral (sidebar) no desktop */
+      .appMain {
+        display: flex;
+        gap: 20px;
+        align-items: flex-start;
+        max-width: 1160px;
+        margin: 0 auto;
+      }
+      .appMain .wrap {
+        flex: 1;
+        min-width: 0;
+        margin: 0;
+        padding: 0 0 30px;
+        max-width: none;
+      }
+      .tabbar {
+        position: sticky;
+        top: 12px;
+        bottom: auto;
+        z-index: 10;
+        flex: 0 0 210px;
+        flex-direction: column;
+        gap: 4px;
+        padding: 8px;
+        border: 1px solid var(--line);
+        border-radius: var(--r);
+        background: linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .03));
+        box-shadow: var(--shadow);
+      }
+      .tabbar button {
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: 12px;
+        font-size: 14px;
+        padding: 12px 14px;
+        border-radius: 10px;
+      }
+      .tabbar button .ic { font-size: 18px; }
+      .tabbar button[aria-current="page"] { background: rgba(79, 140, 255, .14); color: #fff; }
 
       .appHeader {
         position: relative;
-        margin: 0 0 12px;
+        max-width: 1160px;
+        margin: 0 auto 12px;
         padding: 8px 0 12px;
       }
 
@@ -676,9 +754,18 @@
     </header>
   </div>
 
+  <div class="appMain">
+    <nav class="tabbar" id="tabbar" aria-label="Navegação">
+      <button type="button" data-view="inicio" aria-current="page"><span class="ic" aria-hidden="true">🏠</span><span>Início</span></button>
+      <button type="button" data-view="lancar"><span class="ic" aria-hidden="true">➕</span><span>Lançar</span></button>
+      <button type="button" data-view="analise"><span class="ic" aria-hidden="true">📊</span><span>Análise</span></button>
+      <button type="button" data-view="planejar"><span class="ic" aria-hidden="true">🎯</span><span>Planejar</span></button>
+      <button type="button" data-view="config"><span class="ic" aria-hidden="true">⚙️</span><span>Config</span></button>
+    </nav>
+
   <div class="wrap">
     <!-- Resumo -->
-    <section class="panel acc" data-acc="resumo">
+    <section class="panel acc" data-acc="resumo" data-view="inicio">
       <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="true" aria-controls="bodyResumo">
         <h2>📊 Resumo do mês</h2>
         <div class="right">
@@ -745,7 +832,7 @@
     </section>
 
     <!-- Análise / Gráficos -->
-    <section class="panel acc" data-acc="analise">
+    <section class="panel acc" data-acc="analise" data-view="analise">
       <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="true" aria-controls="bodyAnalise">
         <h2>📈 Análise</h2>
         <div class="right">
@@ -769,7 +856,7 @@
     </section>
 
     <!-- Relatório anual -->
-    <section class="panel acc collapsed" data-acc="relatorio">
+    <section class="panel acc collapsed" data-acc="relatorio" data-view="analise">
       <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="false" aria-controls="bodyRelatorio">
         <h2>📅 Relatório anual</h2>
         <div class="right">
@@ -792,7 +879,7 @@
     </section>
 
     <!-- Parcelas futuras -->
-    <section class="panel acc" data-acc="parcelas">
+    <section class="panel acc" data-acc="parcelas" data-view="analise">
       <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="true" aria-controls="bodyParcelas">
         <h2>🔮 Parcelas futuras</h2>
         <div class="right">
@@ -805,7 +892,7 @@
     </section>
 
     <!-- Compartilhado / acerto de contas -->
-    <section class="panel acc" data-acc="compartilhado">
+    <section class="panel acc" data-acc="compartilhado" data-view="analise">
       <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="true" aria-controls="bodyCompartilhado">
         <h2>🤝 Compartilhado</h2>
         <div class="right">
@@ -818,7 +905,7 @@
     </section>
 
     <!-- Contas -->
-    <section class="panel acc" data-acc="contas">
+    <section class="panel acc" data-acc="contas" data-view="config">
       <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="true" aria-controls="bodyContas">
         <h2>🏦 Contas</h2>
         <div class="right">
@@ -858,7 +945,7 @@
     </section>
 
     <!-- Fatura de cartão -->
-    <section class="panel acc collapsed" data-acc="fatura">
+    <section class="panel acc collapsed" data-acc="fatura" data-view="analise">
       <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="false" aria-controls="bodyFatura">
         <h2>💳 Fatura de cartão</h2>
         <div class="right">
@@ -872,7 +959,7 @@
     </section>
 
     <!-- Backup / Exportar -->
-    <section class="panel acc" data-acc="backup">
+    <section class="panel acc" data-acc="backup" data-view="config">
       <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="true" aria-controls="bodyBackup">
         <h2>💾 Backup</h2>
         <div class="right">
@@ -890,7 +977,7 @@
     </section>
 
     <!-- Importar extrato -->
-    <section class="panel acc collapsed" data-acc="importar">
+    <section class="panel acc collapsed" data-acc="importar" data-view="config">
       <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="false" aria-controls="bodyImportar">
         <h2>📥 Importar extrato</h2>
         <div class="right">
@@ -918,7 +1005,7 @@
     </section>
 
     <!-- Lembretes de vencimento -->
-    <section class="panel acc collapsed" data-acc="lembretes">
+    <section class="panel acc collapsed" data-acc="lembretes" data-view="planejar">
       <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="false" aria-controls="bodyLembretes">
         <h2>🔔 Lembretes</h2>
         <div class="right">
@@ -966,7 +1053,7 @@
     </section>
 
     <!-- Novo lançamento -->
-    <section class="panel acc" data-acc="lancamento">
+    <section class="panel acc" data-acc="lancamento" data-view="lancar">
       <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="true" aria-controls="bodyLancamento">
         <h2>➕ Novo lançamento</h2>
         <div class="right">
@@ -1102,7 +1189,7 @@
     </section>
 
     <!-- Transações -->
-    <section class="panel acc" data-acc="transacoes">
+    <section class="panel acc" data-acc="transacoes" data-view="lancar">
       <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="true" aria-controls="bodyTransacoes">
         <h2>📋 Transações do mês</h2>
         <div class="right">
@@ -1150,7 +1237,7 @@
     </section>
 
     <!-- Orçamentos por categoria -->
-    <section class="panel acc" data-acc="orcamentos">
+    <section class="panel acc" data-acc="orcamentos" data-view="planejar">
       <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="true" aria-controls="bodyOrcamentos">
         <h2>🎯 Orçamentos</h2>
         <div class="right">
@@ -1179,7 +1266,7 @@
     </section>
 
     <!-- Metas de economia -->
-    <section class="panel acc" data-acc="metas">
+    <section class="panel acc" data-acc="metas" data-view="planejar">
       <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="true" aria-controls="bodyMetas">
         <h2>🏆 Metas de economia</h2>
         <div class="right">
@@ -1220,6 +1307,7 @@
       </div>
     </section>
   </div>
+  </div><!-- /appMain -->
 
   <!-- Mobile sticky actions -->
   <div class="actionBar" id="actionBar">
@@ -2203,6 +2291,21 @@
       btn.textContent = anyExpanded() ? '🔼 Recolher' : '🔽 Expandir';
     }
 
+    // ---- Navegação por telas (SPA) ----
+    const VIEWS = ['inicio', 'lancar', 'analise', 'planejar', 'config'];
+    function showView(v) {
+      if (VIEWS.indexOf(v) < 0) v = 'inicio';
+      document.querySelectorAll('section[data-view]').forEach(s => {
+        s.style.display = (s.getAttribute('data-view') === v) ? '' : 'none';
+      });
+      document.querySelectorAll('#tabbar button').forEach(b => {
+        b.setAttribute('aria-current', b.getAttribute('data-view') === v ? 'page' : 'false');
+      });
+      document.body.setAttribute('data-view', v); // controla a barra de "Salvar" (só em Lançar)
+      localStorage.setItem('activeView', v);
+      window.scrollTo(0, 0);
+    }
+
     function defaultMonth() {
       const d = new Date();
       const y = d.getFullYear();
@@ -2775,6 +2878,12 @@
     carregarStatusGatilhoRec();
     carregarRelatorio();
     initAccordions();
+
+    // Navegação por telas: liga os botões e restaura a última tela
+    document.querySelectorAll('#tabbar button').forEach(b => {
+      b.addEventListener('click', () => showView(b.getAttribute('data-view')));
+    });
+    showView(localStorage.getItem('activeView') || 'inicio');
 
     // Atalho no PC
     document.addEventListener('keydown', (e) => {
