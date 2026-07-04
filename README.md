@@ -85,20 +85,25 @@ FinanceiroAppGoogle/
 │   ├── mock-sheets.js     # mock da API do Sheets + carregador do Código.js
 │   └── run.js             # casos de teste (node tests/run.js)
 └── docs/                  # documentação (não vai para a nuvem)
+    ├── README.md                  # índice/mapa da documentação
     ├── CHANGELOG.md               # histórico de versões
     ├── ANALISE_PROJETO.md         # o que é o projeto
-    ├── PLANO_ALTERACOES.md        # lote atual de mudanças (em ordem)
-    ├── PLANO_FUNCIONALIDADES.md   # roadmap de recursos
-    ├── PLANO_MELHORIA_CODIGO.md   # evolução de arquitetura
-    ├── PLANO_MELHORIA_VISUAL.md   # evolução de UI/UX
-    ├── PLANO_CORRECOES.md         # bugs corrigidos (registro)
-    ├── PLANOS_ALTERNATIVOS.md     # índice de arquiteturas alternativas
-    ├── PLANO_ALT_FRONT_SEPARADO.md# alt. A: PWA real + GAS como API
-    ├── PLANO_ALT_SUPABASE.md      # alt. B: Postgres + Auth + multiusuário
-    ├── PLANO_ALT_LOCALFIRST.md    # alt. C: PWA offline (IndexedDB/Dexie)
-    ├── PLANO_MIGRACAO_PGLITE.md   # alt.: Postgres WASM no navegador
-    └── GUIA_CLASP.md              # como publicar com clasp
+    ├── GUIA_CLASP.md              # como publicar com clasp
+    ├── planos/                    # roadmap e melhorias do produto/código
+    │   ├── PLANO_FUNCIONALIDADES.md   # roadmap de recursos (Ondas 1–7)
+    │   ├── PLANO_ALTERACOES.md        # último lote de mudanças (em ordem)
+    │   ├── PLANO_MELHORIA_CODIGO.md   # evolução de arquitetura de código
+    │   ├── PLANO_MELHORIA_VISUAL.md   # evolução de UI/UX
+    │   └── PLANO_CORRECOES.md         # bugs corrigidos (registro)
+    └── arquitetura/               # caminhos de arquitetura alternativos
+        ├── PLANOS_ALTERNATIVOS.md     # índice + comparativo
+        ├── PLANO_ALT_FRONT_SEPARADO.md# alt. A: PWA real + GAS como API
+        ├── PLANO_ALT_SUPABASE.md      # alt. B: Postgres + Auth + multiusuário
+        ├── PLANO_ALT_LOCALFIRST.md    # alt. C: PWA offline (IndexedDB/Dexie)
+        └── PLANO_MIGRACAO_PGLITE.md   # alt. D: Postgres WASM no navegador
 ```
+
+Um índice navegável de toda a documentação está em [docs/README.md](docs/README.md).
 
 ## 🚀 Rodar / publicar
 
@@ -145,7 +150,7 @@ backup (CSV/XML). Sai com código ≠ 0 se algo falhar (pronto para CI).
 - ✅ **Acerto de contas** · **contas dinâmicas** · **backup CSV/XML** · **importar extrato OFX/CSV** (auto-categoriza) · **lembretes de vencimento** (e-mail)
 - 🔮 **Futuro** — recorrentes automáticos (gatilho), metas de economia, relatórios anuais
 
-Detalhes e ideias em [docs/PLANO_FUNCIONALIDADES.md](docs/PLANO_FUNCIONALIDADES.md).
+Detalhes e ideias em [docs/planos/PLANO_FUNCIONALIDADES.md](docs/planos/PLANO_FUNCIONALIDADES.md).
 Histórico do que já foi entregue em [docs/CHANGELOG.md](docs/CHANGELOG.md).
 
 ## 📄 Licença / uso

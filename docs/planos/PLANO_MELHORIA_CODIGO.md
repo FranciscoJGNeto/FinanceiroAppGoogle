@@ -1,6 +1,6 @@
 # Plano de Melhoria e Atualização de Código — Financeiro
 
-> **Status:** ✅ Já feitos — mapeamento por cabeçalho (A1), ID por transação (A2), validação server-side (B1), CRUD completo (B2), constantes/enums parciais, **testes (B7 — suíte Node em `tests/`)**, Git/GitHub (E2). ⏳ Pendentes — cache (B3), split em módulos (B4), PWA real/migração (D1). Ver [CHANGELOG.md](CHANGELOG.md).
+> **Status:** ✅ Já feitos — mapeamento por cabeçalho (A1), ID por transação (A2), validação server-side (B1), CRUD completo (B2), constantes/enums parciais, **testes (B7 — suíte Node em `tests/`)**, Git/GitHub (E2). ⏳ Pendentes — cache (B3), split em módulos (B4), PWA real/migração (D1). Ver [CHANGELOG.md](../CHANGELOG.md).
 
 Foca em robustez, manutenibilidade e evolução da arquitetura. Complementa o `PLANO_CORRECOES.md` (que trata dos bugs). Prioridade: 🟢 Alto/baixo esforço · 🟡 Médio · 🔵 Estratégico.
 

@@ -1,6 +1,6 @@
 # Plano de Melhoria Visual — Financeiro
 
-> **Status:** ✅ Já feitos — cores despesa/receita (#2), barra de progresso do % salário, máscara de moeda (#5), gráficos/dashboard (#6), acordeões. ⏳ Pendentes — tokens de design (#1), ícones SVG no lugar de emojis (#3), toasts/skeleton (#4), tema claro (#8), a11y completa (#9). Ver [CHANGELOG.md](CHANGELOG.md).
+> **Status:** ✅ Já feitos — cores despesa/receita (#2), barra de progresso do % salário, máscara de moeda (#5), gráficos/dashboard (#6), acordeões. ⏳ Pendentes — tokens de design (#1), ícones SVG no lugar de emojis (#3), toasts/skeleton (#4), tema claro (#8), a11y completa (#9). Ver [CHANGELOG.md](../CHANGELOG.md).
 
 Objetivo: elevar o app de "funcional" para "agradável e legível", mantendo a identidade escura atual e sem exigir build (compatível com Apps Script).
 

@@ -9,7 +9,7 @@ plano e executar sem depender do resto.
 > A stack atual (Apps Script + Google Sheets) é ótima para custo zero e dono único dos
 > dados, mas tem limites conhecidos:
 > - **Não dá para ter um PWA instalável de verdade** (offline/standalone) pela URL `/exec`
->   — o app roda num iframe sandbox (ver [PLANO_ALTERACOES.md](PLANO_ALTERACOES.md)).
+>   — o app roda num iframe sandbox (ver [PLANO_ALTERACOES.md](../planos/PLANO_ALTERACOES.md)).
 > - **Multiusuário/auth** é frágil (acesso `MYSELF` ou "qualquer um com o link").
 > - **Latência**: cada `google.script.run` vai à nuvem e lê a planilha inteira.
 > - **Planilha como banco** não escala bem com milhares de linhas.

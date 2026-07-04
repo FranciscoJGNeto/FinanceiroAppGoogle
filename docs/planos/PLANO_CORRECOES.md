@@ -1,6 +1,6 @@
 # Plano de Correções — Financeiro (Francisco)
 
-> ✅ **Status: CONCLUÍDO (v4–v5).** Todos os bugs abaixo foram corrigidos, testados e publicados. Documento mantido como registro. Ver [CHANGELOG.md](CHANGELOG.md).
+> ✅ **Status: CONCLUÍDO (v4–v5).** Todos os bugs abaixo foram corrigidos, testados e publicados. Documento mantido como registro. Ver [CHANGELOG.md](../CHANGELOG.md).
 
 Erros encontrados em `Código.js` e `index.html`, ordenados por severidade, com plano de correção.
 

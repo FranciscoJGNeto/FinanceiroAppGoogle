@@ -18,7 +18,7 @@ Por causa disso, um **PWA instalável de verdade é impossível** pela URL `/exe
 **"Adicionar à tela inicial"** que detecta a plataforma (Android/iOS/desktop) e
 mostra os passos reais. Isso cria um **ícone na tela inicial** — o caminho que de
 fato funciona no Apps Script. (Migrar para um PWA 100% instalável exigiria sair do
-Apps Script; ver [PLANO_MIGRACAO_PGLITE.md](PLANO_MIGRACAO_PGLITE.md).)
+Apps Script; ver [PLANO_MIGRACAO_PGLITE.md](../arquitetura/PLANO_MIGRACAO_PGLITE.md).)
 
 ## Itens (em ordem)
 

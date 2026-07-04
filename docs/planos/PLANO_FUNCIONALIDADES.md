@@ -4,11 +4,11 @@
 > editar/excluir (1.1), receitas (1.2), categorias + auto-categorização (1.3), busca (1.4),
 > recorrentes **manuais** (2.1), projeção de parcelas (2.2), orçamento com sugestões (2.3),
 > lembretes de vencimento por e-mail (2.4), dashboard/gráficos (3.1), acerto de contas (3.2),
-> importar extrato **OFX/CSV** (4.2), backup **CSV/XML** (5.1). Detalhes em [CHANGELOG.md](CHANGELOG.md).
+> importar extrato **OFX/CSV** (4.2), backup **CSV/XML** (5.1). Detalhes em [CHANGELOG.md](../CHANGELOG.md).
 >
 > **Próximos passos em ordem:** ver **[Onda 7 — sequência de execução](#onda-7--próximos-passos-em-ordem-de-execução)** no fim deste documento.
 > Para mudanças de arquitetura (PWA instalável de verdade, multiusuário, offline), ver os
-> **[planos alternativos](PLANOS_ALTERNATIVOS.md)** além do [PLANO_MIGRACAO_PGLITE.md](PLANO_MIGRACAO_PGLITE.md).
+> **[planos alternativos](../arquitetura/PLANOS_ALTERNATIVOS.md)** além do [PLANO_MIGRACAO_PGLITE.md](../arquitetura/PLANO_MIGRACAO_PGLITE.md).
 
 Ideias de recursos que fazem sentido para o processo financeiro pessoal, considerando o que o app já faz (lançar gastos, resumo por conta, gastos compartilhados com reembolso, previsão de saldo). Priorizadas por **valor × esforço**.
 
@@ -148,7 +148,7 @@ lançar na hora. É o item que mais melhora o uso no dia a dia sem abrir o app.
 > **Ordem recomendada:** 7.1 → 7.2 → 7.3 (mais valor/menor risco), depois 7.4–7.8
 > conforme necessidade. Itens que exigem **multiusuário/auth de verdade** ou **PWA
 > instalável/offline** não cabem bem no Apps Script — para esses, ver os
-> **[planos alternativos](PLANOS_ALTERNATIVOS.md)**.
+> **[planos alternativos](../arquitetura/PLANOS_ALTERNATIVOS.md)**.
 
 ## Observações de viabilidade no Apps Script
 - **Gatilhos de tempo** (2.1, 2.4, 5.1, 7.1, 7.7): nativos e gratuitos no GAS (`ScriptApp.newTrigger`).
@@ -156,4 +156,4 @@ lançar na hora. É o item que mais melhora o uso no dia a dia sem abrir o app.
 - **Bot/webhook** (4.1, 7.8): `doPost` do GAS funciona como webhook do Telegram.
 - **Gráficos** (3.1, 7.3): via SVG inline no front, sem custo.
 - **Multiusuário/auth robusta** (5.2) e **PWA instalável/offline**: é o que mais pressiona
-  por migrar de arquitetura — ver [PLANOS_ALTERNATIVOS.md](PLANOS_ALTERNATIVOS.md).
+  por migrar de arquitetura — ver [PLANOS_ALTERNATIVOS.md](../arquitetura/PLANOS_ALTERNATIVOS.md).
