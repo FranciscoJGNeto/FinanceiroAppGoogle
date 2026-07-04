@@ -146,6 +146,21 @@ group('gerarRecorrentes — cria faltantes, não duplica, idempotente');
   eq(r2.criadas, 0, '2ª chamada é idempotente (0 criadas)');
 }
 
+group('recorrentes automáticos — gatilho (instalar/status/remover) + verificar');
+{
+  const { api } = loadApp(baseTrans([
+    txRow({ id: 'a', data: new Date(2026, 5, 10), conta: 'Inter', descricao: 'Aluguel', tipo: 'Recorrente', natureza: 'Despesa', valor: 1200 })
+  ]));
+  eq(api.statusGatilhoRecorrentes().ativo, false, 'começa sem gatilho');
+  eq(api.instalarGatilhoRecorrentes().ativo, true, 'instala gatilho');
+  eq(api.statusGatilhoRecorrentes().ativo, true, 'status reflete ativo');
+  eq(api.instalarGatilhoRecorrentes().ativo, true, 'reinstalar não duplica (idempotente)');
+  const res = api.verificarRecorrentes(); // gera no mês atual
+  ok(res && res.ok === true, 'verificarRecorrentes roda gerarRecorrentes (mês atual)');
+  eq(api.removerGatilhoRecorrentes().ativo, false, 'remove gatilho');
+  eq(api.statusGatilhoRecorrentes().ativo, false, 'status volta a inativo');
+}
+
 group('orçamentos — upsert, validação, delete');
 {
   const { api } = loadApp({ Transacoes: [HEADER.slice()] });

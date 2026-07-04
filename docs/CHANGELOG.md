@@ -3,6 +3,15 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v26 — Recorrentes automáticos (Onda 7.1)
+- No painel **Transações**, botão **⏰ Gerar automático**: cria um **gatilho mensal** (dia 1º, ~06h) que roda `gerarRecorrentes` no mês atual — sem precisar clicar todo mês. Idempotente (não duplica). Status mostrado abaixo do botão; dá para desativar a qualquer momento.
+- Backend: `verificarRecorrentes` + `instalar/remover/statusGatilhoRecorrentes` (usa `ScriptApp` — requer autorização de gatilhos na 1ª vez, como os lembretes).
+- Testes: **75 checagens** (cobre instalar/status/remover + verificar).
+
+## v25 — Fix recolher no desktop + planos futuros/alternativos
+- **Bug corrigido:** a **Análise** não recolhia no computador — a regra `#bodyAnalise { display:grid }` (seletor de ID) vencia o `display:none` do acordeão por especificidade. Trocado por `.acc:not(.collapsed) #bodyAnalise`.
+- Docs: **Onda 7** no [PLANO_FUNCIONALIDADES](planos/PLANO_FUNCIONALIDADES.md) (ideias futuras em ordem) e **planos de arquitetura alternativos** ([PLANOS_ALTERNATIVOS](arquitetura/PLANOS_ALTERNATIVOS.md): front separado, Supabase, local-first).
+
 ## v24 — Mobile + backup XML + importação OFX
 - **Instalar no celular:** removido o prompt automático que nunca disparava (o app roda num iframe do Apps Script, então `beforeinstallprompt`/manifest não funcionam ali). Novo botão **📱** no topo mostra o passo a passo de **"Adicionar à tela inicial"** por plataforma (iOS Safari / Android Chrome / desktop). Detalhes e limitação em [PLANO_ALTERACOES.md](planos/PLANO_ALTERACOES.md).
 - **Recolher/expandir tudo:** botão no cabeçalho que fecha (ou abre) **todos os acordeões de uma vez**; estado salvo por painel. Rótulo alterna conforme o estado.

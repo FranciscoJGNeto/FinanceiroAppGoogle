@@ -107,11 +107,11 @@ Só se houver gastos em outra moeda (ex.: assinaturas em USD). Provavelmente des
 Ideias de futuro priorizadas para serem feitas **na sequência**. Cada item cabe na
 arquitetura atual (Apps Script + Sheets), sem migração.
 
-### 7.1 Recorrentes automáticos (gatilho) ⭐⭐⭐ 🔨🔨
-Hoje os recorrentes são gerados por um botão (manual). Criar um **gatilho de tempo**
-mensal (`ScriptApp.newTrigger`) que roda `gerarRecorrentes` no dia 1º de cada mês,
-com o mesmo painel de ativar/desativar dos lembretes. Idempotente (não duplica).
-*Reaproveita:* `gerarRecorrentes`, a UI de gatilho dos Lembretes.
+### 7.1 Recorrentes automáticos (gatilho) ✅ (v26)
+**Feito.** Botão **⏰ Gerar automático** no painel Transações cria um gatilho mensal
+(dia 1º, ~06h) que roda `gerarRecorrentes` no mês atual, idempotente (não duplica).
+Backend: `verificarRecorrentes` + `instalar/remover/statusGatilhoRecorrentes`.
+**Próximo da fila: 7.2 Metas de economia.**
 
 ### 7.2 Metas de economia ⭐⭐⭐ 🔨🔨
 Definir metas (ex.: "guardar R$ 500/mês" ou "juntar R$ 6.000 até dez"). Acompanhar o

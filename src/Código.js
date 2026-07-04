@@ -721,6 +721,28 @@ function gerarRecorrentes(mesISO) {
   }
 }
 
+// Rodado pelo gatilho mensal: gera os recorrentes do MÊS ATUAL (idempotente).
+function verificarRecorrentes() {
+  return gerarRecorrentes(); // sem arg = mês atual
+}
+
+// Gatilho automático mensal (dia 1º, ~06h) para verificarRecorrentes.
+function instalarGatilhoRecorrentes() {
+  removerGatilhoRecorrentes();
+  ScriptApp.newTrigger('verificarRecorrentes').timeBased().onMonthDay(1).atHour(6).create();
+  return { ok: true, ativo: true };
+}
+function removerGatilhoRecorrentes() {
+  ScriptApp.getProjectTriggers().forEach(t => {
+    if (t.getHandlerFunction() === 'verificarRecorrentes') ScriptApp.deleteTrigger(t);
+  });
+  return { ok: true, ativo: false };
+}
+function statusGatilhoRecorrentes() {
+  const ativo = ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'verificarRecorrentes');
+  return { ativo: ativo };
+}
+
 // Lista as despesas compartilhadas do mês e calcula o reembolso (acerto de contas).
 function getCompartilhados(mesISO) {
   const ss = SpreadsheetApp.getActive();

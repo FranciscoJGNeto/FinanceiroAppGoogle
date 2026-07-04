@@ -84,7 +84,7 @@ function loadApp(sheetsSpec) {
     MailApp: { sendEmail: (to, subj, body) => { emails.push({ to, subj, body }); } },
     ScriptApp: {
       _triggers: [],
-      newTrigger: (fn) => { const t = { fn, timeBased: () => t, everyDays: () => t, atHour: () => t, create: () => { ctx.ScriptApp._triggers.push({ getHandlerFunction: () => fn, _id: Math.random() }); } }; return t; },
+      newTrigger: (fn) => { const t = { fn, timeBased: () => t, everyDays: () => t, onMonthDay: () => t, atHour: () => t, create: () => { ctx.ScriptApp._triggers.push({ getHandlerFunction: () => fn, _id: Math.random() }); } }; return t; },
       getProjectTriggers: () => ctx.ScriptApp._triggers,
       deleteTrigger: (t) => { ctx.ScriptApp._triggers = ctx.ScriptApp._triggers.filter(x => x !== t); }
     },
@@ -98,7 +98,9 @@ function loadApp(sheetsSpec) {
 
   const nomes = ['addTransacao', 'updateTransacao', 'deleteTransacao', 'listTransacoes', 'getResumo',
     'getEvolucao', 'getPorCategoria', 'getSugestoesOrcamento', 'getProjecaoParcelas', 'getCompartilhados',
-    'gerarRecorrentes', 'getOrcamentos', 'setOrcamento', 'deleteOrcamento',
+    'gerarRecorrentes', 'verificarRecorrentes', 'instalarGatilhoRecorrentes',
+    'removerGatilhoRecorrentes', 'statusGatilhoRecorrentes',
+    'getOrcamentos', 'setOrcamento', 'deleteOrcamento',
     'getContas', 'setConta', 'deleteConta', 'exportarBackup', 'exportarBackupXML', 'importarTransacoes',
     'getLembretes', 'setLembrete', 'deleteLembrete', 'getLembretesProximos', 'verificarLembretes',
     'instalarGatilhoLembretes', 'removerGatilhoLembretes', 'statusGatilhoLembretes', 'migrarEstrutura'];
