@@ -5,8 +5,8 @@
 > ✅ **A3** coluna Categoria → **v11** · ✅ **A4** valor sempre número → **v4/v5** ·
 > ✅ **B1** validação server-side → **v5** · ✅ **B2** CRUD (editar/excluir) → **v6** ·
 > ✅ **B6** logging/erro (Stackdriver) → ligado no `appsscript.json` · ✅ **B7** testes (suíte Node) → **v17** (ampliada até **v28**) ·
-> ✅ **E2** Git/GitHub → reorg inicial.
-> ⏳ Pendentes — **B3** cache · **B4** split em módulos · **B5** enums pelo backend · **C1** separar HTML/CSS/JS · **C2** camada `api` com Promise · **D1** PWA real/migração (ver [planos alternativos](../arquitetura/PLANOS_ALTERNATIVOS.md)) · **E3** script de deploy.
+> ✅ **E2** Git/GitHub → reorg inicial · ✅ **C1** separar HTML/CSS/JS → **v33**.
+> ⏳ Pendentes — **B3** cache · **B4** split do backend em módulos · **B5** enums pelo backend · **C2** camada `api` com Promise · **D1** PWA real/migração (ver [planos alternativos](../arquitetura/PLANOS_ALTERNATIVOS.md)) · **E3** script de deploy.
 
 Foca em robustez, manutenibilidade e evolução da arquitetura. Complementa o `PLANO_CORRECOES.md` (que trata dos bugs). Prioridade: 🟢 Alto/baixo esforço · 🟡 Médio · 🔵 Estratégico.
 
@@ -57,8 +57,9 @@ Criar `Testes.gs` com funções de teste (dados fixos numa aba temporária) para
 
 ## C. Frontend
 
-### C1. 🟢 Separar HTML/CSS/JS
-No Apps Script dá para usar `HtmlService` com include de arquivos parciais (`<?!= include('css') ?>`), separando `index.html`, `styles.html`, `app.js.html`. Melhora legibilidade.
+### C1. ✅ Separar HTML/CSS/JS (v33)
+**Feito.** `index.html` (estrutura) + `styles.html` (CSS) + `js.html` (JS), servidos juntos
+via `createTemplateFromFile('index').evaluate()` + `include()`. Página final idêntica.
 
 ### C2. 🟡 Camada de acesso ao backend
 Encapsular os `google.script.run` numa mini-API com Promises:

@@ -1,0 +1,755 @@
+<style>
+    :root {
+      --bg: #000000;
+      --surface: #141414;      /* superfície neumórfica em relevo (acima do preto) */
+      --panel: #141414;
+      --card: #0c0c0c;         /* poços "debossed" (abaixo da superfície) */
+      --muted: rgba(255, 255, 255, .58);
+      --text: rgba(255, 255, 255, .90);
+      --line: rgba(255, 255, 255, .05);
+      --primary: #4f8cff;
+      --primary2: #2f6bff;
+      --ok: #22c55e;
+      --bad: #ef4444;
+      --warn: #f59e0b;
+
+      --r: 16px;
+      --shadow: 0 14px 34px rgba(0, 0, 0, .7);
+      /* Sombras neumórficas (tons escuros) */
+      --nm-dark: rgba(0, 0, 0, .82);
+      --nm-light: rgba(255, 255, 255, .045);
+      --nm-out: 7px 7px 16px var(--nm-dark), -6px -6px 14px var(--nm-light);   /* em relevo */
+      --nm-in: inset 4px 4px 9px var(--nm-dark), inset -4px -4px 9px var(--nm-light); /* debossed */
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background-color: #000;
+      color: var(--text);
+      /* Remove selection highlights que atrapalham no app */
+      -webkit-user-select: none;
+      user-select: none;
+      /* Previne pull-to-refresh do Chrome */
+      overscroll-behavior: contain;
+    }
+
+    /* Textura de papel (ruído SVG inline) sobre o preto */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      opacity: .05;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 160px 160px;
+    }
+
+    /* Cifrão em relevo (debossed) como marca d'água ao fundo */
+    body::after {
+      content: "$";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Georgia, "Times New Roman", serif;
+      font-weight: 900;
+      font-size: 58vmin;
+      line-height: 1;
+      color: #050505;
+      text-shadow: 2px 2px 2px rgba(255, 255, 255, .04), -2px -2px 3px rgba(0, 0, 0, .9);
+    }
+
+    /* Permite seleção apenas em inputs */
+    input,
+    textarea,
+    select {
+      -webkit-user-select: text;
+      user-select: text;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 14px 14px calc(126px + env(safe-area-inset-bottom));
+    }
+
+    /* App header com status bar safe area */
+    .appHeader {
+      position: sticky;
+      top: 0;
+      background: linear-gradient(180deg, var(--bg), rgba(0, 0, 0, .95));
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+      z-index: 100;
+      padding: calc(env(safe-area-inset-top) + 8px) 14px 12px;
+      margin: 0 -14px 12px;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin: 0;
+      letter-spacing: .2px;
+    }
+
+    .sub {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid rgba(255, 255, 255, .03);
+      border-radius: var(--r);
+      box-shadow: var(--nm-out);
+      overflow: hidden;
+      margin: 14px 0;
+    }
+
+    .panelHead {
+      padding: 12px 12px 10px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .panelHead h2 {
+      font-size: 14px;
+      margin: 0;
+      color: rgba(255, 255, 255, .90);
+      letter-spacing: .2px;
+    }
+
+    .panelBody {
+      padding: 12px;
+    }
+
+    /* Controls */
+    .row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .row2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin: 0 0 6px;
+    }
+
+    .field {
+      width: 100%;
+      padding: 13px 13px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, .03);
+      background: var(--card);
+      color: var(--text);
+      outline: none;
+      font-size: 16px;
+      box-shadow: var(--nm-in);
+      /* importante no iPhone (evita zoom) */
+      /* Remove aparência nativa no iOS */
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .field:focus {
+      border-color: rgba(79, 140, 255, .45);
+      box-shadow: var(--nm-in), 0 0 0 3px rgba(79, 140, 255, .18);
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 13px 14px;
+      font-weight: 700;
+      color: white;
+      background: linear-gradient(180deg, var(--primary), var(--primary2));
+      cursor: pointer;
+      width: 100%;
+      font-size: 16px;
+      box-shadow: 5px 5px 12px rgba(0, 0, 0, .6), -3px -3px 10px rgba(255, 255, 255, .03);
+      /* Remove highlight no toque */
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    .btn:disabled {
+      opacity: .65;
+      cursor: not-allowed;
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+      box-shadow: inset 3px 3px 8px rgba(0, 0, 0, .5);
+    }
+
+    .btnGhost {
+      background: var(--surface);
+      border: 1px solid rgba(255, 255, 255, .04);
+      color: var(--text);
+      font-weight: 700;
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      width: auto;
+      white-space: nowrap;
+      box-shadow: var(--nm-out);
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    .btnGhost:active {
+      background: rgba(255, 255, 255, .05);
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    /* Summary chips/cards */
+    .kpis {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .kpi {
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, .03);
+      border-radius: 14px;
+      padding: 11px 11px;
+      min-height: 72px;
+      box-shadow: var(--nm-in);
+    }
+
+    .kpi .name {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .kpi .val {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: .2px;
+    }
+
+    .kpi .small {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, .06);
+      font-size: 12px;
+      color: rgba(255, 255, 255, .88);
+    }
+
+    /* Navegação de mês no cabeçalho */
+    .monthNav { display: flex; align-items: center; gap: 5px; }
+    button.pill { font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; min-width: 96px; justify-content: center; }
+    .mNavBtn {
+      background: var(--surface); border: 1px solid rgba(255, 255, 255, .04);
+      color: var(--text); border-radius: 10px; width: 34px; height: 34px;
+      font-size: 20px; font-weight: 800; line-height: 1; cursor: pointer;
+      box-shadow: var(--nm-out); -webkit-tap-highlight-color: transparent;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .mNavBtn:active { box-shadow: var(--nm-in); }
+
+    /* Install prompt */
+    .installPrompt {
+      position: fixed;
+      bottom: calc(90px + env(safe-area-inset-bottom));
+      left: 14px;
+      right: 14px;
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      border-radius: 16px;
+      padding: 12px 16px;
+      box-shadow: var(--shadow);
+      display: none;
+      align-items: center;
+      gap: 12px;
+      z-index: 200;
+      animation: slideUp 0.3s ease;
+    }
+
+    .installPrompt .content {
+      flex: 1;
+    }
+
+    .installPrompt .title {
+      font-weight: 700;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    .installPrompt .desc {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .installPrompt .actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .installPrompt .btnSmall {
+      padding: 6px 12px;
+      border: 1px solid rgba(255, 255, 255, .3);
+      background: rgba(255, 255, 255, .1);
+      color: white;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(100%);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    /* Transactions */
+    .txList {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .txCard {
+      border: 1px solid var(--line);
+      background: rgba(0, 0, 0, .18);
+      border-radius: 14px;
+      padding: 12px;
+    }
+
+    .txTop {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .txDesc {
+      font-weight: 800;
+      letter-spacing: .2px;
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.2;
+    }
+
+    .txVal {
+      font-weight: 900;
+      font-size: 16px;
+      white-space: nowrap;
+    }
+
+    .txMeta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .txObs {
+      margin-top: 10px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, .78);
+      border-top: 1px dashed rgba(255, 255, 255, .14);
+      padding-top: 10px;
+    }
+
+    /* Desktop table (hidden on mobile) */
+    .tableWrap {
+      display: none;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 10px 10px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    th {
+      color: rgba(255, 255, 255, .85);
+      font-weight: 800;
+    }
+
+    td {
+      color: rgba(255, 255, 255, .90);
+    }
+
+    /* Sticky action bar for mobile (só na tela "Lançar", acima da barra de navegação) */
+    .actionBar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: calc(58px + env(safe-area-inset-bottom));
+      padding: 12px 14px;
+      background: linear-gradient(180deg, rgba(0, 0, 0, .20), rgba(0, 0, 0, .92));
+      border-top: 1px solid var(--line);
+      backdrop-filter: blur(10px);
+      display: none;
+      z-index: 140;
+    }
+    body[data-view="lancar"] .actionBar { display: block; }
+
+    /* Navegação por telas (SPA): barra inferior no celular */
+    .tabbar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 150;
+      display: flex;
+      background: rgba(0, 0, 0, .96);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid var(--line);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .tabbar button {
+      flex: 1;
+      background: none;
+      border: 0;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 8px 2px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      transition: color .15s;
+    }
+    .tabbar button .ic { font-size: 20px; line-height: 1; }
+    .tabbar button[aria-current="page"] { color: var(--primary); }
+    .tabbar button:active { color: var(--text); }
+
+    .actionBarInner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .actionBarInner .btn {
+      flex: 1;
+    }
+
+    .actionBarInner .btnGhost {
+      flex: 0 0 auto;
+    }
+
+    .msg {
+      margin-top: 10px;
+      display: none;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(0, 0, 0, .20);
+      color: rgba(255, 255, 255, .92);
+      font-size: 13px;
+    }
+
+    .msg.ok {
+      border-color: rgba(34, 197, 94, .45);
+    }
+
+    .msg.err {
+      border-color: rgba(239, 68, 68, .55);
+    }
+
+    /* Valores / natureza */
+    .txVal.pos { color: var(--ok); }
+    .txCard.receita { border-left: 3px solid var(--ok); }
+    .txCard.despesa { border-left: 3px solid rgba(239, 68, 68, .45); }
+    strong.pos { color: var(--ok); }
+
+    /* Ações por transação */
+    .txActions { display: flex; gap: 8px; margin-top: 10px; }
+    .miniBtn {
+      flex: 1; border: 1px solid var(--line); background: rgba(255, 255, 255, .05);
+      color: var(--text); border-radius: 10px; padding: 8px; font-size: 12px;
+      font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent;
+    }
+    .miniBtn:active { background: rgba(255, 255, 255, .10); }
+    .miniBtn.danger { border-color: rgba(239, 68, 68, .4); color: #fca5a5; }
+    td .rowBtns { display: flex; gap: 6px; }
+    td .rowBtns button {
+      border: 1px solid var(--line); background: rgba(255, 255, 255, .05); color: var(--text);
+      border-radius: 8px; padding: 4px 8px; font-size: 13px; cursor: pointer;
+    }
+    td .rowBtns button.danger { border-color: rgba(239, 68, 68, .4); }
+
+    /* Barra de progresso do % do salário */
+    .progress {
+      height: 8px; border-radius: 999px; background: rgba(255, 255, 255, .10);
+      overflow: hidden; margin-top: 8px;
+    }
+    .progress > span { display: block; height: 100%; width: 0; background: var(--ok); transition: width .3s ease; }
+
+    /* Aviso de edição */
+    .editBadge { display: none; font-size: 12px; color: var(--warn); margin-top: 8px; }
+
+    /* Gráficos (Análise) */
+    .chartBlock { margin-bottom: 16px; }
+    .chartBlock:last-child { margin-bottom: 0; }
+    .chartTitle { font-size: 13px; color: var(--muted); margin-bottom: 8px; font-weight: 600; }
+    .chartRow { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .legend { display: flex; flex-direction: column; gap: 8px; font-size: 13px; min-width: 160px; flex: 1; }
+    .legend .lgi { display: flex; align-items: center; gap: 8px; }
+    .legend .dot { width: 11px; height: 11px; border-radius: 3px; display: inline-block; flex: 0 0 auto; }
+    .legend .lgi b { margin-left: auto; padding-left: 12px; font-variant-numeric: tabular-nums; }
+
+    /* Barras horizontais por categoria */
+    .catRow { display: grid; grid-template-columns: 104px 1fr auto; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 13px; }
+    .catRow:last-child { margin-bottom: 0; }
+    .catName { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .catBarWrap { background: rgba(255, 255, 255, .08); border-radius: 999px; height: 10px; overflow: hidden; }
+    .catBar { height: 100%; background: linear-gradient(90deg, #4f8cff, #2f6bff); border-radius: 999px; }
+    .catVal { font-variant-numeric: tabular-nums; }
+
+    /* Orçamentos (gasto vs limite) */
+    .orcRow { border: 1px solid var(--line); background: rgba(0, 0, 0, .18); border-radius: 12px; padding: 10px 12px; margin-bottom: 10px; }
+    .orcRow:last-child { margin-bottom: 0; }
+    .orcTop { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+    .orcName { font-weight: 700; }
+    .orcVals { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+    .orcBarWrap { background: rgba(255, 255, 255, .08); border-radius: 999px; height: 10px; overflow: hidden; }
+    .orcBar { height: 100%; border-radius: 999px; transition: width .3s ease; }
+    .orcActions { display: flex; gap: 8px; margin-top: 10px; }
+
+    /* Sugestões de orçamento */
+    .sugTitle { font-size: 13px; color: var(--muted); font-weight: 600; margin-bottom: 8px; }
+    .sugRow { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      border: 1px dashed rgba(79, 140, 255, .4); background: rgba(79, 140, 255, .06);
+      border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+    .sugRow .sugInfo { font-size: 13px; }
+    .sugRow .sugInfo b { font-size: 14px; }
+    .sugRow .sugSub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .sugActions { display: flex; gap: 8px; flex: 0 0 auto; }
+    .sugActions .miniBtn { flex: 0 0 auto; padding: 7px 12px; }
+    .sugActions .apply { border-color: rgba(34, 197, 94, .5); color: #86efac; }
+
+    /* Parcelas futuras */
+    .projTotal { font-size: 14px; }
+    .projTotal b { color: var(--warn); }
+
+    /* Saldos por conta (resumo) */
+    .saldoRow { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+    .saldoRow:last-child { border-bottom: 0; }
+    .saldoRow b { font-variant-numeric: tabular-nums; }
+    .saldoRow.total { margin-top: 4px; border-top: 1px solid var(--line); border-bottom: 0; padding-top: 8px; }
+    .saldoRow.total b { color: var(--ok); }
+
+    /* Acerto de contas */
+    .compAcerto { margin-top: 8px; font-size: 14px; padding: 10px 12px; border-radius: 12px;
+      border: 1px solid rgba(34, 197, 94, .4); background: rgba(34, 197, 94, .08); }
+    .compAcerto b { color: var(--ok); }
+
+    /* Acordeão dos painéis */
+    .accHead { cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
+    .accHead:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; border-radius: var(--r) var(--r) 0 0; }
+    .accHead .chevron { transition: transform .2s ease; color: var(--muted); font-size: 12px; }
+    .acc.collapsed .panelBody { display: none; }
+    .acc.collapsed .panelHead { border-bottom: 0; }
+    .acc.collapsed .accHead .chevron { transform: rotate(-90deg); }
+
+    /* Toggle segmentado (Despesa/Receita) */
+    .segment {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+      background: rgba(0, 0, 0, .18); border: 1px solid var(--line);
+      border-radius: 12px; padding: 4px;
+    }
+    .segment button {
+      border: 0; background: transparent; color: var(--muted); font-weight: 700;
+      font-size: 15px; padding: 12px; border-radius: 9px; cursor: pointer;
+      -webkit-tap-highlight-color: transparent; transition: background .15s, color .15s;
+    }
+    .segment button[aria-pressed="true"] { color: #fff; }
+    .segment button.seg-desp[aria-pressed="true"] { background: linear-gradient(180deg, #ef4444, #dc2626); }
+    .segment button.seg-rec[aria-pressed="true"] { background: linear-gradient(180deg, var(--ok), #16a34a); }
+    .segment button.seg-neu[aria-pressed="true"] { background: rgba(255, 255, 255, .14); }
+
+    /* Campo de valor com prefixo R$ */
+    .moneyWrap { position: relative; }
+    .moneyWrap .prefix {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      color: var(--muted); font-weight: 800; font-size: 20px; pointer-events: none;
+    }
+    .field.money { padding-left: 46px; font-size: 26px; font-weight: 800; letter-spacing: .3px; }
+
+    /* Larger screens */
+    @media (min-width: 900px) {
+      .wrap {
+        padding-bottom: 30px;
+      }
+
+      .actionBar {
+        display: none !important;
+      }
+
+      /* Navegação vira menu lateral (sidebar) no desktop */
+      .appMain {
+        display: flex;
+        gap: 20px;
+        align-items: flex-start;
+        max-width: 1160px;
+        margin: 0 auto;
+      }
+      .appMain .wrap {
+        flex: 1;
+        min-width: 0;
+        margin: 0;
+        padding: 0 0 30px;
+        max-width: none;
+      }
+      .tabbar {
+        position: sticky;
+        top: 12px;
+        bottom: auto;
+        z-index: 10;
+        flex: 0 0 210px;
+        flex-direction: column;
+        gap: 4px;
+        padding: 8px;
+        border: 1px solid rgba(255, 255, 255, .03);
+        border-radius: var(--r);
+        background: var(--surface);
+        box-shadow: var(--nm-out);
+      }
+      .tabbar button {
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: 12px;
+        font-size: 14px;
+        padding: 12px 14px;
+        border-radius: 10px;
+      }
+      .tabbar button .ic { font-size: 18px; }
+      .tabbar button[aria-current="page"] { background: rgba(79, 140, 255, .14); color: #fff; }
+
+      .appHeader {
+        position: relative;
+        max-width: 1160px;
+        margin: 0 auto 12px;
+        padding: 8px 0 12px;
+      }
+
+      h1 {
+        font-size: 22px;
+      }
+
+      .kpis {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      /* :not(.collapsed) para o grid não vencer o "display:none" do acordeão
+         recolhido (senão a Análise não recolheria no desktop). */
+      .acc:not(.collapsed) #bodyAnalise {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        align-items: start;
+      }
+
+      .chartBlock { margin-bottom: 0; }
+      .chartBlock.full { grid-column: 1 / -1; }
+
+      .row {
+        grid-template-columns: 1fr 1fr 1fr;
+      }
+
+      .row2 {
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+      }
+
+      .tableWrap {
+        display: block;
+      }
+
+      .txList {
+        display: none;
+      }
+
+      .btn {
+        width: auto;
+      }
+
+      .panelHead .right {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .installPrompt {
+        bottom: 20px;
+        left: 20px;
+        right: auto;
+        max-width: 320px;
+      }
+    }
+  </style>

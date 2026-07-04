@@ -83,7 +83,9 @@ FinanceiroAppGoogle/
 ├── src/                   # o que é enviado à nuvem (via clasp)
 │   ├── appsscript.json    # manifesto (timezone America/Sao_Paulo, V8)
 │   ├── Código.js          # backend
-│   └── index.html         # frontend (UI + JS)
+│   ├── index.html         # estrutura do frontend (inclui os parciais)
+│   ├── styles.html        # CSS (via include())
+│   └── js.html            # JS do frontend (via include())
 ├── tests/                 # suíte de testes em Node (mock do Apps Script)
 │   ├── mock-sheets.js     # mock da API do Sheets + carregador do Código.js
 │   └── run.js             # casos de teste (node tests/run.js)

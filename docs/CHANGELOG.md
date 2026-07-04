@@ -3,6 +3,11 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v33 — Código do frontend dividido em parciais (include)
+- O `index.html` (~2.900 linhas) foi **dividido em 3 arquivos** servidos juntos via template do Apps Script: **`index.html`** (só a estrutura/markup), **`styles.html`** (todo o CSS) e **`js.html`** (todo o JS).
+- `doGet` passou a usar `HtmlService.createTemplateFromFile('index').evaluate()` + a função `include()`; a página final é idêntica para o usuário (um único HTML), só a organização do código mudou.
+- Fecha o item **C1** do [plano de código](planos/PLANO_MELHORIA_CODIGO.md). Testes: **114 checagens** (backend inalterado).
+
 ## v32 — Regra 50/30/20 (Onda 7.5)
 - Novo painel **⚖️ Regra 50/30/20** (tela Planejar): classifique cada categoria em **Essencial** (alvo 50%), **Desejo** (30%) ou **Poupança** (20%) e veja **3 barras com o real × o alvo** (marcador na meta), além do que está **não classificado**.
 - Classificação feita **na hora** por um seletor ao lado de cada categoria do mês.

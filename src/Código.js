@@ -199,11 +199,16 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 
-  // HTML normal (app)
-  return HtmlService.createHtmlOutputFromFile('index')
+  // HTML normal (app) — index.html é um template que inclui styles.html e js.html
+  return HtmlService.createTemplateFromFile('index').evaluate()
     .setTitle('Financeiro - Francisco')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover');
+}
+
+// Inclui o conteúdo de outro arquivo HTML (styles.html, js.html) dentro do template.
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
 // ===================== Transações =====================
