@@ -3,6 +3,13 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v24 — Mobile + backup XML + importação OFX
+- **Instalar no celular:** removido o prompt automático que nunca disparava (o app roda num iframe do Apps Script, então `beforeinstallprompt`/manifest não funcionam ali). Novo botão **📱** no topo mostra o passo a passo de **"Adicionar à tela inicial"** por plataforma (iOS Safari / Android Chrome / desktop). Detalhes e limitação em [PLANO_ALTERACOES.md](PLANO_ALTERACOES.md).
+- **Recolher/expandir tudo:** botão no cabeçalho que fecha (ou abre) **todos os acordeões de uma vez**; estado salvo por painel. Rótulo alterna conforme o estado.
+- **Backup em XML** além de CSV: `exportarBackupXML()` gera `<financeiro><transacao>…</transacao></financeiro>` no Drive (mime `application/xml`, tags derivadas dos cabeçalhos, escaping de `& < >`). Dois botões no painel Backup.
+- **Importar OFX:** além de CSV, o painel importa **extrato OFX** (padrão dos apps de banco — Nubank, Itaú, Bradesco, Inter, C6…). Detecção automática do formato; parser tolerante a OFX v1 (SGML) e v2 (XML). Reaproveita a prévia, o dedup e a auto-categorização.
+- Testes: **68 checagens** (cobre `exportarBackupXML`).
+
 ## v23 — Lembretes de vencimento + mais palavras-chave
 - Painel **Lembretes**: cadastrar contas com dia de vencimento, valor e antecedência; ver **próximos vencimentos**.
 - **E-mail automático** alguns dias antes (gatilho diário às 8h) — ativar/desativar pelo app; botão **Enviar agora** para testar. 1 e-mail consolidado por mês por lembrete.

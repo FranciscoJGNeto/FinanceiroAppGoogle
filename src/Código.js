@@ -1052,6 +1052,47 @@ function exportarBackup() {
   return { ok: true, nome: nome, url: file.getUrl(), linhas: Math.max(vals.length - 1, 0) };
 }
 
+// Escapa um valor para conteúdo de elemento XML.
+function xmlCell_(v) {
+  let s;
+  if (v instanceof Date) s = Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  else s = String(v == null ? '' : v);
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+}
+
+// Transforma um cabeçalho da planilha num nome de tag XML seguro.
+function xmlTag_(h) {
+  let t = String(h == null ? '' : h).normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^A-Za-z0-9]/g, '');
+  if (!t) t = 'campo';
+  if (/^[0-9]/.test(t)) t = 'c' + t;
+  return t;
+}
+
+// Exporta TODAS as transações para um XML no Google Drive e devolve o link.
+// XML é mais estruturado que CSV (uma <transacao> por lançamento, tags nomeadas).
+function exportarBackupXML() {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEET_TRANS);
+  if (!sh) throw new Error('Aba "Transacoes" não encontrada na planilha');
+
+  const vals = sh.getDataRange().getValues();
+  const headers = (vals[0] || []).map(xmlTag_);
+  const tz = Session.getScriptTimeZone();
+  const itens = [];
+  for (let i = 1; i < vals.length; i++) {
+    const campos = headers.map((tag, j) => '    <' + tag + '>' + xmlCell_(vals[i][j]) + '</' + tag + '>').join('\n');
+    itens.push('  <transacao>\n' + campos + '\n  </transacao>');
+  }
+  const xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    + '<financeiro gerado="' + Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd HH:mm') + '">\n'
+    + itens.join('\n') + (itens.length ? '\n' : '') + '</financeiro>\n';
+  const nome = 'financeiro-backup-' + Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd-HHmm') + '.xml';
+  const file = DriveApp.createFile(nome, xml, 'application/xml');
+  return { ok: true, nome: nome, url: file.getUrl(), linhas: Math.max(vals.length - 1, 0) };
+}
+
 // Importa uma lista de transações (ex.: extrato), em lote, evitando duplicar
 // (chave: data + descrição + valor). Retorna quantas importou/ignorou.
 function importarTransacoes(lista) {

@@ -651,12 +651,12 @@
   <!-- Install Prompt -->
   <div class="installPrompt" id="installPrompt">
     <div class="content">
-      <div class="title">📱 Instalar App</div>
-      <div class="desc">Adicione à tela inicial para acesso rápido</div>
+      <div class="title">📱 Instalar no celular</div>
+      <div class="desc" id="installDesc">Adicione à tela inicial para acesso rápido.</div>
     </div>
     <div class="actions">
-      <button class="btnSmall" id="installBtn">Instalar</button>
-      <button class="btnSmall" id="dismissBtn">Dispensar</button>
+      <button class="btnSmall" id="installBtn" style="display:none;">Instalar</button>
+      <button class="btnSmall" id="dismissBtn">Ok</button>
     </div>
   </div>
 
@@ -666,7 +666,11 @@
         <h1>💰 Financeiro</h1>
         <div class="sub">Controle financeiro pessoal</div>
       </div>
-      <div class="pill" id="pillMes">—</div>
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+        <button class="btnGhost" id="btnInstall" style="padding:8px 10px;" title="Instalar na tela inicial">📱</button>
+        <button class="btnGhost" id="btnToggleAll" style="padding:8px 10px;">🔼 Recolher</button>
+        <div class="pill" id="pillMes">—</div>
+      </div>
     </header>
   </div>
 
@@ -826,8 +830,11 @@
         </div>
       </div>
       <div class="panelBody" id="bodyBackup">
-        <div class="hint" style="margin-bottom:10px;">Gera um arquivo <b>CSV com todos os lançamentos</b> no seu Google Drive — uma cópia de segurança que você pode baixar quando quiser.</div>
-        <button class="btn" id="btnBackup">💾 Exportar backup (CSV no Drive)</button>
+        <div class="hint" style="margin-bottom:10px;">Gera um arquivo com <b>todos os lançamentos</b> no seu Google Drive — uma cópia de segurança que você pode baixar quando quiser. Escolha o formato: <b>CSV</b> (abre no Excel/Sheets) ou <b>XML</b> (mais estruturado, bom para reimportar em outros apps).</div>
+        <div class="row2">
+          <button class="btn" id="btnBackup">💾 Backup CSV</button>
+          <button class="btn" id="btnBackupXml">🗂️ Backup XML</button>
+        </div>
         <div class="msg" id="msgBackup"></div>
       </div>
     </section>
@@ -841,8 +848,8 @@
         </div>
       </div>
       <div class="panelBody" id="bodyImportar">
-        <div class="hint" style="margin-bottom:10px;">Cole o CSV do extrato (ou escolha um arquivo). Precisa ter colunas de <b>Data</b>, <b>Descrição</b> e <b>Valor</b>. Valores negativos viram despesa; positivos, receita. Duplicados (mesma data + descrição + valor) são ignorados.</div>
-        <input type="file" id="impFile" accept=".csv,text/csv" class="field" style="margin-bottom:10px;" />
+        <div class="hint" style="margin-bottom:10px;">Importe o extrato em <b>OFX</b> (o "extrato OFX" que os apps dos bancos exportam — Nubank, Itaú, Bradesco, Inter, C6…) ou em <b>CSV</b> (colunas <b>Data</b>, <b>Descrição</b> e <b>Valor</b>). Escolha o arquivo ou cole o conteúdo abaixo — o formato é detectado automaticamente. Valores negativos viram despesa; positivos, receita. Duplicados (mesma data + descrição + valor) são ignorados, e cada lançamento é categorizado automaticamente.</div>
+        <input type="file" id="impFile" accept=".ofx,.csv,text/csv,application/x-ofx" class="field" style="margin-bottom:10px;" />
         <textarea class="field" id="impTexto" rows="4" placeholder="Data,Descrição,Valor&#10;05/07/2026,Mercado,-150,00&#10;08/07/2026,Salário,3000,00"></textarea>
         <div class="row2" style="margin-top:10px;">
           <div>
@@ -1381,10 +1388,73 @@
       return null;
     }
 
-    function preImportar() {
-      const rows = parseCSV(document.getElementById('impTexto').value);
+    // Detecta se o conteúdo é um extrato OFX (padrão dos apps de banco).
+    function isOFX(text) {
+      return /OFXHEADER|<OFX>|<STMTTRN>/i.test(String(text || ''));
+    }
+
+    // Parser de OFX tolerante: funciona tanto no OFX v1 (SGML, sem tags de
+    // fechamento) quanto no v2 (XML). Lê cada <STMTTRN> (transação) e extrai
+    // data (DTPOSTED), valor (TRNAMT) e descrição (MEMO/NAME).
+    function parseOFX(text) {
+      text = String(text || '');
+      let blocks = text.match(/<STMTTRN>[\s\S]*?<\/STMTTRN>/gi);
+      if (!blocks || !blocks.length) {
+        // OFX SGML sem </STMTTRN>: quebra manualmente pelos marcadores de abertura.
+        const parts = text.split(/<STMTTRN>/i).slice(1);
+        blocks = parts.map(p => '<STMTTRN>' + p.split(/<\/BANKTRANLIST>|<STMTTRN>/i)[0]);
+      }
+      const val = (b, name) => {
+        const m = new RegExp('<' + name + '>\\s*([^<\\r\\n]*)', 'i').exec(b);
+        return m ? m[1].trim() : '';
+      };
+      const out = [];
+      blocks.forEach(b => {
+        const dt = val(b, 'DTPOSTED');
+        const amt = val(b, 'TRNAMT');
+        const desc = val(b, 'MEMO') || val(b, 'NAME') || 'Lançamento';
+        if (!/^\d{8}/.test(dt)) return;
+        const v = parseFloat(String(amt).replace(/\s/g, '').replace(',', '.'));
+        if (isNaN(v) || v === 0) return;
+        const iso = dt.slice(0, 4) + '-' + dt.slice(4, 6) + '-' + dt.slice(6, 8);
+        out.push({ data: iso, descricao: desc, valor: Math.abs(v), natureza: v < 0 ? 'Despesa' : 'Receita' });
+      });
+      return out;
+    }
+
+    // Desenha a prévia da importação (comum a CSV e OFX).
+    function renderImportPreview(invalidas, fonte) {
       const btnImp = document.getElementById('btnImportar');
-      if (rows.length < 2) { setMsg('msgImportar', '❌ CSV vazio ou sem linhas de dados.', 'err'); btnImp.style.display = 'none'; return; }
+      const el = document.getElementById('impPreview');
+      if (!impParsed.length) {
+        el.innerHTML = '<div style="color:var(--muted);font-size:13px;">Nenhuma linha válida encontrada.</div>';
+        btnImp.style.display = 'none';
+        return;
+      }
+      const amostra = impParsed.slice(0, 5).map(t =>
+        `<div class="saldoRow"><span>${escapeHtml(t.data)} · ${escapeHtml(t.descricao)} <span class="pill">${t.natureza === 'Despesa' ? '🔴' : '🟢'}</span></span><b>${moneyBRL(t.valor)}</b></div>`
+      ).join('');
+      el.innerHTML = `<div class="chartTitle">Prévia (${fonte}): ${impParsed.length} lançamento(s)${invalidas ? ` · ${invalidas} linha(s) ignorada(s)` : ''}</div>`
+        + amostra + (impParsed.length > 5 ? `<div class="hint">…e mais ${impParsed.length - 5}.</div>` : '');
+      setMsg('msgImportar', '', 'ok');
+      btnImp.style.display = '';
+    }
+
+    function preImportar() {
+      const txt = document.getElementById('impTexto').value;
+      const btnImp = document.getElementById('btnImportar');
+
+      // Formato OFX (extrato dos apps de banco)
+      if (isOFX(txt)) {
+        impParsed = parseOFX(txt);
+        if (!impParsed.length) { setMsg('msgImportar', '❌ OFX sem transações reconhecidas.', 'err'); btnImp.style.display = 'none'; return; }
+        renderImportPreview(0, 'OFX');
+        return;
+      }
+
+      // Formato CSV
+      const rows = parseCSV(txt);
+      if (rows.length < 2) { setMsg('msgImportar', '❌ Arquivo vazio ou sem linhas de dados.', 'err'); btnImp.style.display = 'none'; return; }
       const header = rows[0].map(normCat);
       const find = (...cands) => header.findIndex(h => cands.some(c => h.indexOf(c) !== -1));
       const iData = find('data');
@@ -1405,19 +1475,7 @@
         if (!iso || isNaN(v) || v === 0 || !desc) { invalidas++; continue; }
         impParsed.push({ data: iso, descricao: desc, valor: Math.abs(v), natureza: v < 0 ? 'Despesa' : 'Receita' });
       }
-      const el = document.getElementById('impPreview');
-      if (!impParsed.length) {
-        el.innerHTML = '<div style="color:var(--muted);font-size:13px;">Nenhuma linha válida encontrada.</div>';
-        btnImp.style.display = 'none';
-        return;
-      }
-      const amostra = impParsed.slice(0, 5).map(t =>
-        `<div class="saldoRow"><span>${escapeHtml(t.data)} · ${escapeHtml(t.descricao)} <span class="pill">${t.natureza === 'Despesa' ? '🔴' : '🟢'}</span></span><b>${moneyBRL(t.valor)}</b></div>`
-      ).join('');
-      el.innerHTML = `<div class="chartTitle">Prévia: ${impParsed.length} lançamento(s)${invalidas ? ` · ${invalidas} linha(s) ignorada(s)` : ''}</div>`
-        + amostra + (impParsed.length > 5 ? `<div class="hint">…e mais ${impParsed.length - 5}.</div>` : '');
-      setMsg('msgImportar', '', 'ok');
-      btnImp.style.display = '';
+      renderImportPreview(invalidas, 'CSV');
     }
 
     function importarExtrato() {
@@ -1547,25 +1605,27 @@
         .verificarLembretes();
     }
 
-    // ---- Backup / exportar ----
-    function exportarBackup() {
-      const btn = document.getElementById('btnBackup');
-      btn.disabled = true;
-      setMsg('msgBackup', '⏳ Gerando backup no Drive...', 'ok');
-      google.script.run
+    // ---- Backup / exportar (CSV ou XML) ----
+    function exportarBackup(formato) {
+      const xml = formato === 'xml';
+      const btns = [document.getElementById('btnBackup'), document.getElementById('btnBackupXml')];
+      btns.forEach(b => b.disabled = true);
+      setMsg('msgBackup', `⏳ Gerando backup ${xml ? 'XML' : 'CSV'} no Drive...`, 'ok');
+      const runner = google.script.run
         .withSuccessHandler(res => {
-          btn.disabled = false;
+          btns.forEach(b => b.disabled = false);
           const el = document.getElementById('msgBackup');
           el.style.display = 'block';
           el.className = 'msg ok';
-          el.innerHTML = `✅ Backup criado (${res.linhas} lançamento(s)): <b>${escapeHtml(res.nome)}</b><br>`
+          el.innerHTML = `✅ Backup ${xml ? 'XML' : 'CSV'} criado (${res.linhas} lançamento(s)): <b>${escapeHtml(res.nome)}</b><br>`
             + `<a href="${res.url}" target="_blank" rel="noopener" style="color:var(--primary); font-weight:700;">📂 Abrir no Google Drive</a>`;
         })
         .withFailureHandler(err => {
-          btn.disabled = false;
+          btns.forEach(b => b.disabled = false);
           setMsg('msgBackup', '❌ Erro ao gerar backup: ' + (err?.message || err), 'err');
-        })
-        .exportarBackup();
+        });
+      if (xml) runner.exportarBackupXML();
+      else runner.exportarBackup();
     }
 
     // ---- Contas (dinâmicas) ----
@@ -1798,6 +1858,7 @@
           sec.classList.toggle('collapsed');
           localStorage.setItem(key, sec.classList.contains('collapsed') ? 'collapsed' : 'open');
           sync();
+          updateToggleAllLabel();
         };
         sync();
         head.addEventListener('click', (e) => {
@@ -1809,6 +1870,27 @@
           if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
         });
       });
+      updateToggleAllLabel();
+    }
+
+    // ---- Recolher / expandir TODOS os acordeões de uma vez ----
+    function anyExpanded() {
+      return Array.prototype.some.call(document.querySelectorAll('.acc'), s => !s.classList.contains('collapsed'));
+    }
+    function setAllAccordions(collapsed) {
+      document.querySelectorAll('.acc').forEach(sec => {
+        const key = 'acc_' + sec.getAttribute('data-acc');
+        sec.classList.toggle('collapsed', collapsed);
+        localStorage.setItem(key, collapsed ? 'collapsed' : 'open');
+        const head = sec.querySelector('.accHead');
+        if (head) head.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      });
+      updateToggleAllLabel();
+    }
+    function updateToggleAllLabel() {
+      const btn = document.getElementById('btnToggleAll');
+      if (!btn) return;
+      btn.textContent = anyExpanded() ? '🔼 Recolher' : '🔽 Expandir';
     }
 
     function defaultMonth() {
@@ -1845,25 +1927,41 @@
       document.getElementById('saveDesktop').style.display = isDesktop() ? 'block' : 'none';
     }
 
-    // PWA Install functionality
-    let deferredPrompt;
-    let installShown = localStorage.getItem('installDismissed') === 'true';
+    // Instalar na tela inicial.
+    // OBS.: o app roda dentro de um iframe do Apps Script, então o evento
+    // beforeinstallprompt normalmente NÃO dispara e o manifest do iframe é
+    // ignorado — um PWA "instalável de verdade" não é possível pela URL /exec.
+    // O caminho que funciona é "Adicionar à tela inicial"; abaixo mostramos os
+    // passos por plataforma. Se por acaso o navegador oferecer instalação nativa
+    // (ex.: Chrome no desktop abrindo a página direta), aproveitamos o evento.
+    let deferredPrompt = null;
 
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
-
-      if (!installShown && !window.matchMedia('(display-mode: standalone)').matches) {
-        setTimeout(() => {
-          document.getElementById('installPrompt').style.display = 'flex';
-        }, 3000);
-      }
+      document.getElementById('installBtn').style.display = '';
     });
+
+    function passosInstalacao() {
+      const ua = navigator.userAgent || '';
+      const isIOS = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && 'ontouchend' in document);
+      const isAndroid = /Android/.test(ua);
+      if (isIOS) return 'No <b>Safari</b>: toque em <b>Compartilhar</b> (□↑) e depois em <b>Adicionar à Tela de Início</b>.';
+      if (isAndroid) return 'No <b>Chrome</b>: toque no menu <b>⋮</b> e escolha <b>Adicionar à tela inicial</b> (ou <b>Instalar app</b>).';
+      return 'No navegador: menu <b>⋮</b> → <b>Instalar</b> ou <b>Adicionar à tela inicial</b>. Um ícone será criado para abrir o app rapidinho.';
+    }
+
+    function mostrarAjudaInstalacao() {
+      document.getElementById('installDesc').innerHTML = passosInstalacao();
+      document.getElementById('installPrompt').style.display = 'flex';
+    }
+
+    document.getElementById('btnInstall').addEventListener('click', mostrarAjudaInstalacao);
 
     document.getElementById('installBtn').addEventListener('click', async () => {
       if (deferredPrompt) {
         deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
+        await deferredPrompt.userChoice;
         deferredPrompt = null;
       }
       document.getElementById('installPrompt').style.display = 'none';
@@ -1871,12 +1969,12 @@
 
     document.getElementById('dismissBtn').addEventListener('click', () => {
       document.getElementById('installPrompt').style.display = 'none';
-      localStorage.setItem('installDismissed', 'true');
     });
 
-    // Hide install prompt if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      document.getElementById('installPrompt').style.display = 'none';
+    // Já está aberto em modo standalone (instalado)? Esconde o botão.
+    if (window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true) {
+      document.getElementById('btnInstall').style.display = 'none';
     }
 
     function refresh() {
@@ -2290,7 +2388,9 @@
     document.getElementById('btnSalvarConta').addEventListener('click', salvarConta);
     document.getElementById('btnCancelarConta').addEventListener('click', cancelarEdicaoConta);
     document.getElementById('contasList').addEventListener('click', onContaClick);
-    document.getElementById('btnBackup').addEventListener('click', exportarBackup);
+    document.getElementById('btnToggleAll').addEventListener('click', () => setAllAccordions(anyExpanded()));
+    document.getElementById('btnBackup').addEventListener('click', () => exportarBackup('csv'));
+    document.getElementById('btnBackupXml').addEventListener('click', () => exportarBackup('xml'));
 
     // Lembretes
     document.getElementById('lValor').addEventListener('input', (e) => { const c = centsOfEl(e.target); e.target.value = c ? formatCentavos(c) : ''; });

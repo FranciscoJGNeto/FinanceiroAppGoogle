@@ -31,7 +31,9 @@ na **sua** conta Google (nada de servidor de terceiros, nada de mensalidade).
 | **Visualizar** | Dashboard com gráficos: rosca por conta · evolução de 6 meses · barras por categoria |
 | **Planejar** | Orçamento por categoria (com sugestões e alerta de estouro) · projeção de parcelas · recorrentes |
 | **Dividir** | Acerto de contas de gastos compartilhados (quanto a outra pessoa te reembolsa) |
-| **Experiência** | Painéis em acordeão que lembram o estado · atualização automática · instalável na tela inicial (Android/iOS) |
+| **Importar** | Extrato **OFX** (padrão dos apps de banco — Nubank, Itaú, Bradesco, Inter, C6…) **ou CSV** · detecção automática do formato · dedup · auto-categorização |
+| **Backup** | Exportação para o Google Drive em **CSV** (Excel/Sheets) ou **XML** (estruturado) |
+| **Experiência** | Painéis em acordeão que lembram o estado (com **recolher/expandir tudo**) · atualização automática · atalho na tela inicial (Android/iOS) |
 
 > 💡 **Gasto compartilhado:** marque um lançamento como compartilhado e informe o **% que a outra
 > pessoa paga** — o app calcula o **reembolso** e o seu gasto real ajustado. Na importação de extrato,
@@ -39,8 +41,12 @@ na **sua** conta Google (nada de servidor de terceiros, nada de mensalidade).
 
 ## 📸 Telas
 
-> _(Adicione aqui prints do app — ex.: `docs/img/resumo.png`, `docs/img/dashboard.png`.
-> No celular: menu do navegador → "Adicionar à tela inicial" para virar um app.)_
+> _(Adicione aqui prints do app — ex.: `docs/img/resumo.png`, `docs/img/dashboard.png`.)_
+
+> 📱 **No celular:** toque em **📱** no topo do app para ver o passo a passo de
+> "Adicionar à tela inicial" (cria um ícone de acesso rápido). Observação: como o app
+> é servido dentro de um iframe do Apps Script, um PWA 100% instalável (offline/standalone)
+> não é possível pela URL `/exec` — o atalho na tela inicial é o caminho suportado.
 
 ## 🧠 Como funciona (arquitetura)
 
@@ -81,6 +87,7 @@ FinanceiroAppGoogle/
 └── docs/                  # documentação (não vai para a nuvem)
     ├── CHANGELOG.md               # histórico de versões
     ├── ANALISE_PROJETO.md         # o que é o projeto
+    ├── PLANO_ALTERACOES.md        # lote atual de mudanças (em ordem)
     ├── PLANO_FUNCIONALIDADES.md   # roadmap de recursos
     ├── PLANO_MELHORIA_CODIGO.md   # evolução de arquitetura
     ├── PLANO_MELHORIA_VISUAL.md   # evolução de UI/UX
@@ -113,9 +120,10 @@ Script **mockada** — ou seja, valida a lógica **sem tocar em nenhuma planilha
 node tests/run.js
 ```
 
-Cobre parsing de valores, mapeamento por cabeçalho, resumo, CRUD, categorias,
-evolução, orçamentos (com sugestões), projeção de parcelas, recorrentes e acerto
-de contas. Sai com código ≠ 0 se algo falhar (pronto para CI).
+São **68 checagens** cobrindo parsing de valores, mapeamento por cabeçalho, resumo,
+CRUD, categorias, evolução, orçamentos (com sugestões), projeção de parcelas,
+recorrentes, acerto de contas, importação (dedup/auto-categoria), lembretes e
+backup (CSV/XML). Sai com código ≠ 0 se algo falhar (pronto para CI).
 
 ## 🛠️ Stack
 
@@ -130,7 +138,7 @@ de contas. Sai com código ≠ 0 se algo falhar (pronto para CI).
 - ✅ **Onda 1** — editar/excluir, receitas, busca
 - ✅ **Onda 2** — categorias e dashboard com gráficos
 - ✅ **Onda 3** — orçamentos (com sugestões/alerta), projeção de parcelas, recorrentes (manual)
-- ✅ **Acerto de contas** · **contas dinâmicas** · **backup CSV** · **importar extrato** (auto-categoriza) · **lembretes de vencimento** (e-mail)
+- ✅ **Acerto de contas** · **contas dinâmicas** · **backup CSV/XML** · **importar extrato OFX/CSV** (auto-categoriza) · **lembretes de vencimento** (e-mail)
 - 🔮 **Futuro** — recorrentes automáticos (gatilho), metas de economia, relatórios anuais
 
 Detalhes e ideias em [docs/PLANO_FUNCIONALIDADES.md](docs/PLANO_FUNCIONALIDADES.md).

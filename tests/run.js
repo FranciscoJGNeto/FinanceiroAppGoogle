@@ -239,6 +239,23 @@ group('exportarBackup — CSV no Drive (com escaping)');
   ok(csv.indexOf('2026-07-03') !== -1, 'data formatada como yyyy-MM-dd');
 }
 
+group('exportarBackupXML — XML no Drive (com escaping)');
+{
+  const { api, driveFiles } = loadApp(baseTrans([
+    txRow({ id: '1', data: new Date(2026, 6, 3), conta: 'Inter', descricao: 'Café & Cia <loja>', natureza: 'Despesa', valor: 12.5 })
+  ]));
+  const res = api.exportarBackupXML();
+  ok(/^financeiro-backup-.*\.xml$/.test(res.nome), 'nome do arquivo no padrão financeiro-backup-*.xml');
+  eq(res.linhas, 1, 'contou 1 lançamento');
+  ok(driveFiles.length === 1 && driveFiles[0].mime === 'application/xml', 'criou 1 XML no Drive (mime application/xml)');
+  const xml = driveFiles[0].content;
+  ok(xml.indexOf('<?xml') === 0, 'começa com declaração XML');
+  ok(xml.indexOf('<transacao>') !== -1 && xml.indexOf('</financeiro>') !== -1, 'estrutura financeiro/transacao presente');
+  ok(xml.indexOf('Café &amp; Cia &lt;loja&gt;') !== -1, 'caracteres especiais escapados (& < >)');
+  ok(xml.indexOf('<Descricao>') !== -1, 'tag derivada do cabeçalho, sem acento (Descricao)');
+  ok(xml.indexOf('2026-07-03') !== -1, 'data formatada como yyyy-MM-dd');
+}
+
 group('importarTransacoes — lote e dedup');
 {
   const { api } = loadApp(baseTrans([
