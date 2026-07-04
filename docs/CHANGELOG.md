@@ -3,6 +3,12 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v39 — Bot do Telegram (Onda 7.8) — lançar por mensagem
+- **Lançar gasto por mensagem:** mande **"Mercado 85,90 Inter"** ao seu bot e vira lançamento. Painel **Config → 🤖 Bot do Telegram** (token, chat id, ativar/verificar agora).
+- **Mantém o app privado** (`MYSELF`): em vez de webhook público, um **gatilho consulta o Telegram a cada minuto** (só requisições de saída via `UrlFetchApp`). Segurança: só aceita mensagens do seu **chat id**.
+- Parser tolerante (valor BR/US, conta por nome cadastrado, `+`/palavra-chave = receita). Backend: `parseLancamentoMsg_`, `getConfigTelegram`/`setConfigTelegram`, `verificarTelegram`, `instalar/removerGatilhoTelegram` (config em `PropertiesService`).
+- Passo a passo em [GUIA_TELEGRAM.md](GUIA_TELEGRAM.md). Novo scope `UrlFetchApp` (autorizar 1×). Testes: **134 checagens**.
+
 ## v38 — Fix do cabeçalho no celular
 - Corrigido o **cabeçalho quebrando em duas linhas** no celular quando o botão **"Hoje"** aparecia. Agora os controles ficam em **uma linha só** (sem quebra), com compactação em telas estreitas (≤560px): subtítulo escondido, botões e o rótulo do mês menores; o título encolhe com reticências antes de cortar qualquer controle.
 

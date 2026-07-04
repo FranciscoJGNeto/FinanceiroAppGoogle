@@ -1436,6 +1436,122 @@ function statusGatilhoBackup() {
   return { ativo: ativo, freq: freq };
 }
 
+// ===================== Bot Telegram (por polling) =====================
+// Mantém o app privado (MYSELF): em vez de webhook, um gatilho consulta o
+// Telegram a cada minuto (só requisições de saída via UrlFetchApp).
+// Config guardada em PropertiesService: tgToken, tgChatId, tgOffset.
+
+// Interpreta "Mercado 85,90 Inter" → { descricao, valor, conta, natureza }.
+function parseLancamentoMsg_(text, contas) {
+  let raw = String(text || '').trim();
+  if (!raw) return { ok: false, erro: 'vazio' };
+  let natureza = 'Despesa';
+  if (/^\+/.test(raw)) { natureza = 'Receita'; raw = raw.replace(/^\+\s*/, ''); }
+  const tokens = raw.split(/\s+/);
+  const recWords = ['salario', 'receita', 'entrada', 'deposito', 'provento', 'sali'];
+  if (tokens.some(w => recWords.indexOf(norm_(w)) !== -1)) natureza = 'Receita';
+
+  let valor = 0, idxNum = -1;
+  for (let i = 0; i < tokens.length; i++) {
+    if (/^\(?-?\d[\d.,]*\)?$/.test(tokens[i])) {
+      const v = toNumBR_(tokens[i]);
+      if (v && Math.abs(v) > 0) { valor = Math.abs(v); idxNum = i; break; }
+    }
+  }
+  if (idxNum < 0) return { ok: false, erro: 'sem valor' };
+
+  const resto = tokens.filter((_, i) => i !== idxNum);
+  let conta = '';
+  const contasNorm = (contas || []).map(c => norm_(c));
+  for (let i = resto.length - 1; i >= 0; i--) {
+    const ix = contasNorm.indexOf(norm_(resto[i]));
+    if (ix >= 0) { conta = contas[ix]; resto.splice(i, 1); break; }
+  }
+  const descricao = resto.join(' ').trim() || 'Lançamento';
+  return { ok: true, descricao: descricao, valor: valor, conta: conta, natureza: natureza };
+}
+
+function enviarTelegram_(token, chatId, text) {
+  UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
+    method: 'post', muteHttpExceptions: true,
+    payload: { chat_id: String(chatId), text: text }
+  });
+}
+
+// Status/config do bot (não expõe o token inteiro).
+function getConfigTelegram() {
+  const props = PropertiesService.getScriptProperties();
+  const token = props.getProperty('tgToken') || '';
+  const ativo = ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'verificarTelegram');
+  return { configurado: !!token, tokenMasc: token ? ('••••' + token.slice(-4)) : '', chatId: props.getProperty('tgChatId') || '', ativo: ativo };
+}
+
+// Salva token (só se enviado) e chatId. Token vazio no formulário não apaga o atual.
+function setConfigTelegram(token, chatId) {
+  const props = PropertiesService.getScriptProperties();
+  token = String(token || '').trim();
+  chatId = String(chatId || '').trim();
+  if (token && token.indexOf(':') < 0) throw new Error('Token inválido (formato 123456:ABC...).');
+  if (token) props.setProperty('tgToken', token);
+  props.setProperty('tgChatId', chatId);
+  return { ok: true, message: 'Configuração do Telegram salva' };
+}
+
+// Rodado pelo gatilho (e pelo botão "Verificar agora"): lê novas mensagens e lança.
+function verificarTelegram() {
+  const props = PropertiesService.getScriptProperties();
+  const token = props.getProperty('tgToken');
+  if (!token) return { ok: false, erro: 'Bot não configurado.' };
+  const allowChat = props.getProperty('tgChatId') || '';
+  const offset = Number(props.getProperty('tgOffset') || 0);
+  const tz = Session.getScriptTimeZone();
+
+  const resp = UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/getUpdates?timeout=0&offset=' + offset, { muteHttpExceptions: true });
+  let data;
+  try { data = JSON.parse(resp.getContentText()); } catch (e) { return { ok: false, erro: 'resposta inválida' }; }
+  if (!data.ok) return { ok: false, erro: data.description || 'erro getUpdates' };
+  const updates = data.result || [];
+
+  const contas = getContas().map(c => c.conta);
+  let maxId = offset - 1;
+  let importadas = 0;
+  updates.forEach(u => {
+    if (u.update_id > maxId) maxId = u.update_id;
+    const msg = u.message || u.edited_message;
+    if (!msg || !msg.text) return;
+    const chatId = msg.chat && msg.chat.id;
+    const text = String(msg.text).trim();
+
+    if (/^\/(start|id|ajuda|help)/i.test(text)) {
+      enviarTelegram_(token, chatId, 'Seu chat id é: ' + chatId + '\nConfigure-o no app (Config → Telegram) e envie, por ex.:\n"Mercado 85,90 Inter"  ou  "+Salário 3000 Inter".');
+      return;
+    }
+    if (!allowChat) { enviarTelegram_(token, chatId, '⚠️ Configure seu chat id no app antes de lançar. Envie /id para vê-lo.'); return; }
+    if (String(chatId) !== String(allowChat)) return;
+
+    const r = parseLancamentoMsg_(text, contas);
+    if (!r.ok) { enviarTelegram_(token, chatId, '❓ Não entendi. Envie: descrição valor [conta].\nEx.: "Mercado 85,90 Inter".'); return; }
+    addTransacao({ data: Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd'), conta: r.conta, descricao: r.descricao, valor: r.valor, natureza: r.natureza, meio: 'Conta', tipo: 'Único' });
+    importadas++;
+    enviarTelegram_(token, chatId, (r.natureza === 'Receita' ? '🟢' : '🔴') + ' Registrado: ' + r.descricao + ' — R$ ' + r.valor.toFixed(2) + (r.conta ? ' (' + r.conta + ')' : ''));
+  });
+
+  if (updates.length) props.setProperty('tgOffset', String(maxId + 1));
+  return { ok: true, processadas: updates.length, importadas: importadas };
+}
+
+function instalarGatilhoTelegram() {
+  removerGatilhoTelegram();
+  ScriptApp.newTrigger('verificarTelegram').timeBased().everyMinutes(1).create();
+  return { ok: true, ativo: true };
+}
+function removerGatilhoTelegram() {
+  ScriptApp.getProjectTriggers().forEach(t => {
+    if (t.getHandlerFunction() === 'verificarTelegram') ScriptApp.deleteTrigger(t);
+  });
+  return { ok: true, ativo: false };
+}
+
 // Importa uma lista de transações (ex.: extrato), em lote, evitando duplicar
 // (chave: data + descrição + valor). Retorna quantas importou/ignorou.
 function importarTransacoes(lista) {

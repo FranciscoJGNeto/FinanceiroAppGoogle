@@ -35,6 +35,7 @@ na **sua** conta Google (nada de servidor de terceiros, nada de mensalidade).
 | **Lembretes** | Contas com vencimento → **e-mail** automático alguns dias antes (gatilho diário) |
 | **Dividir** | Acerto de contas de gastos compartilhados (quanto a outra pessoa te reembolsa) |
 | **Importar** | Extrato **OFX** (padrão dos apps de banco — Nubank, Itaú, Bradesco, Inter, C6…), **QIF** ou **CSV** (inclui colunas Débito/Crédito por banco) · detecção automática · dedup · auto-categorização |
+| **Telegram** | **Lançar por mensagem** ao seu bot (ex.: "Mercado 85,90 Inter") — mantém o app privado (polling, sem webhook público) |
 | **Backup** | Exportação para o Google Drive em **CSV** (Excel/Sheets) ou **XML** (estruturado) |
 | **Experiência** | **App com telas** — navegação por barra inferior (celular) / menu lateral (desktop), sem recarregar · **tema escuro neumórfico** · troca de mês no cabeçalho com botão **"Hoje"** · atalho na tela inicial (Android/iOS) |
 
@@ -100,6 +101,7 @@ FinanceiroAppGoogle/
     ├── CHANGELOG.md               # histórico de versões
     ├── ANALISE_PROJETO.md         # o que é o projeto
     ├── GUIA_CLASP.md              # como publicar com clasp
+    ├── GUIA_TELEGRAM.md           # como configurar o bot do Telegram
     ├── planos/                    # roadmap e melhorias do produto/código
     │   ├── PLANO_FUNCIONALIDADES.md   # roadmap de recursos (Ondas 1–7)
     │   ├── PLANO_ALTERACOES.md        # último lote de mudanças (em ordem)
@@ -161,7 +163,7 @@ código ≠ 0 se algo falhar (pronto para CI).
 - ✅ **Onda 3** — orçamentos (com sugestões/alerta), projeção de parcelas, recorrentes
 - ✅ **Onda 4–5** — acerto de contas · contas dinâmicas · backup CSV/XML · importar OFX/CSV · lembretes (e-mail)
 - ✅ **Onda 6** — instalar na tela inicial · **app com telas (navegação)** · **tema escuro neumórfico** · troca de mês com botão "Hoje"
-- 🔄 **Onda 7 (em andamento)** — ✅ recorrentes automáticos · ✅ metas de economia · ✅ relatório anual · ✅ fatura de cartão · ✅ regra 50/30/20 · ✅ importar QIF/CSV por banco · ✅ backup agendado · ⏳ bot Telegram
+- ✅ **Onda 7 (completa)** — recorrentes automáticos · metas de economia · relatório anual · fatura de cartão · regra 50/30/20 · importar QIF/CSV por banco · backup agendado · **bot do Telegram** (lançar por mensagem)
 - 🧭 **Arquitetura** — caminhos para PWA instalável de verdade, multiusuário e offline em [docs/arquitetura/](docs/arquitetura/)
 
 Roadmap detalhado (com a versão de cada entrega) em [docs/planos/PLANO_FUNCIONALIDADES.md](docs/planos/PLANO_FUNCIONALIDADES.md).

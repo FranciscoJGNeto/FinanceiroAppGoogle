@@ -638,6 +638,55 @@
       else runner.instalarGatilhoBackup(freq);
     }
 
+    // ---- Bot do Telegram ----
+    function carregarTelegram() {
+      google.script.run
+        .withSuccessHandler(atualizarTelegram)
+        .withFailureHandler(() => { /* silencioso */ })
+        .getConfigTelegram();
+    }
+    function atualizarTelegram(cfg) {
+      const btn = document.getElementById('btnToggleTelegram');
+      const st = document.getElementById('telegramStatus');
+      const ativo = cfg && cfg.ativo;
+      btn.textContent = ativo ? '🚫 Desativar automático' : '⏰ Ativar automático';
+      if (cfg && cfg.chatId) document.getElementById('tgChatId').value = cfg.chatId;
+      if (!cfg || !cfg.configurado) {
+        st.innerHTML = '⚪ Bot não configurado — cole o token acima e salve.';
+      } else {
+        st.innerHTML = `🔑 Token ${escapeHtml(cfg.tokenMasc)} · 💬 chat ${cfg.chatId ? escapeHtml(cfg.chatId) : '<b>não definido</b>'} · `
+          + (ativo ? '✅ automático <b>ativo</b> (checa a cada 1 min)' : '⚪ automático desativado');
+      }
+    }
+    function salvarTelegram() {
+      const token = document.getElementById('tgToken').value.trim();
+      const chatId = document.getElementById('tgChatId').value.trim();
+      setMsg('msgTelegram', '⏳ Salvando...', 'ok');
+      google.script.run
+        .withSuccessHandler(() => { setMsg('msgTelegram', '✅ Configuração salva!', 'ok'); document.getElementById('tgToken').value = ''; carregarTelegram(); })
+        .withFailureHandler(err => setMsg('msgTelegram', '❌ ' + (err?.message || err), 'err'))
+        .setConfigTelegram(token, chatId);
+    }
+    function toggleTelegram() {
+      const btn = document.getElementById('btnToggleTelegram');
+      const ativoAgora = btn.textContent.indexOf('Desativar') !== -1;
+      btn.disabled = true;
+      google.script.run
+        .withSuccessHandler(() => { btn.disabled = false; carregarTelegram(); setMsg('msgTelegram', ativoAgora ? '🚫 Automático desativado.' : '✅ Automático ativado! Mande uma mensagem ao bot.', 'ok'); })
+        .withFailureHandler(err => { btn.disabled = false; setMsg('msgTelegram', '❌ ' + (err?.message || err), 'err'); })
+      [ativoAgora ? 'removerGatilhoTelegram' : 'instalarGatilhoTelegram']();
+    }
+    function verificarTelegramAgora() {
+      setMsg('msgTelegram', '⏳ Consultando o Telegram...', 'ok');
+      google.script.run
+        .withSuccessHandler(res => {
+          if (res && res.ok) { setMsg('msgTelegram', `✅ ${res.processadas} mensagem(ns) · ${res.importadas} lançada(s).`, 'ok'); if (res.importadas) refresh(); }
+          else setMsg('msgTelegram', '❌ ' + ((res && res.erro) || 'erro'), 'err');
+        })
+        .withFailureHandler(err => setMsg('msgTelegram', '❌ ' + (err?.message || err), 'err'))
+        .verificarTelegram();
+    }
+
     // ---- Contas (dinâmicas) ----
     function carregarContas() {
       google.script.run
@@ -1686,6 +1735,9 @@
     document.getElementById('btnBackup').addEventListener('click', () => exportarBackup('csv'));
     document.getElementById('btnBackupXml').addEventListener('click', () => exportarBackup('xml'));
     document.getElementById('btnToggleBackup').addEventListener('click', toggleBackup);
+    document.getElementById('btnSalvarTelegram').addEventListener('click', salvarTelegram);
+    document.getElementById('btnToggleTelegram').addEventListener('click', toggleTelegram);
+    document.getElementById('btnVerificarTelegram').addEventListener('click', verificarTelegramAgora);
 
     // Lembretes
     document.getElementById('lValor').addEventListener('input', (e) => { const c = centsOfEl(e.target); e.target.value = c ? formatCentavos(c) : ''; });
@@ -1714,6 +1766,7 @@
     carregarLembretes();
     carregarStatusGatilhoRec();
     carregarStatusBackup();
+    carregarTelegram();
     carregarRelatorio();
     initAccordions();
 

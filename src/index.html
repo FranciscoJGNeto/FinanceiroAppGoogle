@@ -295,6 +295,34 @@
       </div>
     </section>
 
+    <!-- Bot do Telegram -->
+    <section class="panel acc collapsed" data-acc="telegram" data-view="config">
+      <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="false" aria-controls="bodyTelegram">
+        <h2>🤖 Bot do Telegram</h2>
+        <div class="right">
+          <span class="chevron" aria-hidden="true">▾</span>
+        </div>
+      </div>
+      <div class="panelBody" id="bodyTelegram">
+        <div class="hint" style="margin-bottom:10px;">Lance gastos por mensagem — ex.: <b>"Mercado 85,90 Inter"</b> (ou <b>"+Salário 3000 Inter"</b> para receita). Crie um bot no <b>@BotFather</b>, cole o <b>token</b> aqui, mande <b>/id</b> ao bot para descobrir seu <b>chat id</b> e ative. O app continua privado — um gatilho consulta o Telegram a cada minuto.</div>
+        <div style="margin-bottom:10px;">
+          <label for="tgToken">🔑 Token do bot</label>
+          <input class="field" type="password" id="tgToken" autocomplete="off" placeholder="123456:ABC... (deixe em branco para manter o atual)" />
+        </div>
+        <div style="margin-bottom:10px;">
+          <label for="tgChatId">💬 Seu chat id</label>
+          <input class="field" type="text" id="tgChatId" inputmode="numeric" autocomplete="off" placeholder="Ex.: 123456789 — envie /id ao bot" />
+        </div>
+        <button class="btn" id="btnSalvarTelegram">💾 Salvar configuração</button>
+        <div class="msg" id="msgTelegram"></div>
+        <div id="telegramStatus" class="hint" style="margin-top:12px;">—</div>
+        <div style="display:flex; gap:10px; margin-top:8px;">
+          <button class="btnGhost" id="btnToggleTelegram" style="flex:1;">⏰ Ativar automático</button>
+          <button class="btnGhost" id="btnVerificarTelegram">🔄 Verificar agora</button>
+        </div>
+      </div>
+    </section>
+
     <!-- Importar extrato -->
     <section class="panel acc collapsed" data-acc="importar" data-view="config">
       <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="false" aria-controls="bodyImportar">

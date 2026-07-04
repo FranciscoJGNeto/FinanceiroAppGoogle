@@ -64,6 +64,7 @@ function loadApp(sheetsSpec) {
   const ss = new Spreadsheet(sheets);
   const driveFiles = [];
   const emails = [];
+  const tg = { updates: [], sent: [] }; // mock do Telegram (getUpdates/sendMessage)
 
   const mesesPt = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
   const pad = n => String(n).padStart(2, '0');
@@ -85,11 +86,12 @@ function loadApp(sheetsSpec) {
     ScriptApp: {
       _triggers: [],
       WeekDay: { MONDAY: 'MONDAY' },
-      newTrigger: (fn) => { const t = { fn, timeBased: () => t, everyDays: () => t, everyWeeks: () => t, onWeekDay: () => t, onMonthDay: () => t, atHour: () => t, create: () => { ctx.ScriptApp._triggers.push({ getHandlerFunction: () => fn, _id: Math.random() }); } }; return t; },
+      newTrigger: (fn) => { const t = { fn, timeBased: () => t, everyDays: () => t, everyWeeks: () => t, everyMinutes: () => t, onWeekDay: () => t, onMonthDay: () => t, atHour: () => t, create: () => { ctx.ScriptApp._triggers.push({ getHandlerFunction: () => fn, _id: Math.random() }); } }; return t; },
       getProjectTriggers: () => ctx.ScriptApp._triggers,
       deleteTrigger: (t) => { ctx.ScriptApp._triggers = ctx.ScriptApp._triggers.filter(x => x !== t); }
     },
     PropertiesService: (() => { const store = {}; const api = { getProperty: (k) => (k in store ? store[k] : null), setProperty: (k, v) => { store[k] = String(v); return api; }, deleteProperty: (k) => { delete store[k]; return api; } }; return { getScriptProperties: () => api }; })(),
+    UrlFetchApp: { fetch: (url, params) => { let body; if (/getUpdates/.test(url)) body = { ok: true, result: tg.updates }; else if (/sendMessage/.test(url)) { tg.sent.push((params && params.payload) || {}); body = { ok: true }; } else body = { ok: true }; return { getContentText: () => JSON.stringify(body) }; } },
     ContentService: { MimeType: { JSON: 'JSON' }, createTextOutput: () => ({ setMimeType() { return this; } }) },
     HtmlService: {},
     console, Date, Math, JSON, String, Number, Array, Object, RegExp, parseFloat, parseInt, isNaN
@@ -107,10 +109,12 @@ function loadApp(sheetsSpec) {
     'getRegra503020', 'getClassificacao', 'setClasseCategoria',
     'getContas', 'setConta', 'deleteConta', 'getFaturaCartao', 'exportarBackup', 'exportarBackupXML', 'importarTransacoes',
     'backupAgendado', 'instalarGatilhoBackup', 'removerGatilhoBackup', 'statusGatilhoBackup',
+    'parseLancamentoMsg_', 'getConfigTelegram', 'setConfigTelegram', 'verificarTelegram',
+    'instalarGatilhoTelegram', 'removerGatilhoTelegram',
     'getLembretes', 'setLembrete', 'deleteLembrete', 'getLembretesProximos', 'verificarLembretes',
     'instalarGatilhoLembretes', 'removerGatilhoLembretes', 'statusGatilhoLembretes', 'migrarEstrutura'];
   const api = vm.runInContext('({' + nomes.join(',') + '})', ctx);
-  return { api, ss, sheets, driveFiles, emails };
+  return { api, ss, sheets, driveFiles, emails, tg };
 }
 
 // Cabeçalho padrão da aba Transacoes (ordem canônica).

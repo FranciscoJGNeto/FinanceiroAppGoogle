@@ -1,6 +1,6 @@
 # Plano de Funcionalidades — Soluções para um App de Finanças Pessoais
 
-> **Status (jul/2026, v27):** ✅ Ondas 1–6 concluídas + Onda 7 em andamento (7.1 e 7.2 prontas).
+> **Status (jul/2026, v39):** ✅ Ondas 1–7 **concluídas** (7.1–7.8 entregues).
 > Cada item concluído abaixo traz a **versão** entre parênteses — ex.: `✅ (v6)`. Essa versão é a
 > seção correspondente no **[CHANGELOG.md](../CHANGELOG.md)** (organizado por `## vNN`), onde está
 > descrito o que mudou. Itens pendentes trazem o número do item da **Onda 7** (ex.: `⏳ (7.4)`).
@@ -65,8 +65,8 @@ Agrupar lançamentos de "Cartão" por ciclo de fechamento/vencimento, mostrando 
 
 ## Nível 4 — Entrada de dados sem fricção
 
-### 4.1 Lançamento rápido por Telegram/WhatsApp bot ⏳ (7.8)
-Bot que recebe "Mercado 85,90 Inter" e grava na planilha via webhook (GAS `doPost`). Lançar gasto na hora, sem abrir o app. — **Pendente** (Onda 7.8).
+### 4.1 Lançamento rápido por Telegram/WhatsApp bot ✅ (v39)
+Bot que recebe "Mercado 85,90 Inter" e grava. — **Feito na v39** (Onda 7.8), por polling (mantém o app privado). Ver [GUIA_TELEGRAM.md](../GUIA_TELEGRAM.md).
 
 ### 4.2 Importar extrato bancário (CSV/OFX) ✅ (v21 CSV; v24 OFX)
 Upload do extrato do Inter/Itaú → parse → conciliação com o que já foi lançado (evita duplicar). — **v21** importar CSV (dedup); **v24** importar OFX (padrão dos apps de banco) + auto-categorização. Mais formatos (QIF/por banco) em **7.6**.
@@ -99,7 +99,7 @@ Só se houver gastos em outra moeda (ex.: assinaturas em USD). Provavelmente des
 | 4 | Compartilhado & lembretes | 3.2 acerto de contas, 2.4 lembretes | ✅ |
 | 5 | Fricção zero | 4.2 importar extrato (OFX/CSV), 5.1 backup (CSV/XML) | ✅ |
 | 6 | Mobile & UX | instalar na tela inicial (v24), recolher/expandir tudo (v24) | ✅ |
-| **7** | **Próximos passos** | 7.1 recorrentes auto (v26) ✅ · 7.2 metas (v27) ✅ · 7.3 relatório anual (v28) ✅ · 7.4 fatura de cartão (v29) ✅ · 7.5 regra 50/30/20 (v32) ✅ · 7.6 QIF/CSV por banco (v35) ✅ · 7.7 backup agendado (v37) ✅ · 7.8 bot Telegram → em seguida | ⏳ |
+| **7** | **Próximos passos** | 7.1 recorrentes auto (v26) ✅ · 7.2 metas (v27) ✅ · 7.3 relatório anual (v28) ✅ · 7.4 fatura de cartão (v29) ✅ · 7.5 regra 50/30/20 (v32) ✅ · 7.6 QIF/CSV por banco (v35) ✅ · 7.7 backup agendado (v37) ✅ · 7.8 bot Telegram (v39) ✅ | ✅ |
 
 ## Onda 7 — próximos passos (em ordem de execução)
 
@@ -143,9 +143,10 @@ ou **Débito/Crédito** separados), com detecção automática. Reaproveita pré
 Ativar/desativar + escolher a frequência no painel Backup; a frequência fica em
 `PropertiesService`. **Próximo da fila: 7.8 Bot Telegram (lançar por mensagem).**
 
-### 7.8 Lançamento rápido por bot (Telegram) ⭐⭐⭐ 🔨🔨🔨
-Bot que recebe "Mercado 85,90 Inter" e grava via `doPost` (webhook). Fricção zero para
-lançar na hora. É o item que mais melhora o uso no dia a dia sem abrir o app.
+### 7.8 Lançamento rápido por bot (Telegram) ✅ (v39)
+**Feito.** Bot que recebe "Mercado 85,90 Inter" e grava o lançamento. Para manter o app
+privado (`MYSELF`), usa **polling** (gatilho a cada minuto via `UrlFetchApp`) em vez de
+webhook público. Guia em [GUIA_TELEGRAM.md](../GUIA_TELEGRAM.md). **Onda 7 concluída! 🎉**
 
 > **Ordem recomendada:** 7.1 → 7.2 → 7.3 (mais valor/menor risco), depois 7.4–7.8
 > conforme necessidade. Itens que exigem **multiusuário/auth de verdade** ou **PWA

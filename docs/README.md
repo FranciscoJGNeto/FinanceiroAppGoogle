@@ -10,6 +10,7 @@ guia de uso geral no [README principal](../README.md).
 | [ANALISE_PROJETO.md](ANALISE_PROJETO.md) | O que o projeto é, objetivo e visão geral. |
 | [CHANGELOG.md](CHANGELOG.md) | Histórico de versões publicadas (v4 → atual). |
 | [GUIA_CLASP.md](GUIA_CLASP.md) | Como publicar/atualizar com o `clasp`. |
+| [GUIA_TELEGRAM.md](GUIA_TELEGRAM.md) | Como configurar o bot do Telegram (lançar por mensagem). |
 
 ## Planos — produto e código ([`planos/`](planos))
 

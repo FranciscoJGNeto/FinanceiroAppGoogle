@@ -280,6 +280,46 @@ group('backup agendado — gatilho (instalar/status/remover) + execução');
   eq([api.statusGatilhoBackup().ativo, api.statusGatilhoBackup().freq], [false, ''], 'status volta a inativo e limpa frequência');
 }
 
+group('bot Telegram — parser de mensagem');
+{
+  const { api } = loadApp(baseTrans([]));
+  const contas = ['Inter', 'Itaú', 'Nubank'];
+  const a = api.parseLancamentoMsg_('Mercado 85,90 Inter', contas);
+  eq([a.ok, a.descricao, a.valor, a.conta, a.natureza], [true, 'Mercado', 85.9, 'Inter', 'Despesa'], 'despesa com conta');
+  const b = api.parseLancamentoMsg_('Uber 25', contas);
+  eq([b.descricao, b.valor, b.conta, b.natureza], ['Uber', 25, '', 'Despesa'], 'despesa sem conta');
+  const c = api.parseLancamentoMsg_('+Salario 3000 Inter', contas);
+  eq([c.valor, c.conta, c.natureza], [3000, 'Inter', 'Receita'], 'receita por "+"');
+  const d = api.parseLancamentoMsg_('Padaria sem valor', contas);
+  eq(d.ok, false, 'sem número → inválido');
+}
+
+group('bot Telegram — polling (getUpdates → lança + responde)');
+{
+  const { api, tg } = loadApp({ Transacoes: [HEADER.slice()], Saldos: [['Conta', 'Saldo'], ['Inter', 0]] });
+  api.setConfigTelegram('123456:ABC-token', '999');
+  const cfg = api.getConfigTelegram();
+  eq([cfg.configurado, cfg.chatId], [true, '999'], 'config salva (chatId)');
+  ok(cfg.tokenMasc.indexOf('oken') !== -1 && cfg.tokenMasc.indexOf('123456') === -1, 'token mascarado');
+  // 1 mensagem válida do chat autorizado + 1 de outro chat (ignorada)
+  tg.updates = [
+    { update_id: 10, message: { chat: { id: 999 }, text: 'Mercado 50 Inter' } },
+    { update_id: 11, message: { chat: { id: 111 }, text: 'Hacker 999' } }
+  ];
+  const r = api.verificarTelegram();
+  eq([r.ok, r.processadas, r.importadas], [true, 2, 1], 'processa 2, lança 1 (só do chat autorizado)');
+  const jul = api.listTransacoes(new Date().toISOString().slice(0, 7) + '-01');
+  ok(jul.some(x => x.descricao === 'Mercado' && x.valor === 50), 'transação criada pelo bot');
+  ok(tg.sent.some(m => /Registrado/.test(m.text)), 'respondeu confirmando');
+  // offset avança → getUpdates seguinte sem as mesmas mensagens não relança
+  tg.updates = [];
+  const r2 = api.verificarTelegram();
+  eq(r2.importadas, 0, 'sem novas mensagens, nada é relançado');
+  eq(api.instalarGatilhoTelegram().ativo, true, 'instala gatilho de 1 min');
+  eq(api.getConfigTelegram().ativo, true, 'status reflete gatilho ativo');
+  eq(api.removerGatilhoTelegram().ativo, false, 'remove gatilho');
+}
+
 group('getCompartilhados — por serviço (legado) e reembolso');
 {
   const { api } = loadApp({
