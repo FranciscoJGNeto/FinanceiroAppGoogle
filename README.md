@@ -29,7 +29,9 @@ na **sua** conta Google (nada de servidor de terceiros, nada de mensalidade).
 | **Gerenciar** | Editar e excluir qualquer lançamento · busca/filtro instantâneo · **contas dinâmicas** (crie/edite as suas) |
 | **Entender** | Resumo do mês (totais por conta, gasto compartilhado, reembolso, previsão de saldo, % do salário) |
 | **Visualizar** | Dashboard com gráficos: rosca por conta · evolução de 6 meses · barras por categoria |
-| **Planejar** | Orçamento por categoria (com sugestões e alerta de estouro) · projeção de parcelas · recorrentes |
+| **Planejar** | Orçamento por categoria (com sugestões e alerta de estouro) · projeção de parcelas · **recorrentes automáticos** (gatilho mensal) |
+| **Metas** | Metas de economia **mensais** ("guardar R$ X/mês") e **totais** ("juntar R$ Y até um prazo") com barra de progresso |
+| **Lembretes** | Contas com vencimento → **e-mail** automático alguns dias antes (gatilho diário) |
 | **Dividir** | Acerto de contas de gastos compartilhados (quanto a outra pessoa te reembolsa) |
 | **Importar** | Extrato **OFX** (padrão dos apps de banco — Nubank, Itaú, Bradesco, Inter, C6…) **ou CSV** · detecção automática do formato · dedup · auto-categorização |
 | **Backup** | Exportação para o Google Drive em **CSV** (Excel/Sheets) ou **XML** (estruturado) |
@@ -146,11 +148,13 @@ backup (CSV/XML). Sai com código ≠ 0 se algo falhar (pronto para CI).
 
 - ✅ **Onda 1** — editar/excluir, receitas, busca
 - ✅ **Onda 2** — categorias e dashboard com gráficos
-- ✅ **Onda 3** — orçamentos (com sugestões/alerta), projeção de parcelas, recorrentes (manual)
-- ✅ **Acerto de contas** · **contas dinâmicas** · **backup CSV/XML** · **importar extrato OFX/CSV** (auto-categoriza) · **lembretes de vencimento** (e-mail)
-- 🔮 **Futuro** — recorrentes automáticos (gatilho), metas de economia, relatórios anuais
+- ✅ **Onda 3** — orçamentos (com sugestões/alerta), projeção de parcelas, recorrentes
+- ✅ **Onda 4–5** — acerto de contas · contas dinâmicas · backup CSV/XML · importar OFX/CSV · lembretes (e-mail)
+- ✅ **Onda 6** — instalar na tela inicial · recolher/expandir tudo
+- 🔄 **Onda 7 (em andamento)** — ✅ recorrentes automáticos · ✅ metas de economia · ⏳ relatório anual · fatura de cartão · 50/30/20 · QIF/CSV por banco · backup agendado · bot Telegram
+- 🧭 **Arquitetura** — caminhos para PWA instalável de verdade, multiusuário e offline em [docs/arquitetura/](docs/arquitetura/)
 
-Detalhes e ideias em [docs/planos/PLANO_FUNCIONALIDADES.md](docs/planos/PLANO_FUNCIONALIDADES.md).
+Roadmap detalhado (com a versão de cada entrega) em [docs/planos/PLANO_FUNCIONALIDADES.md](docs/planos/PLANO_FUNCIONALIDADES.md).
 Histórico do que já foi entregue em [docs/CHANGELOG.md](docs/CHANGELOG.md).
 
 ## 📄 Licença / uso
