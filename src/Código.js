@@ -5,6 +5,7 @@ const SHEET_CONF = 'Config';
 const SHEET_SALD = 'Saldos';
 const SHEET_ORC = 'Orcamentos';
 const SHEET_LEMB = 'Lembretes';
+const SHEET_META = 'Metas';
 
 // Colunas canônicas da aba Transacoes (ordem usada ao criar/completar o cabeçalho).
 const TRANS_COLS = ['ID', 'Data', 'Conta', 'Meio', 'Descrição', 'Tipo', 'Natureza', 'Categoria',
@@ -902,6 +903,137 @@ function deleteOrcamento(categoria) {
   return { ok: true, message: 'Orçamento removido' };
 }
 
+// ===================== Metas de economia =====================
+// Aba Metas: A=ID, B=Descrição, C=Tipo(mensal|total), D=Alvo, E=Prazo(yyyy-MM), F=CriadoEm
+
+// Soma a "economia" (receitas − despesas) por mês (ym) a partir das transações.
+function netPorMes_() {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEET_TRANS);
+  const net = {};
+  if (!sh || sh.getLastRow() < 2) return net;
+  const vals = sh.getDataRange().getValues();
+  const map = colMapTrans_(vals[0].map(norm_));
+  const col = (r, f) => (map[f] != null ? r[map[f]] : '');
+  for (let i = 1; i < vals.length; i++) {
+    const ym = toYM_(col(vals[i], 'data'));
+    if (ym == null) continue;
+    const v = Number(col(vals[i], 'valor')) || 0;
+    const rec = norm_(col(vals[i], 'natureza')) === 'receita';
+    net[ym] = (net[ym] || 0) + (rec ? v : -v);
+  }
+  return net;
+}
+
+// Lista as metas com o progresso já calculado para o mês de referência.
+// - mensal: economia (receitas − despesas) do mês alvo vs. alvo.
+// - total: economia acumulada desde a criação até o mês alvo vs. alvo (+ meses restantes).
+function getMetas(mesISO) {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEET_META);
+  if (!sh || sh.getLastRow() < 2) return [];
+
+  const d = mesISO ? parseLocalDate_(mesISO) : new Date();
+  const ymTarget = d.getFullYear() * 100 + (d.getMonth() + 1);
+  const net = netPorMes_();
+
+  return sh.getDataRange().getValues().slice(1)
+    .filter(r => String(r[0]).trim())
+    .map(r => {
+      const id = String(r[0]);
+      const descricao = String(r[1] || '');
+      const tipo = norm_(r[2]) === 'total' ? 'total' : 'mensal';
+      const alvo = Number(r[3]) || 0;
+      const prazo = r[4] ? String(r[4]).slice(0, 7) : '';
+      const criadoEm = r[5];
+
+      let progresso = 0;
+      let mesesRestantes = null;
+      if (tipo === 'mensal') {
+        progresso = net[ymTarget] || 0;
+      } else {
+        const dc = criadoEm instanceof Date ? criadoEm : (criadoEm ? new Date(criadoEm) : null);
+        const ymCriado = dc && !isNaN(dc) ? dc.getFullYear() * 100 + (dc.getMonth() + 1) : null;
+        let acc = 0;
+        Object.keys(net).forEach(k => {
+          const ym = Number(k);
+          if (ymCriado != null && ym < ymCriado) return;
+          if (ym > ymTarget) return;
+          acc += net[k];
+        });
+        progresso = acc;
+        if (prazo) {
+          const p = prazo.split('-').map(Number);
+          const ymPrazo = p[0] * 100 + p[1];
+          mesesRestantes = (Math.floor(ymPrazo / 100) - Math.floor(ymTarget / 100)) * 12
+            + ((ymPrazo % 100) - (ymTarget % 100));
+          if (mesesRestantes < 0) mesesRestantes = 0;
+        }
+      }
+      const pct = alvo > 0 ? Math.round((progresso / alvo) * 100) : 0;
+      return { id: id, descricao: descricao, tipo: tipo, alvo: round2_(alvo), prazo: prazo,
+        progresso: round2_(progresso), pct: pct, mesesRestantes: mesesRestantes };
+    });
+}
+
+// Cria/atualiza uma meta (upsert por ID; preserva CriadoEm ao editar).
+function setMeta(meta) {
+  meta = meta || {};
+  const descricao = String(meta.descricao || '').trim();
+  if (!descricao) throw new Error('Informe a descrição da meta.');
+  const tipo = norm_(meta.tipo) === 'total' ? 'total' : 'mensal';
+  const alvo = toNumBR_(meta.alvo);
+  if (!(alvo > 0)) throw new Error('Informe um valor-alvo maior que zero.');
+  const prazo = (tipo === 'total' && meta.prazo) ? String(meta.prazo).slice(0, 7) : '';
+
+  const ss = SpreadsheetApp.getActive();
+  let sh = ss.getSheetByName(SHEET_META);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_META);
+    sh.getRange('A1:F1').setValues([['ID', 'Descrição', 'Tipo', 'Alvo', 'Prazo', 'CriadoEm']]);
+    sh.getRange('A1:F1').setFontWeight('bold');
+  }
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const id = String(meta.id || '').trim();
+    const last = sh.getLastRow();
+    let row = -1;
+    if (id && last > 1) {
+      const ids = sh.getRange(2, 1, last - 1, 1).getValues();
+      for (let i = 0; i < ids.length; i++) { if (String(ids[i][0]) === id) { row = i + 2; break; } }
+    }
+    if (row === -1) {
+      const novoId = id || Utilities.getUuid();
+      sh.appendRow([novoId, descricao, tipo, alvo, prazo, new Date()]);
+      return { ok: true, id: novoId, message: 'Meta criada' };
+    }
+    const criado = sh.getRange(row, 6).getValue() || new Date();
+    sh.getRange(row, 1, 1, 6).setValues([[id, descricao, tipo, alvo, prazo, criado]]);
+    return { ok: true, id: id, message: 'Meta atualizada' };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// Remove uma meta por ID.
+function deleteMeta(id) {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEET_META);
+  if (!sh || sh.getLastRow() < 2) return { ok: true };
+  id = String(id || '');
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const ids = sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues();
+    for (let i = 0; i < ids.length; i++) { if (String(ids[i][0]) === id) { sh.deleteRow(i + 2); break; } }
+  } finally {
+    lock.releaseLock();
+  }
+  return { ok: true, message: 'Meta removida' };
+}
+
 // ===================== Lembretes de vencimento =====================
 // Aba Lembretes: A=Descrição, B=Dia(1-31), C=Valor, D=Antecedencia(dias), E=Ativo, F=UltimoAviso(yyyy-MM)
 
@@ -1369,6 +1501,14 @@ function criarEstruturaPlanilha() {
     shL = ss.insertSheet(SHEET_LEMB);
     shL.getRange('A1:F1').setValues([['Descrição', 'Dia', 'Valor', 'Antecedencia', 'Ativo', 'UltimoAviso']]);
     shL.getRange('A1:F1').setFontWeight('bold');
+  }
+
+  // Aba Metas
+  let shM = ss.getSheetByName(SHEET_META);
+  if (!shM) {
+    shM = ss.insertSheet(SHEET_META);
+    shM.getRange('A1:F1').setValues([['ID', 'Descrição', 'Tipo', 'Alvo', 'Prazo', 'CriadoEm']]);
+    shM.getRange('A1:F1').setFontWeight('bold');
   }
 
   return 'Estrutura da planilha criada/atualizada com sucesso!';

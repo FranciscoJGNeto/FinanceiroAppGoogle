@@ -3,6 +3,14 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v27 — Metas de economia (Onda 7.2)
+- Novo painel **🏆 Metas de economia**: defina quanto quer guardar (economia = **receitas − despesas**).
+  - **Meta mensal:** guardar R$ X por mês; progresso = economia do mês atual.
+  - **Meta total:** juntar R$ Y até um **prazo** (mês); progresso = economia **acumulada desde a criação** + **meses restantes**.
+- Barra de progresso colorida (azul → verde ao bater 100%, vermelho se a economia ficou negativa) e 🏆 ao atingir a meta. Criar/editar/remover.
+- Backend: nova aba `Metas` + `getMetas`/`setMeta`/`deleteMeta` (helper `netPorMes_`).
+- Testes: **87 checagens** (progresso mensal e total + meses restantes + CRUD).
+
 ## v26 — Recorrentes automáticos (Onda 7.1)
 - No painel **Transações**, botão **⏰ Gerar automático**: cria um **gatilho mensal** (dia 1º, ~06h) que roda `gerarRecorrentes` no mês atual — sem precisar clicar todo mês. Idempotente (não duplica). Status mostrado abaixo do botão; dá para desativar a qualquer momento.
 - Backend: `verificarRecorrentes` + `instalar/remover/statusGatilhoRecorrentes` (usa `ScriptApp` — requer autorização de gatilhos na 1ª vez, como os lembretes).

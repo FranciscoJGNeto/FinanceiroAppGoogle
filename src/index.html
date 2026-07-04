@@ -1129,6 +1129,48 @@
         <div id="orcList" style="margin-top:12px;"></div>
       </div>
     </section>
+
+    <!-- Metas de economia -->
+    <section class="panel acc" data-acc="metas">
+      <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="true" aria-controls="bodyMetas">
+        <h2>🏆 Metas de economia</h2>
+        <div class="right">
+          <span class="chevron" aria-hidden="true">▾</span>
+        </div>
+      </div>
+      <div class="panelBody" id="bodyMetas">
+        <div class="hint" style="margin-bottom:10px;">Defina quanto quer <b>guardar</b>. A economia é medida como <b>receitas − despesas</b>: por mês (meta mensal) ou acumulada até um prazo (meta total).</div>
+        <div style="margin-bottom:10px;">
+          <label for="mDesc">🏷️ Descrição</label>
+          <input class="field" type="text" id="mDesc" autocomplete="off" placeholder="Ex.: Reserva de emergência" />
+        </div>
+        <div style="margin-bottom:10px;">
+          <label>🎯 Tipo de meta</label>
+          <div class="segment" id="segMeta">
+            <button type="button" class="seg-rec" data-mtipo="mensal" aria-pressed="true">📅 Mensal</button>
+            <button type="button" class="seg-neu" data-mtipo="total" aria-pressed="false">🏁 Total (até prazo)</button>
+          </div>
+          <input type="hidden" id="mTipo" value="mensal" />
+        </div>
+        <div class="row2" style="margin-bottom:10px;">
+          <div>
+            <label for="mAlvo" id="mAlvoLabel">💲 Guardar por mês</label>
+            <div class="moneyWrap">
+              <span class="prefix">R$</span>
+              <input class="field money" type="text" id="mAlvo" inputmode="numeric" autocomplete="off" placeholder="0,00" style="font-size:20px;" />
+            </div>
+          </div>
+          <div id="mPrazoWrap" style="display:none;">
+            <label for="mPrazo">📆 Prazo (até)</label>
+            <input class="field" type="month" id="mPrazo" />
+          </div>
+        </div>
+        <button class="btn" id="btnSalvarMeta">🏆 Salvar meta</button>
+        <button class="btnGhost" id="btnCancelarMeta" style="display:none; margin-top:8px;">✖️ Cancelar edição</button>
+        <div class="msg" id="msgMeta"></div>
+        <div id="metasList" style="margin-top:12px;"></div>
+      </div>
+    </section>
   </div>
 
   <!-- Mobile sticky actions -->
@@ -1154,6 +1196,8 @@
     let impParsed = []; // linhas do extrato prontas para importar
     let lembretes = [];
     let lembreteEditando = null;
+    let metas = [];
+    let metaEditando = null;
 
     // Paleta categórica validada (fundo escuro, segura p/ daltônicos)
     const CORES_CONTA = ['#3987e5', '#199e70', '#c98500', '#008300', '#9085e9', '#e66767', '#d55181', '#d95926'];
@@ -1805,6 +1849,110 @@
       return `${document.getElementById('mes').value || defaultMonth()}-01`;
     }
 
+    // ---- Metas de economia ----
+    function setMetaTipo(tipo) {
+      const t = tipo === 'total' ? 'total' : 'mensal';
+      document.getElementById('mTipo').value = t;
+      document.querySelectorAll('#segMeta button').forEach(b => {
+        b.setAttribute('aria-pressed', b.getAttribute('data-mtipo') === t ? 'true' : 'false');
+      });
+      document.getElementById('mPrazoWrap').style.display = t === 'total' ? '' : 'none';
+      document.getElementById('mAlvoLabel').textContent = t === 'total' ? '💲 Valor a juntar' : '💲 Guardar por mês';
+    }
+
+    function carregarMetas() {
+      google.script.run
+        .withSuccessHandler(items => { metas = items || []; renderMetas(); })
+        .withFailureHandler(() => { /* silencioso */ })
+        .getMetas(mesISOatual());
+    }
+
+    function renderMetas() {
+      const el = document.getElementById('metasList');
+      if (!metas || metas.length === 0) {
+        el.innerHTML = '<div style="color:var(--muted); font-size:13px;">Nenhuma meta definida. Crie uma acima para acompanhar sua economia.</div>';
+        return;
+      }
+      el.innerHTML = metas.map(m => {
+        const pct = m.pct || 0;
+        const w = Math.max(0, Math.min(pct, 100));
+        const bateu = pct >= 100;
+        const cor = bateu ? 'var(--ok)' : (pct < 0 ? 'var(--bad)' : 'var(--primary)');
+        const tipoLabel = m.tipo === 'total' ? '🏁 Total' : '📅 Mensal';
+        const prazoLabel = (m.tipo === 'total' && m.prazo)
+          ? ` · até ${ymLabel(m.prazo)}` + (m.mesesRestantes != null ? ` (${m.mesesRestantes === 0 ? 'último mês' : m.mesesRestantes + ' mês(es)'})` : '')
+          : '';
+        return `<div class="orcRow">
+          <div class="orcTop">
+            <div class="orcName">${bateu ? '🏆 ' : ''}${escapeHtml(m.descricao)} <span class="pill">${tipoLabel}</span></div>
+            <div class="orcVals">${moneyBRL(m.progresso)} / ${moneyBRL(m.alvo)} · ${pct}%${prazoLabel}</div>
+          </div>
+          <div class="orcBarWrap"><div class="orcBar" style="width:${w.toFixed(1)}%; background:${cor}"></div></div>
+          <div class="orcActions">
+            <button class="miniBtn" data-mact="edit" data-id="${escapeHtml(m.id)}">✏️ Editar</button>
+            <button class="miniBtn danger" data-mact="del" data-id="${escapeHtml(m.id)}" data-desc="${escapeHtml(m.descricao)}">🗑️ Remover</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function salvarMeta() {
+      const descricao = document.getElementById('mDesc').value.trim();
+      const tipo = document.getElementById('mTipo').value;
+      const alvo = centsOfEl(document.getElementById('mAlvo')) / 100;
+      const prazo = tipo === 'total' ? (document.getElementById('mPrazo').value || '') : '';
+      if (!descricao) { setMsg('msgMeta', '❌ Informe a descrição.', 'err'); return; }
+      if (!(alvo > 0)) { setMsg('msgMeta', '❌ Informe um valor maior que 0.', 'err'); return; }
+      setMsg('msgMeta', '⏳ Salvando...', 'ok');
+      google.script.run
+        .withSuccessHandler(() => {
+          setMsg('msgMeta', '✅ Meta salva!', 'ok');
+          cancelarEdicaoMeta();
+          carregarMetas();
+        })
+        .withFailureHandler(err => setMsg('msgMeta', '❌ ' + (err?.message || err), 'err'))
+        .setMeta({ id: metaEditando || '', descricao: descricao, tipo: tipo, alvo: alvo, prazo: prazo });
+    }
+
+    function iniciarEdicaoMeta(id) {
+      const m = metas.find(x => x.id === id);
+      if (!m) return;
+      metaEditando = id;
+      document.getElementById('mDesc').value = m.descricao;
+      setMetaTipo(m.tipo);
+      setValorEl(document.getElementById('mAlvo'), m.alvo);
+      if (m.tipo === 'total') document.getElementById('mPrazo').value = m.prazo || '';
+      document.getElementById('btnSalvarMeta').textContent = '💾 Salvar edição da meta';
+      document.getElementById('btnCancelarMeta').style.display = '';
+      setMsg('msgMeta', '', 'ok');
+      document.getElementById('mDesc').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function cancelarEdicaoMeta() {
+      metaEditando = null;
+      document.getElementById('mDesc').value = '';
+      document.getElementById('mAlvo').value = '';
+      document.getElementById('mPrazo').value = '';
+      setMetaTipo('mensal');
+      document.getElementById('btnSalvarMeta').textContent = '🏆 Salvar meta';
+      document.getElementById('btnCancelarMeta').style.display = 'none';
+    }
+
+    function onMetaClick(e) {
+      const b = e.target.closest('button[data-mact]');
+      if (!b) return;
+      const id = b.getAttribute('data-id');
+      if (b.getAttribute('data-mact') === 'edit') {
+        iniciarEdicaoMeta(id);
+      } else {
+        if (!confirm(`Remover a meta "${b.getAttribute('data-desc')}"?`)) return;
+        google.script.run
+          .withSuccessHandler(() => { if (metaEditando === id) cancelarEdicaoMeta(); carregarMetas(); })
+          .withFailureHandler(err => setMsg('msgMeta', '❌ ' + (err?.message || err), 'err'))
+          .deleteMeta(id);
+      }
+    }
+
     // ---- Sugestões de orçamento (aplicar/rejeitar) ----
     function carregarSugestoes(mesISO) {
       google.script.run
@@ -2020,6 +2168,7 @@
 
       carregarOrcamentos();
       carregarSugestoes(mesISO);
+      carregarMetas();
 
       google.script.run
         .withSuccessHandler(renderProjecao)
@@ -2412,6 +2561,18 @@
     document.getElementById('btnSalvarOrc').addEventListener('click', salvarOrcamento);
     document.getElementById('orcList').addEventListener('click', onOrcClick);
     document.getElementById('orcSugestoes').addEventListener('click', onSugClick);
+
+    // Metas: máscara do alvo, tipo (segmento), salvar/cancelar e editar/remover
+    document.getElementById('mAlvo').addEventListener('input', (e) => {
+      const c = centsOfEl(e.target);
+      e.target.value = c ? formatCentavos(c) : '';
+    });
+    document.querySelectorAll('#segMeta button').forEach(b => {
+      b.addEventListener('click', () => setMetaTipo(b.getAttribute('data-mtipo')));
+    });
+    document.getElementById('btnSalvarMeta').addEventListener('click', salvarMeta);
+    document.getElementById('btnCancelarMeta').addEventListener('click', cancelarEdicaoMeta);
+    document.getElementById('metasList').addEventListener('click', onMetaClick);
 
     // Contas
     document.getElementById('contaSaldo').addEventListener('input', (e) => {

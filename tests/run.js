@@ -177,6 +177,46 @@ group('orçamentos — upsert, validação, delete');
   eq(api.getOrcamentos().length, 1, 'delete removeu 1');
 }
 
+group('metas de economia — CRUD + progresso mensal');
+{
+  const { api } = loadApp(baseTrans([
+    txRow({ id: 'r', data: new Date(2026, 6, 5), conta: 'Inter', descricao: 'Salário', natureza: 'Receita', valor: 3000 }),
+    txRow({ id: 'd1', data: new Date(2026, 6, 8), conta: 'Inter', descricao: 'Mercado', natureza: 'Despesa', valor: 1000 })
+  ]));
+  const s = api.setMeta({ descricao: 'Guardar', tipo: 'mensal', alvo: '1500' });
+  ok(s.ok && s.id, 'setMeta cria e retorna id');
+  let metas = api.getMetas('2026-07-01');
+  eq(metas.length, 1, '1 meta cadastrada');
+  eq(metas[0].progresso, 2000, 'progresso mensal = receitas − despesas do mês (3000−1000)');
+  eq(metas[0].pct, 133, 'pct = round(2000/1500*100)');
+  api.setMeta({ id: s.id, descricao: 'Guardar+', tipo: 'mensal', alvo: '2000' });
+  metas = api.getMetas('2026-07-01');
+  eq(metas.length, 1, 'upsert por id não duplica');
+  eq(metas[0].pct, 100, 'novo alvo 2000 → 100%');
+  throws(() => api.setMeta({ descricao: '', alvo: '10' }), 'descrição vazia lança');
+  throws(() => api.setMeta({ descricao: 'X', alvo: '0' }), 'alvo 0 lança');
+  api.deleteMeta(s.id);
+  eq(api.getMetas('2026-07-01').length, 0, 'deleteMeta remove');
+}
+
+group('metas de economia — total (acumulado desde criação + meses restantes)');
+{
+  const spec = baseTrans([
+    txRow({ id: 'a', data: new Date(2026, 4, 1), conta: 'Inter', descricao: 'Sal', natureza: 'Receita', valor: 1000 }), // mai +1000
+    txRow({ id: 'b', data: new Date(2026, 5, 1), conta: 'Inter', descricao: 'Sal', natureza: 'Receita', valor: 1000 }), // jun +1000
+    txRow({ id: 'c', data: new Date(2026, 6, 1), conta: 'Inter', descricao: 'Gasto', natureza: 'Despesa', valor: 500 })  // jul -500
+  ]);
+  spec.Metas = [
+    ['ID', 'Descrição', 'Tipo', 'Alvo', 'Prazo', 'CriadoEm'],
+    ['m1', 'Viagem', 'total', 6000, '2026-12', new Date(2026, 4, 1)]
+  ];
+  const { api } = loadApp(spec);
+  const metas = api.getMetas('2026-07-01');
+  eq(metas[0].progresso, 1500, 'acumula mai(1000)+jun(1000)+jul(−500) desde a criação = 1500');
+  eq(metas[0].pct, 25, 'pct = 1500/6000 = 25');
+  eq(metas[0].mesesRestantes, 5, 'de jul a dez = 5 meses restantes');
+}
+
 group('getCompartilhados — por serviço (legado) e reembolso');
 {
   const { api } = loadApp({

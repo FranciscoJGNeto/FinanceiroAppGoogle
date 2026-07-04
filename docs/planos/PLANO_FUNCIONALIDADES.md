@@ -113,10 +113,11 @@ arquitetura atual (Apps Script + Sheets), sem migração.
 Backend: `verificarRecorrentes` + `instalar/remover/statusGatilhoRecorrentes`.
 **Próximo da fila: 7.2 Metas de economia.**
 
-### 7.2 Metas de economia ⭐⭐⭐ 🔨🔨
-Definir metas (ex.: "guardar R$ 500/mês" ou "juntar R$ 6.000 até dez"). Acompanhar o
-progresso com barra e projeção (usa receitas − despesas do mês). Nova aba `Metas`
-(`getMetas`/`setMeta`/`deleteMeta`) e um painel com barra de progresso.
+### 7.2 Metas de economia ✅ (v27)
+**Feito.** Painel **🏆 Metas de economia** com metas **mensais** ("guardar R$ X/mês")
+e **totais** ("juntar R$ Y até MM/AAAA", com meses restantes). Progresso = receitas −
+despesas (do mês ou acumulado desde a criação). Aba `Metas` + `getMetas`/`setMeta`/`deleteMeta`.
+**Próximo da fila: 7.3 Relatório anual.**
 
 ### 7.3 Relatório anual ⭐⭐⭐ 🔨🔨
 Visão do ano: total por mês, por categoria, receita × despesa, maiores gastos, média

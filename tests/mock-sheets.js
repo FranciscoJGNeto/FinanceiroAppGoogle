@@ -101,6 +101,7 @@ function loadApp(sheetsSpec) {
     'gerarRecorrentes', 'verificarRecorrentes', 'instalarGatilhoRecorrentes',
     'removerGatilhoRecorrentes', 'statusGatilhoRecorrentes',
     'getOrcamentos', 'setOrcamento', 'deleteOrcamento',
+    'getMetas', 'setMeta', 'deleteMeta',
     'getContas', 'setConta', 'deleteConta', 'exportarBackup', 'exportarBackupXML', 'importarTransacoes',
     'getLembretes', 'setLembrete', 'deleteLembrete', 'getLembretesProximos', 'verificarLembretes',
     'instalarGatilhoLembretes', 'removerGatilhoLembretes', 'statusGatilhoLembretes', 'migrarEstrutura'];
