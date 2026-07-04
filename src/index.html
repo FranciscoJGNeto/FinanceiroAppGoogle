@@ -601,7 +601,9 @@
         grid-template-columns: repeat(3, 1fr);
       }
 
-      #bodyAnalise {
+      /* :not(.collapsed) para o grid não vencer o "display:none" do acordeão
+         recolhido (senão a Análise não recolheria no desktop). */
+      .acc:not(.collapsed) #bodyAnalise {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 16px;

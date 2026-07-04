@@ -92,7 +92,11 @@ FinanceiroAppGoogle/
     ├── PLANO_MELHORIA_CODIGO.md   # evolução de arquitetura
     ├── PLANO_MELHORIA_VISUAL.md   # evolução de UI/UX
     ├── PLANO_CORRECOES.md         # bugs corrigidos (registro)
-    ├── PLANO_MIGRACAO_PGLITE.md   # estudo: sair do Sheets p/ Postgres WASM
+    ├── PLANOS_ALTERNATIVOS.md     # índice de arquiteturas alternativas
+    ├── PLANO_ALT_FRONT_SEPARADO.md# alt. A: PWA real + GAS como API
+    ├── PLANO_ALT_SUPABASE.md      # alt. B: Postgres + Auth + multiusuário
+    ├── PLANO_ALT_LOCALFIRST.md    # alt. C: PWA offline (IndexedDB/Dexie)
+    ├── PLANO_MIGRACAO_PGLITE.md   # alt.: Postgres WASM no navegador
     └── GUIA_CLASP.md              # como publicar com clasp
 ```
 
