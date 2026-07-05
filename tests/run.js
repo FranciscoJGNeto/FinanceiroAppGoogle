@@ -49,17 +49,42 @@ group('mapeamento por cabeçalho + auto-criação de colunas (planilha legada)')
 
 group('getResumo — receita separada de despesa');
 {
-  const { api } = loadApp(baseTrans([
-    txRow({ id: '1', data: new Date(2026, 6, 3), conta: 'Inter', descricao: 'Mercado', tipo: 'Único', natureza: 'Despesa', valor: 150.75 }),
-    txRow({ id: '2', data: new Date(2026, 6, 5), conta: 'Itaú', descricao: 'Uber', tipo: 'Único', natureza: 'Despesa', valor: 35.9 }),
-    txRow({ id: '3', data: new Date(2026, 6, 8), conta: 'Inter', descricao: 'Freela', tipo: 'Único', natureza: 'Receita', valor: 500 }),
-    txRow({ id: '4', data: new Date(2026, 5, 20), conta: 'Inter', descricao: 'Mês passado', tipo: 'Único', natureza: 'Despesa', valor: 999 })
-  ]), );
+  const { api } = loadApp({
+    Transacoes: [HEADER.slice(),
+      txRow({ id: '1', data: new Date(2026, 6, 3), conta: 'Inter', descricao: 'Mercado', tipo: 'Único', natureza: 'Despesa', valor: 150.75 }),
+      txRow({ id: '2', data: new Date(2026, 6, 5), conta: 'Itaú', descricao: 'Uber', tipo: 'Único', natureza: 'Despesa', valor: 35.9 }),
+      txRow({ id: '3', data: new Date(2026, 6, 8), conta: 'Inter', descricao: 'Freela', tipo: 'Único', natureza: 'Receita', valor: 500 }),
+      txRow({ id: '4', data: new Date(2026, 5, 20), conta: 'Inter', descricao: 'Mês passado', tipo: 'Único', natureza: 'Despesa', valor: 999 })
+    ],
+    Saldos: [['Conta', 'Saldo', 'Fechamento', 'Vencimento', 'DataSaldo'],
+      ['Inter', 0, 0, 0, new Date(2026, 6, 1)], ['Itaú', 0, 0, 0, new Date(2026, 6, 1)]]
+  });
   const r = api.getResumo('2026-07-01');
   eq(r.totalGeral, 186.65, 'totalGeral só despesas de julho');
   eq(r.porConta, [{ conta: 'Inter', total: 150.75 }, { conta: 'Itaú', total: 35.9 }], 'porConta dinâmico (desc), sem a receita');
   eq(r.totalReceitas, 500, 'totalReceitas = 500');
-  ok(Math.abs(r.prevFinal - (0 + 0 + 500 - 186.65)) < 0.01, 'prevFinal soma receita e desconta despesa');
+  // saldo derivado desde 01/07 (inicial 0): fim de julho = 349.25 (Inter) − 35.9 (Itaú) = 313.35
+  ok(Math.abs(r.prevFinal - 313.35) < 0.01, 'prevFinal = saldo derivado ao fim de julho');
+}
+
+group('saldo derivado — encadeia entre meses + respeita saldo manual');
+{
+  const spec = {
+    Transacoes: [HEADER.slice(),
+      txRow({ id: '1', data: new Date(2026, 0, 10), conta: 'Inter', natureza: 'Receita', valor: 1000 }),
+      txRow({ id: '2', data: new Date(2026, 1, 5), conta: 'Inter', natureza: 'Despesa', valor: 300 })
+    ],
+    Saldos: [['Conta', 'Saldo', 'Fechamento', 'Vencimento', 'DataSaldo'], ['Inter', 1000, 0, 0, new Date(2026, 0, 1)]]
+  };
+  const { api } = loadApp(spec);
+  eq(api.getResumo('2026-01-01').prevFinal, 2000, 'fim de janeiro = 1000 inicial + 1000 receita');
+  eq(api.getResumo('2026-02-01').prevFinal, 1700, 'fim de fevereiro = 2000 − 300 (encadeia)');
+  const rel = api.getResumo('2026-02-01');
+  eq(rel.saldosConta[0].saldo, 1700, 'saldo por conta (hoje) = 1700');
+
+  // Sem DataSaldo: o valor é tratado como saldo de HOJE (transação passada não muda)
+  const api2 = loadApp({ Transacoes: [HEADER.slice(), txRow({ id: 'a', data: new Date(2026, 0, 10), conta: 'X', natureza: 'Despesa', valor: 100 })], Saldos: [['Conta', 'Saldo'], ['X', 500]] }).api;
+  eq(api2.getResumo('2026-07-01').saldoAtual, 500, 'sem data, saldo manual de hoje é respeitado');
 }
 
 group('update / delete por ID');

@@ -505,23 +505,48 @@ function getResumo(mesISO) {
   totalCompart = round2_(totalCompart);
   reembolso = round2_(reembolso);
 
-  // Saldo atual (soma da coluna B da aba Saldos)
-  let saldoAtual = 0;
-  if (shD && shD.getLastRow() > 1) {
-    try {
-      const saldos = shD.getRange(2, 2, Math.max(shD.getLastRow() - 1, 0), 1).getValues();
-      saldoAtual = saldos.flat().reduce((a, v) => a + (Number(v) || 0), 0);
-    } catch (e) {
-      console.warn('Erro ao ler saldos: ' + e);
-    }
+  // Saldo DERIVADO das transações. Para cada conta:
+  //   saldo(X) = saldoInicial + (líquido receitas−despesas até X) − (líquido até a DataSaldo)
+  // Sem DataSaldo, assume-se HOJE (o número informado = saldo de hoje; meses passados
+  // encadeiam para trás e lançamentos/importações futuros ajustam para frente).
+  const contasList = getContas();
+  const hoje = new Date();
+  const fimMes = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
+  const accKey = (n) => norm_(n);
+  const openBy = {}, dsBy = {}, netHoje = {}, netFim = {}, netDS = {};
+  contasList.forEach(c => {
+    const k = accKey(c.conta);
+    openBy[k] = Number(c.saldo) || 0;
+    dsBy[k] = c.dataSaldo ? parseLocalDate_(c.dataSaldo) : hoje;
+    netHoje[k] = 0; netFim[k] = 0; netDS[k] = 0;
+  });
+  for (let i = 1; i < vals.length; i++) {
+    const r = vals[i];
+    const k = accKey(col(r, 'conta'));
+    if (!(k in openBy)) continue;
+    const dv = col(r, 'data'); if (!dv) continue;
+    const dt = dv instanceof Date ? dv : new Date(dv); if (isNaN(dt)) continue;
+    const v = Number(col(r, 'valor')) || 0;
+    const signed = (norm_(col(r, 'natureza')) === 'receita') ? v : -v;
+    if (dt <= hoje) netHoje[k] += signed;
+    if (dt <= fimMes) netFim[k] += signed;
+    if (dt <= dsBy[k]) netDS[k] += signed;
   }
+  let saldoAtual = 0, saldoFimMes = 0;
+  const saldosConta = contasList.map(c => {
+    const k = accKey(c.conta);
+    const sHoje = openBy[k] + netHoje[k] - netDS[k];
+    const sFim = openBy[k] + netFim[k] - netDS[k];
+    saldoAtual += sHoje; saldoFimMes += sFim;
+    return { conta: c.conta, saldo: round2_(sHoje) };
+  });
+  saldoAtual = round2_(saldoAtual);
 
   // Resumo final
   const totalGeral = round2_(porConta.reduce((a, x) => a + x.total, 0));
   const totalAjustado = round2_(totalGeral - reembolso);
   const pctSalario = salario > 0 ? totalAjustado / salario : 0;
-  // Previsão inclui salário fixo (Config) + receitas extras lançadas no mês
-  const prevFinal = round2_(saldoAtual + salario + totalReceitas - totalAjustado);
+  const prevFinal = round2_(saldoFimMes); // saldo derivado ao fim do mês visto
 
   return {
     mes: Utilities.formatDate(new Date(d.getFullYear(), d.getMonth(), 1), Session.getScriptTimeZone(), 'MM/yyyy'),
@@ -533,7 +558,8 @@ function getResumo(mesISO) {
     totalAjustado,
     salario,
     pctSalario,
-    saldoAtual: round2_(saldoAtual),
+    saldoAtual: saldoAtual,
+    saldosConta: saldosConta,
     prevFinal
   };
 }
@@ -1633,15 +1659,20 @@ function importarTransacoes(lista) {
 
 // ===================== Contas (dinâmicas, via aba Saldos) =====================
 
-// Lista as contas cadastradas (aba Saldos: A=Conta, B=Saldo, C=Fechamento, D=Vencimento).
-// Fechamento/Vencimento (dia 1-31) são opcionais — usados para a fatura de cartão.
+// Lista as contas (aba Saldos: A=Conta, B=Saldo inicial, C=Fechamento, D=Vencimento, E=DataSaldo).
+// Fechamento/Vencimento (dia 1-31) e DataSaldo (data do saldo inicial) são opcionais.
 function getContas() {
   const ss = SpreadsheetApp.getActive();
   const sh = ss.getSheetByName(SHEET_SALD);
   if (!sh || sh.getLastRow() < 2) return [];
+  const tz = Session.getScriptTimeZone();
   return sh.getDataRange().getValues().slice(1)
     .filter(r => String(r[0]).trim())
-    .map(r => ({ conta: String(r[0]).trim(), saldo: Number(r[1]) || 0, fechamento: Number(r[2]) || 0, vencimento: Number(r[3]) || 0 }));
+    .map(r => {
+      let ds = '';
+      if (r[4]) { const dt = r[4] instanceof Date ? r[4] : new Date(r[4]); if (!isNaN(dt)) ds = Utilities.formatDate(dt, tz, 'yyyy-MM-dd'); }
+      return { conta: String(r[0]).trim(), saldo: Number(r[1]) || 0, fechamento: Number(r[2]) || 0, vencimento: Number(r[3]) || 0, dataSaldo: ds };
+    });
 }
 
 // Normaliza um dia do mês (0 = não informado; 1..31 caso contrário).
@@ -1652,23 +1683,25 @@ function diaMes_(v) {
 }
 
 // Cria/atualiza uma conta (upsert por nome, ignora acento/caixa).
-// saldo pode ser 0/negativo; fechamento/vencimento são opcionais (dia do cartão).
-function setConta(nome, saldo, fechamento, vencimento) {
+// saldo = saldo INICIAL na dataSaldo; fechamento/vencimento (dia do cartão) e
+// dataSaldo (yyyy-MM-dd) são opcionais. Sem dataSaldo, o saldo é tratado como "de hoje".
+function setConta(nome, saldo, fechamento, vencimento, dataSaldo) {
   nome = String(nome || '').trim();
   if (!nome) throw new Error('Informe o nome da conta.');
   const s = toNumBR_(saldo);
   const fech = diaMes_(fechamento);
   const venc = diaMes_(vencimento);
+  const ds = dataSaldo ? parseLocalDate_(dataSaldo) : '';
 
   const ss = SpreadsheetApp.getActive();
   let sh = ss.getSheetByName(SHEET_SALD);
   if (!sh) {
     sh = ss.insertSheet(SHEET_SALD);
-    sh.getRange('A1:D1').setValues([['Conta', 'Saldo', 'Fechamento', 'Vencimento']]);
-    sh.getRange('A1:D1').setFontWeight('bold');
+    sh.getRange('A1:E1').setValues([['Conta', 'Saldo', 'Fechamento', 'Vencimento', 'DataSaldo']]);
+    sh.getRange('A1:E1').setFontWeight('bold');
   } else {
-    const hdr = sh.getRange(1, 1, 1, 4).getValues()[0];
-    if (!hdr[2] || !hdr[3]) sh.getRange('C1:D1').setValues([['Fechamento', 'Vencimento']]);
+    const hdr = sh.getRange(1, 1, 1, 5).getValues()[0];
+    if (!hdr[2] || !hdr[3] || !hdr[4]) sh.getRange('C1:E1').setValues([['Fechamento', 'Vencimento', 'DataSaldo']]);
   }
 
   const lock = LockService.getScriptLock();
@@ -1680,8 +1713,11 @@ function setConta(nome, saldo, fechamento, vencimento) {
     for (let i = 0; i < nomes.length; i++) {
       if (norm_(nomes[i][0]) === norm_(nome)) { row = i + 2; break; }
     }
-    if (row === -1) sh.appendRow([nome, s, fech, venc]);
-    else sh.getRange(row, 1, 1, 4).setValues([[nome, s, fech, venc]]);
+    // Preserva a DataSaldo existente se não vier uma nova
+    let dsFinal = ds;
+    if (!dsFinal && row !== -1) { const cur = sh.getRange(row, 5).getValue(); if (cur) dsFinal = cur; }
+    if (row === -1) sh.appendRow([nome, s, fech, venc, dsFinal]);
+    else sh.getRange(row, 1, 1, 5).setValues([[nome, s, fech, venc, dsFinal]]);
   } finally {
     lock.releaseLock();
   }
@@ -1856,12 +1892,12 @@ function criarEstruturaPlanilha() {
     shC.getRange('A1:B1').setFontWeight('bold');
   }
 
-  // Aba Saldos (C/D = fechamento/vencimento do cartão, opcionais)
+  // Aba Saldos (C/D = fechamento/vencimento do cartão; E = data do saldo inicial; opcionais)
   let shD = ss.getSheetByName(SHEET_SALD);
   if (!shD) {
     shD = ss.insertSheet(SHEET_SALD);
-    shD.getRange('A1:D1').setValues([['Conta', 'Saldo', 'Fechamento', 'Vencimento']]);
-    shD.getRange('A1:D1').setFontWeight('bold');
+    shD.getRange('A1:E1').setValues([['Conta', 'Saldo', 'Fechamento', 'Vencimento', 'DataSaldo']]);
+    shD.getRange('A1:E1').setFontWeight('bold');
     shD.getRange('A2:B4').setValues([
       ['Itaú', 0],
       ['Inter', 0],

@@ -221,11 +221,21 @@
             <input class="field" type="text" id="cNome" autocomplete="off" placeholder="Ex.: Nubank" />
           </div>
           <div>
-            <label for="contaSaldo">💵 Saldo atual</label>
+            <label for="contaSaldo">💵 Saldo inicial</label>
             <div class="moneyWrap">
               <span class="prefix">R$</span>
               <input class="field money" type="text" id="contaSaldo" inputmode="numeric" autocomplete="off" placeholder="0,00" style="font-size:20px;" />
             </div>
+          </div>
+        </div>
+        <div class="row2" style="margin-bottom:12px;">
+          <div>
+            <label for="cDataSaldo">📅 Data do saldo inicial</label>
+            <input class="field" type="date" id="cDataSaldo" />
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <div class="hint" style="margin:0;">O saldo passa a ser <b>calculado</b>: inicial + (receitas − despesas) a partir dessa data. Deixe a data vazia para tratar o valor como o <b>saldo de hoje</b>.</div>
           </div>
         </div>
         <div class="hint" style="margin-bottom:8px;">💳 Se a conta for um <b>cartão de crédito</b>, informe o dia de fechamento e de vencimento para ver a fatura prevista (deixe 0 se não for cartão).</div>

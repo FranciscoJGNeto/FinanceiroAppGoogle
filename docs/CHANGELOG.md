@@ -3,6 +3,13 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v45 — Saldo derivado das transações
+- **Saldo calculado, não mais fixo:** o "Saldo" da conta virou **saldo inicial** numa **data de referência** (novo campo em Contas). A partir daí o app calcula: `inicial + (receitas − despesas)`.
+  - **Saldo Atual** = hoje (reflete lançamentos e importações).
+  - **Previsão Final** = fim do mês visto — agora **encadeia entre meses** (fim de um mês = início do próximo).
+- **Compatível:** contas **sem data** de saldo inicial mantêm o número como "saldo de hoje" (nada muda visualmente até você definir a data). Aba `Saldos` ganhou a coluna `DataSaldo` (auto-criada).
+- Backend: `getResumo` recalcula saldo por conta; `getContas`/`setConta` guardam a data; "Saldos por conta" no Resumo mostra o saldo derivado. Testes: **145 checagens**.
+
 ## v44 — Correções na importação de extrato
 - **Repetições legítimas mantidas:** a dedup agora só compara com o que **já existe** — dois lançamentos idênticos no mesmo extrato (ex.: 2 Uber iguais no dia) **deixam de ser perdidos**; reimportar o mesmo arquivo continua não duplicando.
 - **Meio na importação:** novo seletor **Conta / Cartão de crédito** — importar um extrato de **cartão** agora popula a **Fatura de cartão** (antes tudo entrava como "Conta").

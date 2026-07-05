@@ -691,19 +691,20 @@
     // ---- Contas (dinâmicas) ----
     function carregarContas() {
       google.script.run
-        .withSuccessHandler(items => { contas = items || []; popularSelectContas(); renderContas(); renderSaldosConta(); })
+        .withSuccessHandler(items => { contas = items || []; popularSelectContas(); renderContas(); })
         .withFailureHandler(() => { /* silencioso */ })
         .getContas();
     }
 
     // Saldos por conta (no resumo) — inclui toda conta cadastrada, mesmo sem lançamentos
+    let saldosResumo = []; // saldos DERIVADOS por conta (vindos do getResumo)
     function renderSaldosConta() {
       const el = document.getElementById('saldosConta');
       if (!el) return;
-      if (!contas.length) { el.innerHTML = ''; return; }
-      const total = contas.reduce((a, c) => a + (Number(c.saldo) || 0), 0);
-      el.innerHTML = '<div class="chartTitle">💵 Saldos por conta</div>'
-        + contas.map(c => `<div class="saldoRow"><span>🏦 ${escapeHtml(c.conta)}</span><b>${moneyBRL(c.saldo)}</b></div>`).join('')
+      if (!saldosResumo.length) { el.innerHTML = ''; return; }
+      const total = saldosResumo.reduce((a, c) => a + (Number(c.saldo) || 0), 0);
+      el.innerHTML = '<div class="chartTitle">💵 Saldos por conta (hoje)</div>'
+        + saldosResumo.map(c => `<div class="saldoRow"><span>🏦 ${escapeHtml(c.conta)}</span><b>${moneyBRL(c.saldo)}</b></div>`).join('')
         + `<div class="saldoRow total"><span>Total</span><b>${moneyBRL(total)}</b></div>`;
     }
 
@@ -728,13 +729,14 @@
       }
       el.innerHTML = contas.map(c => {
         const cartao = c.fechamento > 0 ? ` <span class="pill">💳 fecha dia ${c.fechamento}${c.vencimento ? ' · vence ' + c.vencimento : ''}</span>` : '';
+        const dsLabel = c.dataSaldo ? ` <span class="pill">desde ${escapeHtml(c.dataSaldo)}</span>` : '';
         return `<div class="orcRow">
         <div class="orcTop">
           <div class="orcName">🏦 ${escapeHtml(c.conta)}${cartao}</div>
-          <div class="orcVals">saldo: ${moneyBRL(c.saldo)}</div>
+          <div class="orcVals">inicial: ${moneyBRL(c.saldo)}${dsLabel}</div>
         </div>
         <div class="orcActions">
-          <button class="miniBtn" data-cact="edit" data-nome="${escapeHtml(c.conta)}" data-saldo="${c.saldo}" data-fech="${c.fechamento || 0}" data-venc="${c.vencimento || 0}">✏️ Editar</button>
+          <button class="miniBtn" data-cact="edit" data-nome="${escapeHtml(c.conta)}" data-saldo="${c.saldo}" data-fech="${c.fechamento || 0}" data-venc="${c.vencimento || 0}" data-ds="${escapeHtml(c.dataSaldo || '')}">✏️ Editar</button>
           <button class="miniBtn danger" data-cact="del" data-nome="${escapeHtml(c.conta)}">🗑️ Remover</button>
         </div>
       </div>`;
@@ -751,6 +753,7 @@
       document.getElementById('contaSaldo').value = '';
       document.getElementById('cFech').value = '';
       document.getElementById('cVenc').value = '';
+      document.getElementById('cDataSaldo').value = '';
       setMsg('msgConta', '', 'ok');
       setContaEditMode(false);
     }
@@ -760,6 +763,7 @@
       const saldo = centsOfEl(document.getElementById('contaSaldo')) / 100;
       const fech = Number(document.getElementById('cFech').value) || 0;
       const venc = Number(document.getElementById('cVenc').value) || 0;
+      const ds = document.getElementById('cDataSaldo').value || '';
       if (!nome) { setMsg('msgConta', '❌ Informe o nome da conta.', 'err'); return; }
       setMsg('msgConta', '⏳ Salvando...', 'ok');
       google.script.run
@@ -771,7 +775,7 @@
           refresh(); // saldo entra no resumo/previsão
         })
         .withFailureHandler(err => setMsg('msgConta', '❌ ' + (err?.message || err), 'err'))
-        .setConta(nome, saldo, fech, venc);
+        .setConta(nome, saldo, fech, venc, ds);
     }
 
     function onContaClick(e) {
@@ -783,6 +787,7 @@
         setValorEl(document.getElementById('contaSaldo'), Number(b.getAttribute('data-saldo')));
         document.getElementById('cFech').value = Number(b.getAttribute('data-fech')) || '';
         document.getElementById('cVenc').value = Number(b.getAttribute('data-venc')) || '';
+        document.getElementById('cDataSaldo').value = b.getAttribute('data-ds') || '';
         setMsg('msgConta', '', 'ok');
         setContaEditMode(true);
         document.getElementById('cNome').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1302,6 +1307,8 @@
 
     function fillResumo(r) {
       setKpiLoading(false);
+      saldosResumo = r.saldosConta || [];
+      renderSaldosConta();
       const set = (id, v) => { document.getElementById(id).textContent = moneyBRL(v); };
       set('cGeral', r.totalGeral);
       set('cCompart', r.totalCompart);

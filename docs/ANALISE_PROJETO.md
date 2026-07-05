@@ -72,7 +72,7 @@ de moeda, atalho `Ctrl+Enter`, gráficos SVG com paleta acessível e escape de H
 - **Transacoes** — `ID | Data | Conta | Meio | Descrição | Tipo | Natureza | Categoria | Compartilhado | Rateio | ParcelaAtual | ParcelaTotal | Valor | Observação | CriadoEm`
 - **Servicos** — `Nome | Compartilhado | Rateio` (compartilhamento por nome — legado).
 - **Config** — pares chave/valor (salário, % reembolso padrão) lidos **por chave**.
-- **Saldos** — `Conta | Saldo | Fechamento | Vencimento` (contas dinâmicas; fechamento/vencimento opcionais, para a fatura de cartão).
+- **Saldos** — `Conta | Saldo | Fechamento | Vencimento | DataSaldo` (contas dinâmicas; `Saldo` = **saldo inicial** na `DataSaldo`; fechamento/vencimento opcionais para a fatura).
 - **Orcamentos** — `Categoria | Limite`.
 - **Lembretes** — `Descrição | Dia | Valor | Antecedencia | Ativo | UltimoAviso`.
 - **Metas** — `ID | Descrição | Tipo | Alvo | Prazo | CriadoEm`.
@@ -85,7 +85,7 @@ de moeda, atalho `Ctrl+Enter`, gráficos SVG com paleta acessível e escape de H
 - **Reembolso:** soma do rateio de cada item compartilhado — o que a outra pessoa devolve.
 - **Total ajustado:** `totalGeral − reembolso` (gasto real).
 - **% do salário:** `totalAjustado / salário`.
-- **Previsão final:** `saldoAtual + salário − totalAjustado`.
+- **Saldo (derivado):** por conta, `saldoInicial + (receitas − despesas até a data) − (líquido até a DataSaldo)`. **Saldo Atual** = hoje; **Previsão Final** = fim do mês visto (encadeia entre meses). Sem `DataSaldo`, o valor é o saldo de hoje.
 - **Economia (metas):** `receitas − despesas` (do mês ou acumulada até um prazo).
 
 ## Público / uso
