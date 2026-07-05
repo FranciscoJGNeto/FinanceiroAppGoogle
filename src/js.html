@@ -324,9 +324,41 @@
       return /OFXHEADER|<OFX>|<STMTTRN>/i.test(String(text || ''));
     }
 
+    // Extrai um NOME LIMPO + o TIPO da transação a partir do MEMO/NAME do OFX.
+    // No extrato do banco o MEMO vem como  <tipo>: "<descrição real entre aspas>",
+    // ex.:  Compra no debito: "No estabelecimento DROGASIL 1371 BRASILIA BRA".
+    // Queremos guardar só "DROGASIL 1371 BRASILIA BRA" (o que dá pra categorizar)
+    // e devolver o tipo ("Compra no debito") para categorizar por tipo no servidor.
+    function limparDescricaoOFX(memo, name) {
+      memo = String(memo || '').trim();
+      name = String(name || '').trim();
+      const nm = memo.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+      const TIPOS = ['compra no debito', 'compra no credito', 'pix enviado devolvido',
+        'pix enviado', 'pix recebido', 'transferencia recebida', 'transferencia enviada',
+        'pagamento efetuado', 'aplicacao', 'resgate'];
+      let tipo = '';
+      const ci = memo.indexOf(':');
+      if (ci > 0 && ci <= 40) tipo = memo.slice(0, ci).trim();
+      else { for (const tp of TIPOS) { if (nm.indexOf(tp) === 0) { tipo = memo.slice(0, tp.length).trim(); break; } } }
+      // Base da descrição: o texto entre aspas; senão o memo sem o prefixo de tipo; senão NAME.
+      let base = '';
+      const q = /"([^"]*)"/.exec(memo);
+      if (q) base = q[1];
+      else if (tipo) base = memo.slice(tipo.length).replace(/^[:\s-]+/, '');
+      else base = memo;
+      base = base
+        .replace(/^no estabelecimento\s+/i, '')   // compras: "No estabelecimento X" -> "X"
+        .replace(/^cp\s*:?\s*\d+\s*-?\s*/i, '')    // pix: "Cp :78414067-Fulano" -> "Fulano"
+        .replace(/^\d{4,}\s+\d+\s+/, '')           // pix: "00019 48511358 EVOGE" -> "EVOGE"
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+      if (!base) base = name || memo || 'Lançamento';
+      return { descricao: base, tipo: tipo };
+    }
+
     // Parser de OFX tolerante: funciona tanto no OFX v1 (SGML, sem tags de
     // fechamento) quanto no v2 (XML). Lê cada <STMTTRN> (transação) e extrai
-    // data (DTPOSTED), valor (TRNAMT) e descrição (MEMO/NAME).
+    // data (DTPOSTED), valor (TRNAMT), descrição (limpa) e tipo (para categorizar).
     function parseOFX(text) {
       text = String(text || '');
       let blocks = text.match(/<STMTTRN>[\s\S]*?<\/STMTTRN>/gi);
@@ -343,12 +375,12 @@
       blocks.forEach(b => {
         const dt = val(b, 'DTPOSTED');
         const amt = val(b, 'TRNAMT');
-        const desc = val(b, 'MEMO') || val(b, 'NAME') || 'Lançamento';
         if (!/^\d{8}/.test(dt)) return;
         const v = parseValorBR(String(amt).replace(/\s/g, ''));
         if (isNaN(v) || v === 0) return;
         const iso = dt.slice(0, 4) + '-' + dt.slice(4, 6) + '-' + dt.slice(6, 8);
-        out.push({ data: iso, descricao: desc, valor: Math.abs(v), natureza: v < 0 ? 'Despesa' : 'Receita' });
+        const info = limparDescricaoOFX(val(b, 'MEMO'), val(b, 'NAME'));
+        out.push({ data: iso, descricao: info.descricao, tipoOFX: info.tipo, valor: Math.abs(v), natureza: v < 0 ? 'Despesa' : 'Receita' });
       });
       return out;
     }

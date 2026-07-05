@@ -3,6 +3,13 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v47 — Importação OFX: nome limpo + categoria por tipo
+- **Descrição limpa:** o extrato do Inter vem como `Compra no debito: "No estabelecimento DROGASIL 1371 BRASILIA BRA"`. Agora o app guarda só o **nome real** (`DROGASIL 1371 BRASILIA BRA`) — extrai o texto **entre aspas** e remove os prefixos `No estabelecimento`, `Cp :123-`, códigos de Pix (`00019 4851...`). Antes gravava o MEMO inteiro, o que sujava o nome e atrapalhava a categoria.
+- **Categoria pelo tipo da transação:** usa o rótulo do extrato (**Aplicação/Resgate → Investimentos**; **Pix/Transferência** sem outra pista → **Transferências**), além das palavras‑chave. Ordem: regra do usuário → tipo (aplicação/resgate) → histórico → palavra‑chave → tipo (pix/transferência).
+- **Mais estabelecimentos reconhecidos:** KFC, Giraffas, Bob's, Spoleto, Madero… (Alimentação); Allpark/Estapar/posto (Transporte); CDB/poupança/tesouro (Investimentos); Receita Federal/DETRAN/IPVA (Impostos e taxas).
+- **Meio corrigido:** **pagar a fatura** do cartão é **débito em Conta** (não é compra no cartão) — deixou de ser marcado como "Cartão". Só marca **Cartão** em **compra no crédito**.
+- Categorias **Investimentos** e **Transferências** adicionadas ao seletor. Testes: **161 checagens**.
+
 ## v46 — Regras de categoria + rename do backend
 - **Regras de categorização (você ensina):** painel **Config → 🏷️ Regras de categoria**. Ex.: termo **giraffas** → **Alimentação**. Quando a descrição **contém** o termo, aplica a categoria — na importação, no bot e sob demanda. Resolve os lugares que a lista embutida não conhece (KFC, Giraffas, aquele CDB, etc.).
 - **Recategorizar:** botão que preenche a categoria dos lançamentos **sem categoria** usando regras + histórico + palavras-chave (bom depois de criar regras novas).

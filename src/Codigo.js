@@ -65,42 +65,52 @@ function isCompartFlag_(v) {
 // "tim" casa "estimativa", "99" casa valores).
 const CATEGORIA_KEYWORDS = {
   'Assinaturas': ['netflix', 'spotify', 'disney', 'hbo', 'primevideo', 'amazonprime', 'youtube', 'crunchyroll', 'globoplay', 'deezer', 'appletv', 'itunes', 'paramount', 'canva', 'chatgpt', 'openai', 'notion', 'dropbox', 'googleone', 'icloud', 'linkedin', 'twitch', 'kindle', 'audible', 'mubi'],
-  'Transporte': ['uber', '99app', '99pop', 'cabify', 'indriver', 'ipiranga', 'petrobras', 'brmania', 'combustivel', 'gasolina', 'estacionamento', 'bilheteunico', 'sem parar', 'semparar', 'veloe', 'conectcar', 'pedagio', 'localiza', 'movida', 'unidas'],
+  'Transporte': ['uber', '99app', '99pop', 'cabify', 'indriver', 'ipiranga', 'petrobras', 'brmania', 'combustivel', 'gasolina', 'estacionamento', 'allpark', 'estapar', 'ipark', 'auto posto', 'autoposto', 'posto', 'bilheteunico', 'sem parar', 'semparar', 'veloe', 'conectcar', 'pedagio', 'localiza', 'movida', 'unidas'],
   'Mercado': ['mercado', 'supermerc', 'carrefour', 'pao de acucar', 'paodeacucar', 'assai', 'atacadao', 'hortifruti', 'bigbox', 'sams club', 'samsclub', 'makro', 'zaffari', 'guanabara', 'mundial', 'sacolao'],
-  'Alimentação': ['ifood', 'rappi', 'restaurante', 'lanchonete', 'burger', 'mcdonald', 'burgerking', 'padaria', 'pizzaria', 'subway', 'habib', 'outback', 'starbucks', 'cacau show', 'cacaushow', 'confeitaria', 'churrascaria', 'hamburgueria'],
+  'Alimentação': ['ifood', 'rappi', 'restaurante', 'lanchonete', 'burger', 'mcdonald', 'burgerking', 'padaria', 'pizzaria', 'pizza', 'subway', 'habib', 'outback', 'starbucks', 'cacau show', 'cacaushow', 'confeitaria', 'churrascaria', 'hamburgueria', 'kfc', 'giraffas', 'bobs', 'spoleto', 'madero', 'griletto', 'china in box', 'chinainbox', 'divino fogao', 'divinofogao', 'lanches', 'sorveteria', 'cafe'],
   'Saúde': ['farmacia', 'drogaria', 'drogasil', 'pacheco', 'droga raia', 'drogaraia', 'pague menos', 'paguemenos', 'hospital', 'clinica', 'laboratorio', 'unimed', 'hapvida', 'academia', 'smartfit', 'gympass', 'wellhub', 'dentista'],
   'Contas e serviços': ['claro', 'vivo', 'timbrasil', 'enel', 'sabesp', 'copasa', 'cemig', 'cpfl', 'equatorial', 'comgas', 'internet', 'condominio', 'iptu', 'seguro', 'porto seguro', 'portoseguro', 'consorcio'],
   'Educação': ['escola', 'faculdade', 'universidade', 'udemy', 'alura', 'duolingo', 'coursera', 'kumon', 'wizard', 'ccaa'],
   'Lazer': ['cinema', 'cinemark', 'steam', 'playstation', 'nintendo', 'ingresso', 'teatro', 'showlivre'],
   'Compras': ['amazon', 'mercadolivre', 'mercado livre', 'shopee', 'aliexpress', 'magalu', 'magazine luiza', 'magazineluiza', 'americanas', 'casas bahia', 'casasbahia', 'renner', 'riachuelo', 'centauro', 'adidas'],
-  'Vestuário': ['calcados', 'boutique']
+  'Vestuário': ['calcados', 'boutique'],
+  'Investimentos': ['cdb', 'rdb', 'lci', 'lca', 'tesouro direto', 'tesourodireto', 'poupanca', 'aplicacao', 'resgate', 'previdencia', 'renda fixa', 'nuinvest', 'xp investimentos', 'fundo de investimento'],
+  'Impostos e taxas': ['receita federal', 'detran', 'ipva', 'darf', 'das mei', 'secretaria de estado da fazenda', 'governo do', 'prefeitura']
 };
 
-// Sugere uma categoria a partir da descrição:
+// Sugere uma categoria a partir da descrição e do TIPO da transação (extraído do
+// extrato: "Aplicacao", "Resgate", "Pix enviado"...). Ordem de prioridade:
 //   1) regras do usuário (aba Regras: se a descrição CONTÉM o termo -> categoria);
-//   2) histórico exato (histMap: descrição normalizada -> categoria);
-//   3) palavras-chave embutidas.
-// `regras`: [{ termo (já normalizado), categoria }]. Tudo comparado normalizado.
-function categorizarAuto_(descricao, histMap, regras) {
+//   2) tipo autoritativo (aplicação/resgate de investimento -> Investimentos);
+//   3) histórico exato (histMap: descrição normalizada -> categoria);
+//   4) palavras-chave embutidas;
+//   5) fallback por tipo (pix/transferência sem outra pista -> Transferências).
+// `regras`: [{ termo (já normalizado), categoria }]. `tipo` é opcional. Tudo normalizado.
+function categorizarAuto_(descricao, histMap, regras, tipo) {
   const nd = norm_(descricao);
-  if (!nd) return '';
+  const nt = norm_(tipo);
   if (regras && regras.length) {
     for (let i = 0; i < regras.length; i++) {
       const t = regras[i].termo;
-      if (t && nd.indexOf(t) !== -1) return regras[i].categoria;
+      if (t && nd && nd.indexOf(t) !== -1) return regras[i].categoria;
     }
   }
-  if (histMap && histMap[nd]) return histMap[nd];
-  for (const cat in CATEGORIA_KEYWORDS) {
-    if (CATEGORIA_KEYWORDS[cat].some(k => { const nk = norm_(k); return nk && nd.indexOf(nk) !== -1; })) return cat;
+  if (nt.indexOf('aplicacao') === 0 || nt.indexOf('resgate') === 0) return 'Investimentos';
+  if (nd && histMap && histMap[nd]) return histMap[nd];
+  if (nd) {
+    for (const cat in CATEGORIA_KEYWORDS) {
+      if (CATEGORIA_KEYWORDS[cat].some(k => { const nk = norm_(k); return nk && nd.indexOf(nk) !== -1; })) return cat;
+    }
   }
+  if (/^(pixenviado|pixrecebido|transferencia)/.test(nt)) return 'Transferências';
   return '';
 }
 
-// Detecta o meio (Cartão vs Conta) a partir da descrição; sem indício, usa o fallback.
-function detectMeio_(desc, fallback) {
-  const n = norm_(desc);
-  if (/(cartaodecredito|compranocredito|creditocartao|faturadecartao|faturacartao)/.test(n)) return 'Cartão';
+// Detecta o meio (Cartão vs Conta) a partir da descrição/tipo; sem indício, usa o
+// fallback. Só marca Cartão em COMPRA no crédito — pagar a fatura é débito em CONTA.
+function detectMeio_(desc, fallback, tipo) {
+  const n = norm_(desc) + norm_(tipo);
+  if (/(compranocredito|cartaodecredito|compracredito)/.test(n)) return 'Cartão';
   return fallback || 'Conta';
 }
 
@@ -1739,12 +1749,13 @@ function importarTransacoes(lista) {
       setc('id', Utilities.getUuid());
       setc('data', dataObj);
       setc('conta', String((t && t.conta) || '').trim());
-      setc('meio', detectMeio_(descricao, String((t && t.meio) || 'Conta')));
+      const tipoOFX = String((t && t.tipoOFX) || '');
+      setc('meio', detectMeio_(descricao, String((t && t.meio) || 'Conta'), tipoOFX));
       setc('descricao', descricao);
       setc('tipo', 'Único');
       setc('natureza', norm_(t && t.natureza) === 'receita' ? 'Receita' : 'Despesa');
       let categoria = String((t && t.categoria) || '').trim();
-      if (!categoria) categoria = categorizarAuto_(descricao, histMap, regras);
+      if (!categoria) categoria = categorizarAuto_(descricao, histMap, regras, tipoOFX);
       setc('categoria', categoria);
       setc('valor', valor);
       setc('obs', String((t && t.obs) || ''));

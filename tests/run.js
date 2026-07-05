@@ -436,6 +436,35 @@ group('importarTransacoes — keywords com espaço + sem falso-positivo');
   eq(byDesc('TARIFA EXTRATO MENSAL').categoria, '', '"EXTRATO" NÃO vira Mercado (sem falso-positivo)');
 }
 
+group('importarTransacoes — categoria por TIPO do extrato + meio correto');
+{
+  const { api } = loadApp(baseTrans([]));
+  // Simula o que o parser OFX manda: descrição limpa + tipoOFX + meio da tela (Conta).
+  api.importarTransacoes([
+    { data: '2026-07-01', descricao: 'CDB POS DI LIQ. BANCO INTER SA', tipoOFX: 'Aplicacao', valor: 50, conta: 'Inter', meio: 'Conta', natureza: 'Despesa' },
+    { data: '2026-07-02', descricao: 'CDB PORQUINHO BANCO INTER SA', tipoOFX: 'Resgate', valor: 30, conta: 'Inter', meio: 'Conta', natureza: 'Receita' },
+    { data: '2026-07-03', descricao: 'Cleverson Guimaraes', tipoOFX: 'Pix enviado', valor: 70, conta: 'Inter', meio: 'Conta', natureza: 'Despesa' },
+    { data: '2026-07-04', descricao: 'EVOGE SISTEMAS E CONSULTORIA LTDA', tipoOFX: 'Pix recebido', valor: 2800, conta: 'Inter', meio: 'Conta', natureza: 'Receita' },
+    { data: '2026-07-05', descricao: 'Pagamento fatura cartao Inter', tipoOFX: 'Pagamento efetuado', valor: 1345.49, conta: 'Inter', meio: 'Conta', natureza: 'Despesa' },
+    { data: '2026-07-06', descricao: 'DROGASIL 1371 BRASILIA BRA', tipoOFX: 'Compra no debito', valor: 34.98, conta: 'Inter', meio: 'Conta', natureza: 'Despesa' },
+    { data: '2026-07-07', descricao: 'KFC BRASILIA BRA', tipoOFX: 'Compra no debito', valor: 53.8, conta: 'Inter', meio: 'Conta', natureza: 'Despesa' },
+    { data: '2026-07-08', descricao: 'RECEITA FEDERAL', tipoOFX: 'Pix enviado', valor: 86.05, conta: 'Inter', meio: 'Conta', natureza: 'Despesa' },
+    { data: '2026-07-09', descricao: 'LOJA X NO CREDITO', tipoOFX: 'Compra no credito', valor: 99, conta: 'Inter', meio: 'Conta', natureza: 'Despesa' }
+  ]);
+  const lst = api.listTransacoes('2026-07-01');
+  const by = d => lst.find(x => x.descricao === d);
+  eq(by('CDB POS DI LIQ. BANCO INTER SA').categoria, 'Investimentos', 'Aplicação -> Investimentos');
+  eq(by('CDB PORQUINHO BANCO INTER SA').categoria, 'Investimentos', 'Resgate -> Investimentos');
+  eq(by('Cleverson Guimaraes').categoria, 'Transferências', 'Pix p/ pessoa -> Transferências (fallback por tipo)');
+  eq(by('EVOGE SISTEMAS E CONSULTORIA LTDA').categoria, 'Transferências', 'Pix recebido -> Transferências');
+  eq(by('DROGASIL 1371 BRASILIA BRA').categoria, 'Saúde', 'Drogasil (limpo) -> Saúde por keyword');
+  eq(by('KFC BRASILIA BRA').categoria, 'Alimentação', 'KFC (limpo) -> Alimentação por keyword');
+  eq(by('RECEITA FEDERAL').categoria, 'Impostos e taxas', 'Receita Federal -> Impostos (keyword vence fallback de Pix)');
+  eq(by('Pagamento fatura cartao Inter').meio, 'Conta', 'pagar fatura é débito em CONTA (não Cartão)');
+  eq(by('DROGASIL 1371 BRASILIA BRA').meio, 'Conta', 'compra no débito -> Conta');
+  eq(by('LOJA X NO CREDITO').meio, 'Cartão', 'compra no crédito -> Cartão (por tipo)');
+}
+
 group('contas — cadastro dinâmico (upsert, delete)');
 {
   const { api } = loadApp({ Transacoes: [HEADER.slice()], Saldos: [['Conta', 'Saldo']] });
