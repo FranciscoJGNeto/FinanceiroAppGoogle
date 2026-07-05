@@ -38,6 +38,45 @@
       --nm-light: rgba(255, 255, 255, .045);
       --nm-out: 7px 7px 16px var(--nm-dark), -6px -6px 14px var(--nm-light);   /* em relevo */
       --nm-in: inset 4px 4px 9px var(--nm-dark), inset -4px -4px 9px var(--nm-light); /* debossed */
+      /* Detalhes que mudam entre temas */
+      --track: rgba(255, 255, 255, .10);   /* trilho de barras */
+      --chip: rgba(255, 255, 255, .06);    /* pills / segment */
+      --well: rgba(0, 0, 0, .20);          /* fundos afundados diretos */
+      --header-a: rgba(0, 0, 0, .92);
+      --header-b: rgba(0, 0, 0, .78);
+      --nav-bg: rgba(0, 0, 0, .96);
+      --wm: #070707;                        /* cor do cifrão de fundo */
+      --wm-sh: rgba(255, 255, 255, .05);
+      --wm-sh2: rgba(0, 0, 0, .9);
+      --tex-op: .13;                        /* opacidade da textura */
+      --skel1: rgba(255, 255, 255, .05);
+      --skel2: rgba(255, 255, 255, .13);
+    }
+
+    /* Tema claro — off-white/creme suave (sem branco estourado) */
+    :root[data-theme="light"] {
+      --bg: #e7e3db;
+      --surface: rgba(255, 255, 255, .5);
+      --panel: rgba(255, 255, 255, .5);
+      --card: rgba(0, 0, 0, .045);
+      --muted: rgba(30, 30, 30, .62);
+      --text: rgba(24, 24, 24, .92);
+      --line: rgba(0, 0, 0, .12);
+      --shadow: 0 14px 30px rgba(0, 0, 0, .14);
+      --nm-dark: rgba(0, 0, 0, .12);
+      --nm-light: rgba(255, 255, 255, .85);
+      --track: rgba(0, 0, 0, .10);
+      --chip: rgba(0, 0, 0, .05);
+      --well: rgba(0, 0, 0, .05);
+      --header-a: rgba(231, 227, 219, .92);
+      --header-b: rgba(231, 227, 219, .72);
+      --nav-bg: rgba(238, 234, 227, .96);
+      --wm: #d8d2c6;
+      --wm-sh: rgba(255, 255, 255, .7);
+      --wm-sh2: rgba(0, 0, 0, .12);
+      --tex-op: .05;
+      --skel1: rgba(0, 0, 0, .05);
+      --skel2: rgba(0, 0, 0, .12);
     }
 
     * {
@@ -47,8 +86,9 @@
     body {
       margin: 0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background-color: #000;
+      background-color: var(--bg);
       color: var(--text);
+      transition: background-color .2s ease, color .2s ease;
       /* Evita rolagem horizontal (sem quebrar o position:sticky do cabeçalho) */
       max-width: 100%;
       overflow-x: clip;
@@ -66,7 +106,7 @@
       inset: 0;
       z-index: -2;
       pointer-events: none;
-      opacity: .13;
+      opacity: var(--tex-op);
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
       background-size: 200px 200px;
     }
@@ -86,8 +126,8 @@
       font-weight: 900;
       font-size: 58vmin;
       line-height: 1;
-      color: #070707;
-      text-shadow: 2px 2px 2px rgba(255, 255, 255, .05), -2px -2px 3px rgba(0, 0, 0, .9);
+      color: var(--wm);
+      text-shadow: 2px 2px 2px var(--wm-sh), -2px -2px 3px var(--wm-sh2);
     }
 
     /* Permite seleção apenas em inputs */
@@ -108,7 +148,7 @@
     .appHeader {
       position: sticky;
       top: 0;
-      background: linear-gradient(180deg, rgba(0, 0, 0, .92), rgba(0, 0, 0, .78));
+      background: linear-gradient(180deg, var(--header-a), var(--header-b));
       backdrop-filter: blur(10px);
       border-bottom: 1px solid var(--line);
       z-index: 100;
@@ -146,7 +186,7 @@
 
     .panel {
       background: var(--surface);
-      border: 1px solid rgba(255, 255, 255, .03);
+      border: 1px solid var(--line);
       border-radius: var(--r);
       box-shadow: var(--nm-out);
       overflow: hidden;
@@ -165,7 +205,7 @@
     .panelHead h2 {
       font-size: var(--fs-md);
       margin: 0;
-      color: rgba(255, 255, 255, .90);
+      color: var(--text);
       letter-spacing: .2px;
     }
 
@@ -197,7 +237,7 @@
       width: 100%;
       padding: 13px 13px;
       border-radius: var(--r-sm);
-      border: 1px solid rgba(255, 255, 255, .03);
+      border: 1px solid var(--line);
       background: var(--card);
       color: var(--text);
       outline: none;
@@ -242,7 +282,7 @@
 
     .btnGhost {
       background: var(--surface);
-      border: 1px solid rgba(255, 255, 255, .04);
+      border: 1px solid var(--line);
       color: var(--text);
       font-weight: 700;
       padding: 10px 12px;
@@ -274,7 +314,7 @@
 
     .kpi {
       background: var(--card);
-      border: 1px solid rgba(255, 255, 255, .03);
+      border: 1px solid var(--line);
       border-radius: 14px;
       padding: 11px 11px;
       min-height: 72px;
@@ -306,9 +346,9 @@
       padding: 3px 8px;
       border-radius: 999px;
       border: 1px solid var(--line);
-      background: rgba(255, 255, 255, .06);
+      background: var(--chip);
       font-size: var(--fs-xs);
-      color: rgba(255, 255, 255, .88);
+      color: var(--text);
     }
 
     /* Navegação de mês no cabeçalho */
@@ -318,7 +358,7 @@
     .monthNav { display: flex; align-items: center; gap: 5px; }
     button.pill { font: inherit; font-size: var(--fs-xs); font-weight: 700; cursor: pointer; min-width: 92px; justify-content: center; }
     .mNavBtn {
-      background: var(--surface); border: 1px solid rgba(255, 255, 255, .04);
+      background: var(--surface); border: 1px solid var(--line);
       color: var(--text); border-radius: 10px; width: 34px; height: 34px;
       font-size: 20px; font-weight: 800; line-height: 1; cursor: pointer;
       box-shadow: var(--nm-out); -webkit-tap-highlight-color: transparent;
@@ -382,7 +422,7 @@
     .installPrompt .btnSmall {
       padding: 6px 12px;
       border: 1px solid rgba(255, 255, 255, .3);
-      background: rgba(255, 255, 255, .1);
+      background: var(--track);
       color: white;
       border-radius: 8px;
       font-size: var(--fs-xs);
@@ -412,7 +452,7 @@
 
     .txCard {
       border: 1px solid var(--line);
-      background: rgba(0, 0, 0, .18);
+      background: var(--well);
       border-radius: 14px;
       padding: 12px;
     }
@@ -450,8 +490,8 @@
     .txObs {
       margin-top: 10px;
       font-size: var(--fs-xs);
-      color: rgba(255, 255, 255, .78);
-      border-top: 1px dashed rgba(255, 255, 255, .14);
+      color: var(--muted);
+      border-top: 1px dashed var(--line);
       padding-top: 10px;
     }
 
@@ -475,12 +515,12 @@
     }
 
     th {
-      color: rgba(255, 255, 255, .85);
+      color: var(--text);
       font-weight: 800;
     }
 
     td {
-      color: rgba(255, 255, 255, .90);
+      color: var(--text);
     }
 
     /* Sticky action bar for mobile (só na tela "Lançar", acima da barra de navegação) */
@@ -506,7 +546,7 @@
       bottom: 0;
       z-index: 150;
       display: flex;
-      background: rgba(0, 0, 0, .96);
+      background: var(--nav-bg);
       backdrop-filter: blur(12px);
       border-top: 1px solid var(--line);
       padding-bottom: env(safe-area-inset-bottom);
@@ -554,8 +594,8 @@
       padding: 10px 12px;
       border-radius: var(--r-sm);
       border: 1px solid var(--line);
-      background: rgba(0, 0, 0, .20);
-      color: rgba(255, 255, 255, .92);
+      background: var(--well);
+      color: var(--text);
       font-size: var(--fs-sm);
     }
 
@@ -578,7 +618,7 @@
     .toast {
       pointer-events: auto; max-width: 540px;
       background: var(--surface); color: var(--text);
-      border: 1px solid rgba(255, 255, 255, .06); border-left: 4px solid var(--primary);
+      border: 1px solid var(--line); border-left: 4px solid var(--primary);
       border-radius: var(--r-sm); padding: 11px 14px; font-size: var(--fs-sm); font-weight: 600;
       box-shadow: var(--nm-out); animation: toastIn .22s ease;
     }
@@ -593,7 +633,7 @@
     @keyframes shimmer { to { background-position: -200% 0; } }
     .skLine {
       height: 12px; border-radius: 6px; margin: 6px 0;
-      background: linear-gradient(90deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .13), rgba(255, 255, 255, .05));
+      background: linear-gradient(90deg, var(--skel1), var(--skel2), var(--skel1));
       background-size: 200% 100%; animation: shimmer 1.2s linear infinite;
     }
     .skLine.w60 { width: 60%; } .skLine.w40 { width: 40%; } .skLine.w30 { width: 30%; }
@@ -601,7 +641,7 @@
     .kpis.loading .val { color: transparent; position: relative; }
     .kpis.loading .val::after {
       content: ''; position: absolute; left: 0; top: 3px; height: 16px; width: 72%; border-radius: 6px;
-      background: linear-gradient(90deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .13), rgba(255, 255, 255, .05));
+      background: linear-gradient(90deg, var(--skel1), var(--skel2), var(--skel1));
       background-size: 200% 100%; animation: shimmer 1.2s linear infinite;
     }
 
@@ -634,7 +674,7 @@
       color: var(--text); border-radius: 10px; padding: 8px; font-size: var(--fs-xs);
       font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent;
     }
-    .miniBtn:active { background: rgba(255, 255, 255, .10); }
+    .miniBtn:active { background: var(--track); }
     .miniBtn.danger { border-color: rgba(239, 68, 68, .4); color: #fca5a5; }
     td .rowBtns { display: flex; gap: 6px; }
     td .rowBtns button {
@@ -645,7 +685,7 @@
 
     /* Barra de progresso do % do salário */
     .progress {
-      height: 8px; border-radius: 999px; background: rgba(255, 255, 255, .10);
+      height: 8px; border-radius: 999px; background: var(--track);
       overflow: hidden; margin-top: 8px;
     }
     .progress > span { display: block; height: 100%; width: 0; background: var(--ok); transition: width .3s ease; }
@@ -667,17 +707,17 @@
     .catRow { display: grid; grid-template-columns: 104px 1fr auto; align-items: center; gap: 10px; margin-bottom: 8px; font-size: var(--fs-sm); }
     .catRow:last-child { margin-bottom: 0; }
     .catName { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .catBarWrap { background: rgba(255, 255, 255, .08); border-radius: 999px; height: 10px; overflow: hidden; }
+    .catBarWrap { background: var(--track); border-radius: 999px; height: 10px; overflow: hidden; }
     .catBar { height: 100%; background: linear-gradient(90deg, #4f8cff, #2f6bff); border-radius: 999px; }
     .catVal { font-variant-numeric: tabular-nums; }
 
     /* Orçamentos (gasto vs limite) */
-    .orcRow { border: 1px solid var(--line); background: rgba(0, 0, 0, .18); border-radius: var(--r-sm); padding: 10px 12px; margin-bottom: 10px; }
+    .orcRow { border: 1px solid var(--line); background: var(--well); border-radius: var(--r-sm); padding: 10px 12px; margin-bottom: 10px; }
     .orcRow:last-child { margin-bottom: 0; }
     .orcTop { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; }
     .orcName { font-weight: 700; }
     .orcVals { font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
-    .orcBarWrap { background: rgba(255, 255, 255, .08); border-radius: 999px; height: 10px; overflow: hidden; }
+    .orcBarWrap { background: var(--track); border-radius: 999px; height: 10px; overflow: hidden; }
     .orcBar { height: 100%; border-radius: 999px; transition: width .3s ease; }
     .orcActions { display: flex; gap: 8px; margin-top: 10px; }
 
@@ -720,7 +760,7 @@
     /* Toggle segmentado (Despesa/Receita) */
     .segment {
       display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
-      background: rgba(0, 0, 0, .18); border: 1px solid var(--line);
+      background: var(--well); border: 1px solid var(--line);
       border-radius: var(--r-sm); padding: 4px;
     }
     .segment button {
@@ -731,7 +771,7 @@
     .segment button[aria-pressed="true"] { color: #fff; }
     .segment button.seg-desp[aria-pressed="true"] { background: linear-gradient(180deg, #ef4444, #dc2626); }
     .segment button.seg-rec[aria-pressed="true"] { background: linear-gradient(180deg, var(--ok), #16a34a); }
-    .segment button.seg-neu[aria-pressed="true"] { background: rgba(255, 255, 255, .14); }
+    .segment button.seg-neu[aria-pressed="true"] { background: var(--track); color: var(--text); }
 
     /* Campo de valor com prefixo R$ */
     .moneyWrap { position: relative; }
@@ -775,7 +815,7 @@
         flex-direction: column;
         gap: 4px;
         padding: 8px;
-        border: 1px solid rgba(255, 255, 255, .03);
+        border: 1px solid var(--line);
         border-radius: var(--r);
         background: var(--surface);
         box-shadow: var(--nm-out);
@@ -789,7 +829,7 @@
         border-radius: 10px;
       }
       .tabbar button .ic { font-size: var(--fs-lg); }
-      .tabbar button[aria-current="page"] { background: rgba(79, 140, 255, .14); color: #fff; }
+      .tabbar button[aria-current="page"] { background: rgba(79, 140, 255, .14); color: var(--text); }
 
       .appHeader {
         position: relative;

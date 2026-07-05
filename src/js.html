@@ -1429,6 +1429,29 @@
       setTimeout(() => { el.classList.add('leaving'); setTimeout(() => el.remove(), 260); }, type === 'err' ? 5000 : 3000);
     }
 
+    // ---- Tema claro/escuro ----
+    function applyTheme(theme) {
+      const t = theme === 'light' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+      const btn = document.getElementById('btnTheme');
+      if (btn) btn.textContent = t === 'light' ? '☀️' : '🌙';
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', t === 'light' ? '#e7e3db' : '#000000');
+    }
+    function initTheme() {
+      let saved = localStorage.getItem('theme');
+      if (saved !== 'light' && saved !== 'dark') {
+        saved = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+      }
+      applyTheme(saved);
+    }
+    function toggleTheme() {
+      const cur = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+      const next = cur === 'light' ? 'dark' : 'light';
+      localStorage.setItem('theme', next);
+      applyTheme(next);
+    }
+
     // Skeleton loading enquanto os dados chegam
     function setKpiLoading(on) {
       const k = document.querySelector('.kpis');
@@ -1766,6 +1789,10 @@
       rd.onload = () => { document.getElementById('impTexto').value = rd.result; };
       rd.readAsText(f);
     });
+
+    // Tema (antes de tudo, para não piscar)
+    initTheme();
+    document.getElementById('btnTheme').addEventListener('click', toggleTheme);
 
     // Estado inicial do formulário
     setNatureza('Despesa');

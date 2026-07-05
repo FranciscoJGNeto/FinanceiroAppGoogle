@@ -3,6 +3,11 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v43 — Tema claro (#8)
+- **Tema claro suave** (off-white/creme, **sem branco estourado** — não cansa a vista): fundo `#e7e3db`, texto escuro (não preto puro), neumorfismo com sombras suaves, textura e cifrão de fundo adaptados.
+- **Alternância** pelo botão 🌙/☀️ no cabeçalho; a escolha é **lembrada** (localStorage) e, na 1ª vez, respeita o `prefers-color-scheme` do sistema. Atualiza também a cor da barra do navegador (`theme-color`).
+- Por baixo: cores cruas do CSS **tokenizadas** (bordas, trilhos, chips, poços, cabeçalho, nav, cifrão, skeleton) — o tema claro é só um bloco `:root[data-theme="light"]` que sobrescreve os tokens.
+
 ## v42 — Plano visual: design tokens (#1)
 - **Sistema de design em variáveis:** escala de **espaçamento** (`--sp-1..6`), **tipografia** (`--fs-xs..xl`) e **raios** (`--r-sm/--r/--r-lg`).
 - Fontes e raios do app passaram a usar os tokens (substituição **1:1**, sem mudança visual) — deixando o **tema claro (#8)** trivial depois (basta sobrescrever os tokens).

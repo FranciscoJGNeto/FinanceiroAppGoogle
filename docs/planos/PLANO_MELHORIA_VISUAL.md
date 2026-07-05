@@ -10,8 +10,9 @@
 > ✅ troca de mês no cabeçalho + botão **"Hoje"** → **v31**/**v36** ·
 > ✅ **#4** **toasts** de feedback (v40) + **skeleton loading** nos KPIs/lista → **v41** ·
 > ✅ **#9** a11y — `prefers-reduced-motion`, `role=status`, `aria-label` (v40) + **foco visível** (`:focus-visible`) e **contraste** do texto secundário → **v41** ·
-> ✅ **#1** **design tokens** — escala de espaçamento (`--sp-*`), tipografia (`--fs-*`) e raios (`--r-sm/--r/--r-lg`); fonte e raio já adotados por variáveis (base para o tema claro) → **v42**.
-> ⏳ Pendentes — **#3** ícones SVG no lugar de emojis · **#8** tema claro (agora fácil: só sobrescrever tokens) · adotar `--sp-*` nos paddings/margens (incremental) · **#9** revisão de contraste AA em todos os fundos.
+> ✅ **#1** **design tokens** — escala de espaçamento (`--sp-*`), tipografia (`--fs-*`) e raios (`--r-sm/--r/--r-lg`) → **v42** ·
+> ✅ **#8** **tema claro** suave (off-white/creme) com alternância 🌙/☀️, persistência e `prefers-color-scheme`; cores cruas tokenizadas → **v43**.
+> ⏳ Pendentes — **#3** ícones SVG no lugar de emojis · adotar `--sp-*` nos paddings/margens (incremental) · **#9** revisão de contraste AA nos dois temas.
 
 > **Obs.:** o "Mockup textual" abaixo é histórico (layout antigo de acordeão único com contas
 > fixas); a UI atual é o app com telas + tema neumórfico descrito no CHANGELOG.
