@@ -5,7 +5,7 @@
       --surface: rgba(30, 30, 30, .40);   /* painéis em relevo (translúcidos) */
       --panel: rgba(30, 30, 30, .40);
       --card: rgba(0, 0, 0, .24);          /* poços "debossed" (mais transparentes) */
-      --muted: rgba(255, 255, 255, .58);
+      --muted: rgba(255, 255, 255, .64);
       --text: rgba(255, 255, 255, .90);
       --line: rgba(255, 255, 255, .05);
       --primary: #4f8cff;
@@ -571,6 +571,28 @@
     @keyframes toastIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
     @keyframes toastOut { to { opacity: 0; transform: translateY(12px); } }
     @media (min-width: 900px) { .toastWrap { bottom: 20px; right: 20px; left: auto; align-items: flex-end; } }
+
+    /* Skeleton loading (enquanto os dados carregam) */
+    @keyframes shimmer { to { background-position: -200% 0; } }
+    .skLine {
+      height: 12px; border-radius: 6px; margin: 6px 0;
+      background: linear-gradient(90deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .13), rgba(255, 255, 255, .05));
+      background-size: 200% 100%; animation: shimmer 1.2s linear infinite;
+    }
+    .skLine.w60 { width: 60%; } .skLine.w40 { width: 40%; } .skLine.w30 { width: 30%; }
+    .txCard.skel { pointer-events: none; }
+    .kpis.loading .val { color: transparent; position: relative; }
+    .kpis.loading .val::after {
+      content: ''; position: absolute; left: 0; top: 3px; height: 16px; width: 72%; border-radius: 6px;
+      background: linear-gradient(90deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .13), rgba(255, 255, 255, .05));
+      background-size: 200% 100%; animation: shimmer 1.2s linear infinite;
+    }
+
+    /* Foco visível para navegação por teclado (a11y) */
+    .btn:focus-visible, .btnGhost:focus-visible, .miniBtn:focus-visible, .mNavBtn:focus-visible,
+    button.pill:focus-visible, .tabbar button:focus-visible, .field:focus-visible, .segment button:focus-visible {
+      outline: 2px solid var(--primary); outline-offset: 2px;
+    }
 
     /* Respeita quem prefere menos animação */
     @media (prefers-reduced-motion: reduce) {

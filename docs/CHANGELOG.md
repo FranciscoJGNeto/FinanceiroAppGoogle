@@ -3,6 +3,10 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v41 — Plano visual: skeleton loading + foco/contraste
+- **Skeleton loading:** enquanto os dados chegam, os KPIs e a lista mostram um **shimmer** (em vez de "—"), deixando a espera mais suave.
+- **Acessibilidade:** **foco visível** (`:focus-visible`) em botões, campos e navegação; **contraste** do texto secundário aumentado. (Respeita `prefers-reduced-motion` — sem shimmer para quem prefere menos animação.)
+
 ## v40 — Consolidação + 1ª onda visual (toasts/a11y) + novo plano
 - **Consolidação:** suíte de **134 testes** verde, frontend remontável (index+styles+js), links dos .md validados e **remoção de código morto** (funções órfãs do antigo "recolher tudo").
 - **Toasts:** feedback flutuante ao salvar/excluir lançamento (some sozinho; erros ficam mais tempo).

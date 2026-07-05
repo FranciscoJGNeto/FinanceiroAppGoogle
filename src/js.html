@@ -1254,10 +1254,12 @@
 
       setMsg('msgResumo', '', 'ok');
       setMsg('msgLista', '', 'ok');
+      setKpiLoading(true);
+      skeletonCards('txCards', 4);
 
       google.script.run
         .withSuccessHandler(fillResumo)
-        .withFailureHandler(err => setMsg('msgResumo', 'Erro ao carregar resumo: ' + (err?.message || err), 'err'))
+        .withFailureHandler(err => { setKpiLoading(false); setMsg('msgResumo', 'Erro ao carregar resumo: ' + (err?.message || err), 'err'); })
         .getResumo(mesISO);
 
       google.script.run
@@ -1298,6 +1300,7 @@
     }
 
     function fillResumo(r) {
+      setKpiLoading(false);
       const set = (id, v) => { document.getElementById(id).textContent = moneyBRL(v); };
       set('cGeral', r.totalGeral);
       set('cCompart', r.totalCompart);
@@ -1424,6 +1427,19 @@
       el.textContent = text;
       wrap.appendChild(el);
       setTimeout(() => { el.classList.add('leaving'); setTimeout(() => el.remove(), 260); }, type === 'err' ? 5000 : 3000);
+    }
+
+    // Skeleton loading enquanto os dados chegam
+    function setKpiLoading(on) {
+      const k = document.querySelector('.kpis');
+      if (k) k.classList.toggle('loading', on);
+    }
+    function skeletonCards(id, n) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      let h = '';
+      for (let i = 0; i < n; i++) h += '<div class="txCard skel"><div class="skLine w60"></div><div class="skLine w30"></div></div>';
+      el.innerHTML = h;
     }
 
     function limpar() {
