@@ -7,8 +7,10 @@
 > ✅ **#10** teclados/mobile (enterkeyhint) → **v7** ·
 > ✅ **#7** navegação por telas (app SPA com barra inferior/sidebar) → **v30** ·
 > ✅ **tema escuro neumórfico** (fundo preto + textura de papel + cifrão em relevo, superfícies translúcidas, tokens `--nm-*`) → **v31**/**v34** ·
-> ✅ troca de mês no cabeçalho + botão **"Hoje"** → **v31**/**v36**.
-> ⏳ Pendentes — **#1** tokens de design (espaçamento/tipografia) · **#3** ícones SVG no lugar de emojis · **#4** toasts/skeleton · **#8** tema claro · **#9** a11y completa (parcial).
+> ✅ troca de mês no cabeçalho + botão **"Hoje"** → **v31**/**v36** ·
+> ✅ **#4** (parte) **toasts** de feedback flutuante → **v40** ·
+> ✅ **#9** (parte) a11y — `prefers-reduced-motion`, `role=status` nos toasts, `aria-label` em botão de ícone → **v40**.
+> ⏳ Pendentes — **#1** tokens de design (espaçamento/tipografia) · **#3** ícones SVG no lugar de emojis · **#4** **skeleton loading** · **#8** tema claro · **#9** a11y completa (foco, contraste).
 
 > **Obs.:** o "Mockup textual" abaixo é histórico (layout antigo de acordeão único com contas
 > fixas); a UI atual é o app com telas + tema neumórfico descrito no CHANGELOG.

@@ -3,6 +3,13 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v40 — Consolidação + 1ª onda visual (toasts/a11y) + novo plano
+- **Consolidação:** suíte de **134 testes** verde, frontend remontável (index+styles+js), links dos .md validados e **remoção de código morto** (funções órfãs do antigo "recolher tudo").
+- **Toasts:** feedback flutuante ao salvar/excluir lançamento (some sozinho; erros ficam mais tempo).
+- **Acessibilidade:** respeita `prefers-reduced-motion`, toasts com `role="status"`, `aria-label` no botão de instalar.
+- **Docs atualizados** (ANALISE para v39 com Telegram/backup agendado; plano visual).
+- **Novo plano:** [PLANO_FEATURES_FINANCEIRAS.md](planos/PLANO_FEATURES_FINANCEIRAS.md) — próximas ondas (patrimônio, dívidas, reserva, comparativos, alertas, assinaturas, regras de categoria…) viáveis na arquitetura atual.
+
 ## v39 — Bot do Telegram (Onda 7.8) — lançar por mensagem
 - **Lançar gasto por mensagem:** mande **"Mercado 85,90 Inter"** ao seu bot e vira lançamento. Painel **Config → 🤖 Bot do Telegram** (token, chat id, ativar/verificar agora).
 - **Mantém o app privado** (`MYSELF`): em vez de webhook público, um **gatilho consulta o Telegram a cada minuto** (só requisições de saída via `UrlFetchApp`). Segurança: só aceita mensagens do seu **chat id**.

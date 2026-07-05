@@ -1121,7 +1121,6 @@
           sec.classList.toggle('collapsed');
           localStorage.setItem(key, sec.classList.contains('collapsed') ? 'collapsed' : 'open');
           sync();
-          updateToggleAllLabel();
         };
         sync();
         head.addEventListener('click', (e) => {
@@ -1133,27 +1132,6 @@
           if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
         });
       });
-      updateToggleAllLabel();
-    }
-
-    // ---- Recolher / expandir TODOS os acordeões de uma vez ----
-    function anyExpanded() {
-      return Array.prototype.some.call(document.querySelectorAll('.acc'), s => !s.classList.contains('collapsed'));
-    }
-    function setAllAccordions(collapsed) {
-      document.querySelectorAll('.acc').forEach(sec => {
-        const key = 'acc_' + sec.getAttribute('data-acc');
-        sec.classList.toggle('collapsed', collapsed);
-        localStorage.setItem(key, collapsed ? 'collapsed' : 'open');
-        const head = sec.querySelector('.accHead');
-        if (head) head.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-      });
-      updateToggleAllLabel();
-    }
-    function updateToggleAllLabel() {
-      const btn = document.getElementById('btnToggleAll');
-      if (!btn) return;
-      btn.textContent = anyExpanded() ? '🔼 Recolher' : '🔽 Expandir';
     }
 
     // ---- Navegação por telas (SPA) ----
@@ -1436,6 +1414,18 @@
         .replaceAll("'", "&#039;");
     }
 
+    // Feedback flutuante (toast). type: 'ok' | 'err' | ''
+    function toast(text, type) {
+      let wrap = document.getElementById('toastWrap');
+      if (!wrap) { wrap = document.createElement('div'); wrap.id = 'toastWrap'; wrap.className = 'toastWrap'; document.body.appendChild(wrap); }
+      const el = document.createElement('div');
+      el.className = 'toast ' + (type === 'err' ? 'err' : (type === 'ok' ? 'ok' : ''));
+      el.setAttribute('role', 'status');
+      el.textContent = text;
+      wrap.appendChild(el);
+      setTimeout(() => { el.classList.add('leaving'); setTimeout(() => el.remove(), 260); }, type === 'err' ? 5000 : 3000);
+    }
+
     function limpar() {
       document.getElementById('tValor').value = '';
       document.getElementById('tDesc').value = '';
@@ -1506,8 +1496,8 @@
       if (!confirm(`Excluir "${nome}"?\nEsta ação não pode ser desfeita.`)) return;
       setMsg('msgLista', '⏳ Excluindo...', 'ok');
       google.script.run
-        .withSuccessHandler(() => { if (editId === id) sairEdicao(); refresh(); })
-        .withFailureHandler(err => setMsg('msgLista', '❌ Erro ao excluir: ' + (err?.message || err), 'err'))
+        .withSuccessHandler(() => { toast('🗑️ Lançamento excluído.', 'ok'); if (editId === id) sairEdicao(); refresh(); })
+        .withFailureHandler(err => { const m = '❌ Erro ao excluir: ' + (err?.message || err); setMsg('msgLista', m, 'err'); toast(m, 'err'); })
         .deleteTransacao(id);
     }
 
@@ -1623,14 +1613,17 @@
 
       const req = google.script.run
         .withSuccessHandler(() => {
-          setMsg('msgSalvar', editando ? '✅ Atualizado! Atualizando lista…' : '✅ Salvo! Atualizando lista…', 'ok');
+          setMsg('msgSalvar', '', 'ok');
+          toast(editando ? '✅ Lançamento atualizado!' : '✅ Lançamento salvo!', 'ok');
           disableSave(false);
           sairEdicao();
           limpar();
           refresh();
         })
         .withFailureHandler(err => {
-          setMsg('msgSalvar', '❌ Erro ao salvar: ' + (err?.message || err), 'err');
+          const m = '❌ Erro ao salvar: ' + (err?.message || err);
+          setMsg('msgSalvar', m, 'err');
+          toast(m, 'err');
           disableSave(false);
         });
 

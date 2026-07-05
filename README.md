@@ -103,7 +103,8 @@ FinanceiroAppGoogle/
     ├── GUIA_CLASP.md              # como publicar com clasp
     ├── GUIA_TELEGRAM.md           # como configurar o bot do Telegram
     ├── planos/                    # roadmap e melhorias do produto/código
-    │   ├── PLANO_FUNCIONALIDADES.md   # roadmap de recursos (Ondas 1–7)
+    │   ├── PLANO_FUNCIONALIDADES.md   # roadmap de recursos (Ondas 1–7, concluídas)
+    │   ├── PLANO_FEATURES_FINANCEIRAS.md # próximas ondas (8+): features financeiras
     │   ├── PLANO_ALTERACOES.md        # último lote de mudanças (em ordem)
     │   ├── PLANO_MELHORIA_CODIGO.md   # evolução de arquitetura de código
     │   ├── PLANO_MELHORIA_VISUAL.md   # evolução de UI/UX
@@ -164,6 +165,7 @@ código ≠ 0 se algo falhar (pronto para CI).
 - ✅ **Onda 4–5** — acerto de contas · contas dinâmicas · backup CSV/XML · importar OFX/CSV · lembretes (e-mail)
 - ✅ **Onda 6** — instalar na tela inicial · **app com telas (navegação)** · **tema escuro neumórfico** · troca de mês com botão "Hoje"
 - ✅ **Onda 7 (completa)** — recorrentes automáticos · metas de economia · relatório anual · fatura de cartão · regra 50/30/20 · importar QIF/CSV por banco · backup agendado · **bot do Telegram** (lançar por mensagem)
+- 🔮 **Onda 8+ (planejado)** — patrimônio líquido, dívidas, reserva de emergência, comparativos, alertas de gasto incomum, radar de assinaturas, regras de categoria… em [docs/planos/PLANO_FEATURES_FINANCEIRAS.md](docs/planos/PLANO_FEATURES_FINANCEIRAS.md)
 - 🧭 **Arquitetura** — caminhos para PWA instalável de verdade, multiusuário e offline em [docs/arquitetura/](docs/arquitetura/)
 
 Roadmap detalhado (com a versão de cada entrega) em [docs/planos/PLANO_FUNCIONALIDADES.md](docs/planos/PLANO_FUNCIONALIDADES.md).

@@ -18,7 +18,8 @@ Roadmap e melhorias que cabem na arquitetura atual (Apps Script + Google Sheets)
 
 | Documento | O que é |
 |-----------|---------|
-| [PLANO_FUNCIONALIDADES.md](planos/PLANO_FUNCIONALIDADES.md) | Roadmap de recursos (Ondas 1–7). **A Onda 7 lista os próximos passos em ordem.** |
+| [PLANO_FUNCIONALIDADES.md](planos/PLANO_FUNCIONALIDADES.md) | Roadmap de recursos (Ondas 1–7, **concluídas**). |
+| [PLANO_FEATURES_FINANCEIRAS.md](planos/PLANO_FEATURES_FINANCEIRAS.md) | **Próximas ondas (8+)** — features financeiras na arquitetura atual. |
 | [PLANO_ALTERACOES.md](planos/PLANO_ALTERACOES.md) | Último lote de mudanças, item a item. |
 | [PLANO_MELHORIA_CODIGO.md](planos/PLANO_MELHORIA_CODIGO.md) | Evolução da arquitetura de código. |
 | [PLANO_MELHORIA_VISUAL.md](planos/PLANO_MELHORIA_VISUAL.md) | Evolução de UI/UX. |

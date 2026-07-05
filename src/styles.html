@@ -550,6 +550,38 @@
       border-color: rgba(239, 68, 68, .55);
     }
 
+    /* Toasts (feedback flutuante) */
+    .toastWrap {
+      position: fixed;
+      left: 0; right: 0;
+      bottom: calc(70px + env(safe-area-inset-bottom));
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      z-index: 300; pointer-events: none; padding: 0 12px;
+    }
+    .toast {
+      pointer-events: auto; max-width: 540px;
+      background: var(--surface); color: var(--text);
+      border: 1px solid rgba(255, 255, 255, .06); border-left: 4px solid var(--primary);
+      border-radius: 12px; padding: 11px 14px; font-size: 13px; font-weight: 600;
+      box-shadow: var(--nm-out); animation: toastIn .22s ease;
+    }
+    .toast.ok { border-left-color: var(--ok); }
+    .toast.err { border-left-color: var(--bad); }
+    .toast.leaving { animation: toastOut .25s ease forwards; }
+    @keyframes toastIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+    @keyframes toastOut { to { opacity: 0; transform: translateY(12px); } }
+    @media (min-width: 900px) { .toastWrap { bottom: 20px; right: 20px; left: auto; align-items: flex-end; } }
+
+    /* Respeita quem prefere menos animação */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .001ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
     /* Valores / natureza */
     .txVal.pos { color: var(--ok); }
     .txCard.receita { border-left: 3px solid var(--ok); }

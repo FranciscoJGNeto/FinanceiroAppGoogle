@@ -1,6 +1,6 @@
 # Análise do Projeto — Financeiro
 
-> **Atualizado para a v36.** A evolução versão a versão está no [CHANGELOG.md](CHANGELOG.md);
+> **Atualizado para a v39** (Onda 7 completa). A evolução versão a versão está no [CHANGELOG.md](CHANGELOG.md);
 > o roadmap com a versão de cada entrega em [planos/PLANO_FUNCIONALIDADES.md](planos/PLANO_FUNCIONALIDADES.md).
 
 ## O que é o projeto
@@ -44,7 +44,8 @@ fixa). Principais grupos de funções:
 | Contas / Cartão | `getContas`, `setConta`, `deleteConta`, `getFaturaCartao` |
 | 50/30/20 | `getRegra503020`, `getClassificacao`, `setClasseCategoria` |
 | Lembretes | `getLembretes`, `setLembrete`, `deleteLembrete`, `verificarLembretes` + gatilho diário |
-| Import/Backup | `importarTransacoes`, `exportarBackup` (CSV), `exportarBackupXML` |
+| Import/Backup | `importarTransacoes`, `exportarBackup` (CSV), `exportarBackupXML` + **backup agendado** (`backupAgendado` + gatilho semanal/mensal) |
+| Telegram | `parseLancamentoMsg_`, `get/setConfigTelegram`, `verificarTelegram` + gatilho de 1 min (polling via `UrlFetchApp`) |
 | Setup | `criarEstruturaPlanilha`, `migrarEstrutura`, `testarEstrutura`, `include` |
 
 ### Frontend — `index.html` + `styles.html` + `js.html`
@@ -58,7 +59,7 @@ fixa). Principais grupos de funções:
 | ➕ Lançar | Novo lançamento + Transações do mês |
 | 📊 Análise | Gráficos, Relatório anual, Parcelas futuras, Fatura de cartão, Compartilhado |
 | 🎯 Planejar | Orçamentos, Metas, Regra 50/30/20, Lembretes |
-| ⚙️ Config | Contas, Importar extrato, Backup |
+| ⚙️ Config | Contas, Backup (+ agendado), Bot do Telegram, Importar extrato |
 
 No **cabeçalho** (visível em qualquer tela): navegação de mês (‹ › + rótulo) com botão
 **"Hoje"** para voltar ao mês atual, e botão de instalar. Recursos de UI: **tema escuro
