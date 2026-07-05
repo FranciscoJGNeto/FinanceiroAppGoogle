@@ -368,6 +368,21 @@ group('importarTransacoes — auto-categorização');
   eq(byDesc('Padaria do Zé').categoria, 'Alimentação', 'Padaria -> Alimentação (histórico)');
 }
 
+group('importarTransacoes — keywords com espaço + sem falso-positivo');
+{
+  const { api } = loadApp(baseTrans([]));
+  api.importarTransacoes([
+    { data: '2026-07-02', descricao: 'SEM PARAR PEDAGIO SP', valor: 12, conta: 'Inter', natureza: 'Despesa' },
+    { data: '2026-07-03', descricao: 'PAO DE ACUCAR 123', valor: 90, conta: 'Inter', natureza: 'Despesa' },
+    { data: '2026-07-04', descricao: 'TARIFA EXTRATO MENSAL', valor: 9, conta: 'Inter', natureza: 'Despesa' }
+  ]);
+  const lst = api.listTransacoes('2026-07-01');
+  const byDesc = d => lst.find(x => x.descricao === d);
+  eq(byDesc('SEM PARAR PEDAGIO SP').categoria, 'Transporte', 'keyword com espaço casa (Sem Parar)');
+  eq(byDesc('PAO DE ACUCAR 123').categoria, 'Mercado', 'Pão de Açúcar -> Mercado');
+  eq(byDesc('TARIFA EXTRATO MENSAL').categoria, '', '"EXTRATO" NÃO vira Mercado (sem falso-positivo)');
+}
+
 group('contas — cadastro dinâmico (upsert, delete)');
 {
   const { api } = loadApp({ Transacoes: [HEADER.slice()], Saldos: [['Conta', 'Saldo']] });
@@ -461,6 +476,22 @@ group('importarTransacoes — lote e dedup');
   eq(jul.length, 3, 'julho passa a ter 3 (Mercado + 2 importadas)');
   const rec = jul.find(x => x.descricao === 'Salário');
   eq(rec.natureza, 'Receita', 'natureza da receita importada preservada');
+}
+
+group('importarTransacoes — mantém repetidos legítimos + meio do cartão');
+{
+  const { api } = loadApp({ Transacoes: [HEADER.slice()], Saldos: [['Conta', 'Saldo'], ['Nubank', 0]] });
+  const lote = [
+    { data: '2026-07-06', descricao: 'UBER', valor: 25, conta: 'Nubank', meio: 'Cartão', natureza: 'Despesa' },
+    { data: '2026-07-06', descricao: 'UBER', valor: 25, conta: 'Nubank', meio: 'Cartão', natureza: 'Despesa' } // repetido legítimo no mesmo extrato
+  ];
+  const r1 = api.importarTransacoes(lote);
+  eq([r1.importadas, r1.ignoradas], [2, 0], 'mantém os 2 Uber idênticos do mesmo extrato');
+  const jul = api.listTransacoes('2026-07-01');
+  eq(jul.filter(x => x.descricao === 'UBER').length, 2, '2 lançamentos Uber na planilha');
+  eq(jul[0].meio, 'Cartão', 'meio "Cartão" preservado na importação');
+  const r2 = api.importarTransacoes(lote); // reimportar o mesmo arquivo
+  eq([r2.importadas, r2.ignoradas], [0, 2], 'reimportar o mesmo extrato ignora tudo (já existe)');
 }
 
 group('lembretes — CRUD + verificação/e-mail (idempotente no mês)');

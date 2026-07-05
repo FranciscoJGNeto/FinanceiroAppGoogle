@@ -345,7 +345,7 @@
         const amt = val(b, 'TRNAMT');
         const desc = val(b, 'MEMO') || val(b, 'NAME') || 'Lançamento';
         if (!/^\d{8}/.test(dt)) return;
-        const v = parseFloat(String(amt).replace(/\s/g, '').replace(',', '.'));
+        const v = parseValorBR(String(amt).replace(/\s/g, ''));
         if (isNaN(v) || v === 0) return;
         const iso = dt.slice(0, 4) + '-' + dt.slice(4, 6) + '-' + dt.slice(6, 8);
         out.push({ data: iso, descricao: desc, valor: Math.abs(v), natureza: v < 0 ? 'Despesa' : 'Receita' });
@@ -463,7 +463,8 @@
     function importarExtrato() {
       if (!impParsed.length) { setMsg('msgImportar', '❌ Pré-visualize primeiro.', 'err'); return; }
       const conta = document.getElementById('impConta').value;
-      const lista = impParsed.map(t => Object.assign({}, t, { conta: conta }));
+      const meio = document.getElementById('impMeio').value || 'Conta';
+      const lista = impParsed.map(t => Object.assign({}, t, { conta: conta, meio: meio }));
       setMsg('msgImportar', '⏳ Importando...', 'ok');
       const btn = document.getElementById('btnImportar');
       btn.disabled = true;

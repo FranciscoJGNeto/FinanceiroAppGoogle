@@ -59,27 +59,31 @@ function isCompartFlag_(v) {
 }
 
 // Palavras-chave -> categoria, para auto-categorizar na importação de extrato.
+// Palavras-chave (comparadas já normalizadas — sem acento/espaço). Evitar tokens
+// curtos/ambíguos que aparecem em textos de banco (ex.: "extra" casa "extrato",
+// "tim" casa "estimativa", "99" casa valores).
 const CATEGORIA_KEYWORDS = {
-  'Assinaturas': ['netflix', 'spotify', 'disney', 'hbo', 'max', 'primevideo', 'amazonprime', 'youtube', 'crunchyroll', 'globoplay', 'deezer', 'applecom', 'appletv', 'itunes', 'paramount', 'star', 'canva', 'chatgpt', 'openai', 'notion', 'dropbox', 'googleone', 'icloud', 'linkedin', 'twitch', 'kindle', 'audible', 'mubi'],
-  'Transporte': ['uber', '99app', '99', 'cabify', 'indriver', 'posto', 'ipiranga', 'shell', 'petrobras', 'br mania', 'combustivel', 'gasolina', 'alcool', 'estacionamento', 'metro', 'onibus', 'bilheteunico', 'bilhete unico', 'sem parar', 'veloe', 'conectcar', 'pedagio', 'localiza', 'movida', 'unidas'],
-  'Mercado': ['mercado', 'supermerc', 'carrefour', 'paodeacucar', 'pao de acucar', 'assai', 'atacadao', 'atacadão', 'hortifruti', 'bigbox', 'extra', 'sams club', 'makro', 'dia ', 'zaffari', 'guanabara', 'mundial', 'sacolao'],
-  'Alimentação': ['ifood', 'rappi', 'restaurante', 'lanchonete', 'burger', 'mcdonald', 'bk ', 'burgerking', 'padaria', 'pizzaria', 'subway', 'habib', 'outback', 'starbucks', 'cacau show', 'confeitaria', 'churrascaria', 'hamburgueria', 'asubway'],
-  'Saúde': ['farmacia', 'drogaria', 'drogasil', 'pacheco', 'raia', 'droga raia', 'pague menos', 'hospital', 'clinica', 'laboratorio', 'unimed', 'amil', 'hapvida', 'academia', 'smartfit', 'gympass', 'wellhub', 'dentista'],
-  'Contas e serviços': ['claro', 'vivo', 'timbrasil', 'tim', 'oi ', 'enel', 'light', 'sabesp', 'copasa', 'cemig', 'cpfl', 'equatorial', 'comgas', 'internet', 'net ', 'vero', 'condominio', 'condomínio', 'iptu', 'seguro', 'porto seguro', 'consorcio'],
-  'Educação': ['escola', 'faculdade', 'universidade', 'curso', 'udemy', 'alura', 'duolingo', 'coursera', 'kumon', 'wizard', 'ccaa'],
-  'Lazer': ['cinema', 'cinemark', 'steam', 'playstation', 'psn', 'xbox', 'nintendo', 'ingresso', 'ingressocom', 'teatro', 'showlivre', 'ticket'],
-  'Compras': ['amazon', 'mercadolivre', 'mercado livre', 'shopee', 'aliexpress', 'magalu', 'magazine luiza', 'americanas', 'casas bahia', 'renner', 'riachuelo', 'cea', 'zara', 'centauro', 'nike', 'adidas'],
-  'Vestuário': ['calcados', 'calçados', 'moda', 'boutique', 'shoe']
+  'Assinaturas': ['netflix', 'spotify', 'disney', 'hbo', 'primevideo', 'amazonprime', 'youtube', 'crunchyroll', 'globoplay', 'deezer', 'appletv', 'itunes', 'paramount', 'canva', 'chatgpt', 'openai', 'notion', 'dropbox', 'googleone', 'icloud', 'linkedin', 'twitch', 'kindle', 'audible', 'mubi'],
+  'Transporte': ['uber', '99app', '99pop', 'cabify', 'indriver', 'ipiranga', 'petrobras', 'brmania', 'combustivel', 'gasolina', 'estacionamento', 'bilheteunico', 'sem parar', 'semparar', 'veloe', 'conectcar', 'pedagio', 'localiza', 'movida', 'unidas'],
+  'Mercado': ['mercado', 'supermerc', 'carrefour', 'pao de acucar', 'paodeacucar', 'assai', 'atacadao', 'hortifruti', 'bigbox', 'sams club', 'samsclub', 'makro', 'zaffari', 'guanabara', 'mundial', 'sacolao'],
+  'Alimentação': ['ifood', 'rappi', 'restaurante', 'lanchonete', 'burger', 'mcdonald', 'burgerking', 'padaria', 'pizzaria', 'subway', 'habib', 'outback', 'starbucks', 'cacau show', 'cacaushow', 'confeitaria', 'churrascaria', 'hamburgueria'],
+  'Saúde': ['farmacia', 'drogaria', 'drogasil', 'pacheco', 'droga raia', 'drogaraia', 'pague menos', 'paguemenos', 'hospital', 'clinica', 'laboratorio', 'unimed', 'hapvida', 'academia', 'smartfit', 'gympass', 'wellhub', 'dentista'],
+  'Contas e serviços': ['claro', 'vivo', 'timbrasil', 'enel', 'sabesp', 'copasa', 'cemig', 'cpfl', 'equatorial', 'comgas', 'internet', 'condominio', 'iptu', 'seguro', 'porto seguro', 'portoseguro', 'consorcio'],
+  'Educação': ['escola', 'faculdade', 'universidade', 'udemy', 'alura', 'duolingo', 'coursera', 'kumon', 'wizard', 'ccaa'],
+  'Lazer': ['cinema', 'cinemark', 'steam', 'playstation', 'nintendo', 'ingresso', 'teatro', 'showlivre'],
+  'Compras': ['amazon', 'mercadolivre', 'mercado livre', 'shopee', 'aliexpress', 'magalu', 'magazine luiza', 'magazineluiza', 'americanas', 'casas bahia', 'casasbahia', 'renner', 'riachuelo', 'centauro', 'adidas'],
+  'Vestuário': ['calcados', 'boutique']
 };
 
 // Sugere uma categoria a partir da descrição: primeiro pelo histórico (histMap:
 // descrição normalizada -> categoria), depois por palavras-chave conhecidas.
+// Compara já normalizado (sem espaço/acento), por isso as keywords também são normalizadas.
 function categorizarAuto_(descricao, histMap) {
   const nd = norm_(descricao);
   if (!nd) return '';
   if (histMap && histMap[nd]) return histMap[nd];
   for (const cat in CATEGORIA_KEYWORDS) {
-    if (CATEGORIA_KEYWORDS[cat].some(k => nd.indexOf(k) !== -1)) return cat;
+    if (CATEGORIA_KEYWORDS[cat].some(k => { const nk = norm_(k); return nk && nd.indexOf(nk) !== -1; })) return cat;
   }
   return '';
 }
@@ -1596,8 +1600,10 @@ function importarTransacoes(lista) {
       const dataObj = parseLocalDate_(t && t.data);
       const iso = Utilities.formatDate(dataObj, tz, 'yyyy-MM-dd');
       const k = keyOf(iso, descricao, valor);
+      // Dedup só contra o que JÁ EXISTIA antes desta importação. Assim, repetições
+      // legítimas no mesmo extrato (ex.: 2 Uber iguais no dia) são mantidas; e
+      // reimportar o mesmo arquivo ignora tudo (as linhas já existem).
       if (existentes[k]) { ignoradas++; return; }
-      existentes[k] = true;
 
       const row = new Array(nCols).fill('');
       const setc = (campo, val) => { if (map[campo] != null) row[map[campo]] = val; };

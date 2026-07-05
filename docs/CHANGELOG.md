@@ -3,6 +3,12 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v44 — Correções na importação de extrato
+- **Repetições legítimas mantidas:** a dedup agora só compara com o que **já existe** — dois lançamentos idênticos no mesmo extrato (ex.: 2 Uber iguais no dia) **deixam de ser perdidos**; reimportar o mesmo arquivo continua não duplicando.
+- **Meio na importação:** novo seletor **Conta / Cartão de crédito** — importar um extrato de **cartão** agora popula a **Fatura de cartão** (antes tudo entrava como "Conta").
+- **Auto-categorização corrigida:** palavras-chave com espaço (ex.: "Sem Parar", "Pão de Açúcar") **passam a casar**; removidos tokens ambíguos que davam falso-positivo em extratos (ex.: "EXTRATO" virava Mercado por "extra"; "tim"/"99").
+- **OFX:** leitura de valor mais robusta (formato BR com milhar) via `parseValorBR`.
+
 ## v43 — Tema claro (#8)
 - **Tema claro suave** (off-white/creme, **sem branco estourado** — não cansa a vista): fundo `#e7e3db`, texto escuro (não preto puro), neumorfismo com sombras suaves, textura e cifrão de fundo adaptados.
 - **Alternância** pelo botão 🌙/☀️ no cabeçalho; a escolha é **lembrada** (localStorage) e, na 1ª vez, respeita o `prefers-color-scheme` do sistema. Atualiza também a cor da barra do navegador (`theme-color`).
