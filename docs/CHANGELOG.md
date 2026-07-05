@@ -3,6 +3,10 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v42 — Plano visual: design tokens (#1)
+- **Sistema de design em variáveis:** escala de **espaçamento** (`--sp-1..6`), **tipografia** (`--fs-xs..xl`) e **raios** (`--r-sm/--r/--r-lg`).
+- Fontes e raios do app passaram a usar os tokens (substituição **1:1**, sem mudança visual) — deixando o **tema claro (#8)** trivial depois (basta sobrescrever os tokens).
+
 ## v41 — Plano visual: skeleton loading + foco/contraste
 - **Skeleton loading:** enquanto os dados chegam, os KPIs e a lista mostram um **shimmer** (em vez de "—"), deixando a espera mais suave.
 - **Acessibilidade:** **foco visível** (`:focus-visible`) em botões, campos e navegação; **contraste** do texto secundário aumentado. (Respeita `prefers-reduced-motion` — sem shimmer para quem prefere menos animação.)
