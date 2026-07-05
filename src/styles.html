@@ -682,6 +682,22 @@
       border-radius: 8px; padding: 4px 8px; font-size: var(--fs-sm); cursor: pointer;
     }
     td .rowBtns button.danger { border-color: rgba(239, 68, 68, .4); }
+    .rowBtns .miniBtn { flex: 0 0 auto; padding: 4px 8px; }
+
+    /* Bolinha de natureza (🔴 despesa / 🟢 receita) */
+    .dot { font-size: .82em; vertical-align: middle; }
+
+    /* Selo de recorrente e botão de alternar recorrente */
+    .pill.rec { border-color: var(--warn); color: var(--warn); font-weight: 700; }
+    .recBtn.on { border-color: var(--warn); color: var(--warn); background: rgba(245, 158, 11, .12); }
+
+    /* Seletor de categoria inline (edição rápida na lista) */
+    .catInlineWrap { margin-top: 6px; font-size: var(--fs-xs); color: var(--muted); }
+    .catInline {
+      max-width: 100%; margin-top: 2px; background: var(--surface); color: var(--text);
+      border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px;
+      font-size: var(--fs-xs); font-family: inherit; cursor: pointer;
+    }
 
     /* Barra de progresso do % do salário */
     .progress {

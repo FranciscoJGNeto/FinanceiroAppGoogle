@@ -3,6 +3,15 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v48 — Editar categoria/recorrente na lista + categorias flexíveis
+- **Categoria direto na lista:** cada lançamento agora tem um **seletor de categoria** — troca na hora, sem abrir o formulário inteiro (desktop e celular).
+- **Recorrente com 1 toque:** botão **🔄** em cada lançamento marca/desmarca como recorrente, com **selo 🔄 Recorrente** visível. Os recorrentes do mês passam a ser **lançados automaticamente** ao abrir o app (idempotente, sem duplicar) — o botão manual continua disponível.
+- **Bolinha 🔴/🟢 corrigida:** a marca de **despesa (🔴)** e receita (🟢) aparece em **todos** os lançamentos, inclusive na tabela do desktop (antes só a receita aparecia).
+- **Categorias deixam de ser engessadas:** a lista de categorias agora **inclui automaticamente** as que você já usou (não só a lista fixa). Nova função `getCategorias()` alimenta os seletores e o autocompletar.
+- **Regra já recategoriza:** ao salvar uma **regra de categoria**, ela é **aplicada de imediato** aos lançamentos existentes que casam (não precisa mais clicar em "Recategorizar").
+- **Renomear/juntar categorias:** em **Config → Regras de categoria**, um campo **De → Para** troca uma categoria em **todos** os lançamentos de uma vez (e funde se as duas existirem) — atualiza também orçamentos, classificação e regras.
+- Backend: `setCategoriaTransacao`, `setTipoTransacao`, `getCategorias`, `renomearCategoria`; `setRegra` retorna quantos aplicou. Testes: **179 checagens**.
+
 ## v47 — Importação OFX: nome limpo + categoria por tipo
 - **Descrição limpa:** o extrato do Inter vem como `Compra no debito: "No estabelecimento DROGASIL 1371 BRASILIA BRA"`. Agora o app guarda só o **nome real** (`DROGASIL 1371 BRASILIA BRA`) — extrai o texto **entre aspas** e remove os prefixos `No estabelecimento`, `Cp :123-`, códigos de Pix (`00019 4851...`). Antes gravava o MEMO inteiro, o que sujava o nome e atrapalhava a categoria.
 - **Categoria pelo tipo da transação:** usa o rótulo do extrato (**Aplicação/Resgate → Investimentos**; **Pix/Transferência** sem outra pista → **Transferências**), além das palavras‑chave. Ordem: regra do usuário → tipo (aplicação/resgate) → histórico → palavra‑chave → tipo (pix/transferência).

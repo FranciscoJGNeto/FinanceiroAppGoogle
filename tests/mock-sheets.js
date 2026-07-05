@@ -45,6 +45,7 @@ class Sheet {
         return o;
       },
       getValue() { const R = sh.data[row - 1] || []; return R[col - 1] !== undefined ? R[col - 1] : ''; },
+      setValue(v) { sh._ensure(row, col); sh.data[row - 1][col - 1] = v; return this; },
       setValues(v) { sh._ensure(row + nR - 1, col + nC - 1); for (let i = 0; i < nR; i++) for (let j = 0; j < nC; j++) sh.data[row - 1 + i][col - 1 + j] = v[i][j]; return this; },
       setFontWeight() { return this; }
     };
@@ -107,7 +108,8 @@ function loadApp(sheetsSpec) {
     'getOrcamentos', 'setOrcamento', 'deleteOrcamento',
     'getMetas', 'setMeta', 'deleteMeta',
     'getRegra503020', 'getClassificacao', 'setClasseCategoria',
-    'getRegras', 'setRegra', 'deleteRegra', 'recategorizar',
+    'getRegras', 'setRegra', 'deleteRegra', 'recategorizar', 'getCategorias', 'renomearCategoria',
+    'setCategoriaTransacao', 'setTipoTransacao',
     'getContas', 'setConta', 'deleteConta', 'getFaturaCartao', 'exportarBackup', 'exportarBackupXML', 'importarTransacoes',
     'backupAgendado', 'instalarGatilhoBackup', 'removerGatilhoBackup', 'statusGatilhoBackup',
     'parseLancamentoMsg_', 'getConfigTelegram', 'setConfigTelegram', 'verificarTelegram',

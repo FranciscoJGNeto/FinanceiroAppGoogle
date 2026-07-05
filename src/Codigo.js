@@ -148,7 +148,9 @@ function setRegra(termo, categoria) {
   } finally {
     lock.releaseLock();
   }
-  return { ok: true, message: 'Regra salva' };
+  // A regra é intenção explícita: aplica já aos lançamentos existentes que casam.
+  const aplicadas = aplicarRegraExistentes_(termo, categoria);
+  return { ok: true, message: 'Regra salva', aplicadas: aplicadas };
 }
 
 function deleteRegra(termo) {
@@ -164,6 +166,126 @@ function deleteRegra(termo) {
     lock.releaseLock();
   }
   return { ok: true, message: 'Regra removida' };
+}
+
+// Aplica UMA regra (termo -> categoria) a TODOS os lançamentos cuja descrição
+// contém o termo — inclusive os já categorizados (a regra é intenção explícita do
+// usuário). Retorna quantos foram atualizados.
+function aplicarRegraExistentes_(termo, categoria) {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEET_TRANS);
+  if (!sh || sh.getLastRow() < 2) return 0;
+  const nt = norm_(termo);
+  if (!nt) return 0;
+  const map = ensureColunasTrans_(sh);
+  if (map.categoria == null || map.descricao == null) return 0;
+  const vals = sh.getDataRange().getValues();
+  let n = 0;
+  for (let i = 1; i < vals.length; i++) {
+    const nd = norm_(vals[i][map.descricao]);
+    if (nd && nd.indexOf(nt) !== -1 && String(vals[i][map.categoria] || '').trim() !== categoria) {
+      vals[i][map.categoria] = categoria;
+      n++;
+    }
+  }
+  if (n) sh.getDataRange().setValues(vals);
+  return n;
+}
+
+// Renomeia/funde uma categoria em TODA a base (transações, orçamentos,
+// classificação 50/30/20 e regras). "de" e "para" comparados por norma.
+function renomearCategoria(de, para) {
+  de = String(de || '').trim();
+  para = String(para || '').trim();
+  if (!de || !para) throw new Error('Informe a categoria atual e a nova.');
+  const ss = SpreadsheetApp.getActive();
+  const nde = norm_(de);
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  let atualizadas = 0;
+  try {
+    // Transações
+    const shT = ss.getSheetByName(SHEET_TRANS);
+    if (shT && shT.getLastRow() > 1) {
+      const map = ensureColunasTrans_(shT);
+      if (map.categoria != null) {
+        const vals = shT.getDataRange().getValues();
+        let n = 0;
+        for (let i = 1; i < vals.length; i++) {
+          if (norm_(vals[i][map.categoria]) === nde) { vals[i][map.categoria] = para; n++; }
+        }
+        if (n) shT.getDataRange().setValues(vals);
+        atualizadas = n;
+      }
+    }
+    // Orçamentos, Classificação e Regras (coluna A = categoria/termo destino)
+    [[SHEET_ORC, 0], [SHEET_CLASS, 0], [SHEET_REGRAS, 1]].forEach(([nome, colIdx]) => {
+      const sh = ss.getSheetByName(nome);
+      if (!sh || sh.getLastRow() < 2) return;
+      const v = sh.getDataRange().getValues();
+      let ch = false;
+      for (let i = 1; i < v.length; i++) { if (norm_(v[i][colIdx]) === nde) { v[i][colIdx] = para; ch = true; } }
+      if (ch) sh.getDataRange().setValues(v);
+    });
+  } finally {
+    lock.releaseLock();
+  }
+  return { ok: true, atualizadas: atualizadas };
+}
+
+// Categorias distintas conhecidas (para os seletores): junta as embutidas, as já
+// usadas nos lançamentos, as de orçamentos e as das regras. Ordenadas.
+function getCategorias() {
+  const ss = SpreadsheetApp.getActive();
+  const base = ['Moradia', 'Mercado', 'Alimentação', 'Transporte', 'Saúde', 'Educação',
+    'Lazer', 'Assinaturas', 'Vestuário', 'Contas e serviços', 'Impostos e taxas',
+    'Investimentos', 'Transferências', 'Outros'];
+  const seen = {};
+  const out = [];
+  const add = (c) => { const s = String(c || '').trim(); if (!s) return; const k = norm_(s); if (!seen[k]) { seen[k] = true; out.push(s); } };
+  base.forEach(add);
+  const shT = ss.getSheetByName(SHEET_TRANS);
+  if (shT && shT.getLastRow() > 1) {
+    const map = colMapTrans_(shT.getRange(1, 1, 1, shT.getLastColumn()).getValues()[0].map(norm_));
+    if (map.categoria != null) shT.getRange(2, map.categoria + 1, shT.getLastRow() - 1, 1).getValues().forEach(r => add(r[0]));
+  }
+  const shO = ss.getSheetByName(SHEET_ORC);
+  if (shO && shO.getLastRow() > 1) shO.getRange(2, 1, shO.getLastRow() - 1, 1).getValues().forEach(r => add(r[0]));
+  getRegras().forEach(r => add(r.categoria));
+  return out;
+}
+
+// Atualiza SÓ a categoria de um lançamento (pelo ID) — para edição rápida na lista.
+function setCategoriaTransacao(id, categoria) {
+  return setCampoTransacao_(id, 'categoria', String(categoria == null ? '' : categoria).trim());
+}
+
+// Alterna/define SÓ o tipo de um lançamento (pelo ID) — botão de recorrente na lista.
+function setTipoTransacao(id, tipo) {
+  const t = String(tipo || '').trim();
+  const validos = ['Único', 'Recorrente', 'Parcelado', 'Anual'];
+  if (validos.map(norm_).indexOf(norm_(t)) === -1) throw new Error('Tipo inválido.');
+  return setCampoTransacao_(id, 'tipo', t);
+}
+
+// Helper: seta um único campo de um lançamento (por ID), preservando o resto.
+function setCampoTransacao_(id, campo, valor) {
+  if (!id) throw new Error('ID da transação ausente.');
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEET_TRANS);
+  if (!sh) throw new Error('Aba "Transacoes" não encontrada na planilha');
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const map = ensureColunasTrans_(sh);
+    if (map.id == null || map[campo] == null) throw new Error('Coluna não encontrada.');
+    const rowNum = acharLinhaPorId_(sh, map.id, id);
+    if (rowNum === -1) throw new Error('Transação não encontrada.');
+    sh.getRange(rowNum, map[campo] + 1).setValue(valor);
+  } finally {
+    lock.releaseLock();
+  }
+  return { ok: true };
 }
 
 // Recategoriza os lançamentos SEM categoria usando regras + histórico + palavras-chave.

@@ -6,6 +6,7 @@
     let editId = null;
     let orcamentos = [];
     let spentByCat = {}; // gasto do mês por categoria (chave normalizada)
+    let catOptions = []; // categorias conhecidas (para os seletores inline/datalist)
     let sugestoes = [];
     let orcDismiss = JSON.parse(localStorage.getItem('orcDismiss') || '[]'); // sugestões rejeitadas
     let contas = [];
@@ -946,11 +947,14 @@
       if (!termo || !cat) { setMsg('msgRegra', '❌ Informe o termo e a categoria.', 'err'); return; }
       setMsg('msgRegra', '⏳ Salvando...', 'ok');
       google.script.run
-        .withSuccessHandler(() => {
-          setMsg('msgRegra', '✅ Regra salva! Use "Recategorizar" para aplicar ao que já existe.', 'ok');
+        .withSuccessHandler(res => {
+          const n = (res && res.aplicadas) || 0;
+          setMsg('msgRegra', `✅ Regra salva!${n ? ' Aplicada a ' + n + ' lançamento(s) já existente(s).' : ''}`, 'ok');
           document.getElementById('rgTermo').value = '';
           document.getElementById('rgCat').value = '';
           carregarRegras();
+          carregarCategorias();
+          if (n) refresh();
         })
         .withFailureHandler(err => setMsg('msgRegra', '❌ ' + (err?.message || err), 'err'))
         .setRegra(termo, cat);
@@ -961,6 +965,27 @@
       const termo = b.getAttribute('data-rgdel');
       if (!confirm(`Remover a regra "${termo}"?`)) return;
       google.script.run.withSuccessHandler(carregarRegras).withFailureHandler(err => setMsg('msgRegra', '❌ ' + (err?.message || err), 'err')).deleteRegra(termo);
+    }
+    function renomearCategoria() {
+      const de = document.getElementById('rnDe').value.trim();
+      const para = document.getElementById('rnPara').value.trim();
+      if (!de || !para) { setMsg('msgRenomear', '❌ Informe as duas categorias.', 'err'); return; }
+      if (normCat(de) === normCat(para)) { setMsg('msgRenomear', '❌ As categorias são iguais.', 'err'); return; }
+      if (!confirm(`Trocar "${de}" por "${para}" em TODOS os lançamentos?`)) return;
+      const btn = document.getElementById('btnRenomearCat');
+      btn.disabled = true;
+      setMsg('msgRenomear', '⏳ Renomeando...', 'ok');
+      google.script.run
+        .withSuccessHandler(res => {
+          btn.disabled = false;
+          setMsg('msgRenomear', `✅ ${res.atualizadas} lançamento(s) atualizado(s).`, 'ok');
+          document.getElementById('rnDe').value = '';
+          document.getElementById('rnPara').value = '';
+          carregarCategorias();
+          refresh();
+        })
+        .withFailureHandler(err => { btn.disabled = false; setMsg('msgRenomear', '❌ ' + (err?.message || err), 'err'); })
+        .renomearCategoria(de, para);
     }
     function recategorizarTudo() {
       const btn = document.getElementById('btnRecategorizar');
@@ -1449,6 +1474,10 @@
       rows.forEach(r => {
         const receita = r.natureza === 'Receita';
         const sinal = receita ? '+' : '';
+        const dot = receita ? '<span class="dot pos" title="Receita">🟢</span>' : '<span class="dot neg" title="Despesa">🔴</span>';
+        const rec = r.tipo === 'Recorrente';
+        const recSelo = rec ? ' <span class="pill rec" title="Recorrente">🔄 Recorrente</span>' : '';
+        const recBtn = `<button class="miniBtn recBtn${rec ? ' on' : ''}" data-act="rec" data-id="${escapeHtml(r.id)}" title="${rec ? 'É recorrente — clique p/ tornar Único' : 'Marcar como recorrente (repete todo mês)'}">🔄</button>`;
 
         // desktop
         const tr = document.createElement('tr');
@@ -1456,12 +1485,13 @@
           <td>${escapeHtml(r.data)}</td>
           <td>${escapeHtml(r.conta)}</td>
           <td>${escapeHtml(r.meio)}</td>
-          <td><strong>${escapeHtml(r.descricao)}</strong>${receita ? ' <span class="pill">🟢</span>' : ''}${r.categoria ? ' <span class="pill">🗂️ ' + escapeHtml(r.categoria) + '</span>' : ''}</td>
+          <td><strong>${dot} ${escapeHtml(r.descricao)}</strong>${recSelo}<div class="catInlineWrap">${catSelectHtml(r)}</div></td>
           <td>${escapeHtml(r.tipo)}</td>
           <td>${escapeHtml(r.parcela || '')}</td>
           <td><strong class="${receita ? 'pos' : ''}">${sinal}${moneyBRL(r.valor)}</strong></td>
           <td>${escapeHtml(r.obs || '')}</td>
           <td><div class="rowBtns">
+            ${recBtn}
             <button data-act="edit" data-id="${escapeHtml(r.id)}" title="Editar">✏️</button>
             <button data-act="del" data-id="${escapeHtml(r.id)}" class="danger" title="Excluir">🗑️</button>
           </div></td>
@@ -1474,26 +1504,39 @@
         c.innerHTML = `
           <div class="txTop">
             <div>
-              <p class="txDesc">${escapeHtml(r.descricao)}</p>
+              <p class="txDesc">${dot} ${escapeHtml(r.descricao)}</p>
               <div class="txMeta">
                 <span class="pill">📅 ${escapeHtml(r.data)}</span>
                 <span class="pill">🏦 ${escapeHtml(r.conta)}</span>
                 <span class="pill">💰 ${escapeHtml(r.meio)}</span>
                 <span class="pill">${receita ? '🟢 Receita' : '🔴 Despesa'}</span>
-                ${r.categoria ? '<span class="pill">🗂️ ' + escapeHtml(r.categoria) + '</span>' : ''}
-                <span class="pill">📝 ${escapeHtml(r.tipo)}${r.parcela ? ' • ' + escapeHtml(r.parcela) : ''}</span>
+                <span class="pill">📝 ${escapeHtml(r.tipo)}${r.parcela ? ' • ' + escapeHtml(r.parcela) : ''}</span>${recSelo}
               </div>
+              <div class="catInlineWrap">🗂️ ${catSelectHtml(r)}</div>
             </div>
             <div class="txVal ${receita ? 'pos' : ''}">${sinal}${moneyBRL(r.valor)}</div>
           </div>
           ${r.obs ? `<div class="txObs">📝 ${escapeHtml(r.obs)}</div>` : ``}
           <div class="txActions">
+            ${recBtn}
             <button class="miniBtn" data-act="edit" data-id="${escapeHtml(r.id)}">✏️ Editar</button>
             <button class="miniBtn danger" data-act="del" data-id="${escapeHtml(r.id)}">🗑️ Excluir</button>
           </div>
         `;
         cards.appendChild(c);
       });
+    }
+
+    // <select> de categoria inline (edição rápida na lista). Inclui a categoria
+    // atual mesmo que não esteja na lista conhecida, e uma opção "(sem categoria)".
+    function catSelectHtml(r) {
+      const atual = r.categoria || '';
+      const opts = catOptions.slice();
+      if (atual && opts.map(normCat).indexOf(normCat(atual)) === -1) opts.unshift(atual);
+      const optionsHtml = ['<option value="">(sem categoria)</option>']
+        .concat(opts.map(c => `<option value="${escapeHtml(c)}"${normCat(c) === normCat(atual) ? ' selected' : ''}>${escapeHtml(c)}</option>`))
+        .join('');
+      return `<select class="catInline" data-catid="${escapeHtml(r.id)}" title="Categoria">${optionsHtml}</select>`;
     }
 
     function escapeHtml(s) {
@@ -1645,6 +1688,20 @@
         .gerarRecorrentes(mesISOatual());
     }
 
+    // Gera os recorrentes do MÊS ATUAL automaticamente ao abrir o app (idempotente:
+    // não duplica os que já existem). Só avisa se realmente criou algo.
+    function autoGerarRecorrentes() {
+      google.script.run
+        .withSuccessHandler(res => {
+          if (res && res.criadas > 0) {
+            toast(`🔄 ${res.criadas} recorrente(s) lançada(s) automaticamente neste mês.`, 'ok');
+            if ((document.getElementById('mes').value || defaultMonth()) === defaultMonth()) refresh();
+          }
+        })
+        .withFailureHandler(() => { /* silencioso */ })
+        .gerarRecorrentes();
+    }
+
     // ---- Gatilho automático de recorrentes (mensal, dia 1º) ----
     function carregarStatusGatilhoRec() {
       google.script.run
@@ -1675,8 +1732,53 @@
       const btn = e.target.closest('button[data-act]');
       if (!btn) return;
       const id = btn.getAttribute('data-id');
-      if (btn.getAttribute('data-act') === 'edit') iniciarEdicao(id);
-      else if (btn.getAttribute('data-act') === 'del') excluir(id);
+      const act = btn.getAttribute('data-act');
+      if (act === 'edit') iniciarEdicao(id);
+      else if (act === 'del') excluir(id);
+      else if (act === 'rec') toggleRecorrente(id);
+    }
+
+    // Mudança na categoria inline (evento change dos <select> da lista)
+    function onListChange(e) {
+      const sel = e.target.closest('select.catInline');
+      if (!sel) return;
+      mudarCategoriaInline(sel.getAttribute('data-catid'), sel.value);
+    }
+
+    // Grava só a categoria de um lançamento (edição rápida na lista).
+    function mudarCategoriaInline(id, categoria) {
+      const r = currentRows.find(x => x.id === id);
+      if (r) r.categoria = categoria; // otimista (evita re-render que fecharia o select)
+      google.script.run
+        .withSuccessHandler(() => { toast(categoria ? '🗂️ Categoria: ' + categoria : '🗂️ Categoria removida.', 'ok'); carregarCategorias(); })
+        .withFailureHandler(err => { toast('❌ ' + (err?.message || err), 'err'); refresh(); })
+        .setCategoriaTransacao(id, categoria);
+    }
+
+    // Alterna Recorrente ↔ Único direto na lista.
+    function toggleRecorrente(id) {
+      const r = currentRows.find(x => x.id === id);
+      if (!r) return;
+      const novo = r.tipo === 'Recorrente' ? 'Único' : 'Recorrente';
+      google.script.run
+        .withSuccessHandler(() => {
+          toast(novo === 'Recorrente' ? '🔄 Marcado como recorrente (repete todo mês).' : '⚡ Voltou a ser único.', 'ok');
+          refresh();
+        })
+        .withFailureHandler(err => toast('❌ ' + (err?.message || err), 'err'))
+        .setTipoTransacao(id, novo);
+    }
+
+    // Carrega as categorias conhecidas e atualiza o datalist (#catList) e os selects.
+    function carregarCategorias() {
+      google.script.run
+        .withSuccessHandler(cats => {
+          catOptions = cats || [];
+          const dl = document.getElementById('catList');
+          if (dl) dl.innerHTML = catOptions.map(c => `<option value="${escapeHtml(c)}"></option>`).join('');
+        })
+        .withFailureHandler(() => {})
+        .getCategorias();
     }
 
     function salvar() {
@@ -1784,9 +1886,11 @@
     // Busca (filtro da lista, client-side)
     document.getElementById('busca').addEventListener('input', renderList);
 
-    // Editar/excluir por transação (delegação de evento)
+    // Editar/excluir/recorrente e categoria inline por transação (delegação de evento)
     document.getElementById('txCards').addEventListener('click', onListClick);
     document.getElementById('tb').addEventListener('click', onListClick);
+    document.getElementById('txCards').addEventListener('change', onListChange);
+    document.getElementById('tb').addEventListener('change', onListChange);
     document.getElementById('btnRecorrentes').addEventListener('click', gerarRecorrentes);
     document.getElementById('btnToggleGatilhoRec').addEventListener('click', toggleGatilhoRec);
 
@@ -1838,6 +1942,7 @@
     document.getElementById('regraContent').addEventListener('change', onRegraChange);
     document.getElementById('btnSalvarRegra').addEventListener('click', salvarRegra);
     document.getElementById('btnRecategorizar').addEventListener('click', recategorizarTudo);
+    document.getElementById('btnRenomearCat').addEventListener('click', renomearCategoria);
     document.getElementById('regrasList').addEventListener('click', onRegraCatClick);
 
     // Contas
@@ -1895,7 +2000,9 @@
     carregarStatusBackup();
     carregarTelegram();
     carregarRegras();
+    carregarCategorias();
     carregarRelatorio();
+    autoGerarRecorrentes();
     initAccordions();
 
     // Navegação por telas: liga os botões e restaura a última tela

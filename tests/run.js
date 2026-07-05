@@ -413,12 +413,11 @@ group('regras de categoria — usuário ensina + recategorizar');
   eq(byDesc('No estabelecimento GIRAFFAS BRASILIA BRA').categoria, 'Lazer', 'regra giraffas aplicada (upsert -> Lazer)');
   eq(byDesc('No estabelecimento KFC BRASILIA BRA').categoria, 'Alimentação', 'regra kfc aplicada');
   eq(byDesc('No estabelecimento LUGAR NOVO XYZ').categoria, '', 'sem regra/keyword fica vazia');
-  // adiciona regra nova e recategoriza os sem categoria
-  api.setRegra('lugar novo', 'Compras');
-  const rec = api.recategorizar();
-  eq(rec.atualizadas, 1, 'recategorizar preenche 1 (LUGAR NOVO)');
+  // uma regra nova já se aplica de imediato aos lançamentos existentes que casam
+  const r2 = api.setRegra('lugar novo', 'Compras');
+  eq(r2.aplicadas, 1, 'nova regra aplica na hora ao LUGAR NOVO existente');
   lst = api.listTransacoes('2026-07-01');
-  eq(byDesc('No estabelecimento LUGAR NOVO XYZ') && api.listTransacoes('2026-07-01').find(x => x.descricao.indexOf('LUGAR NOVO') !== -1).categoria, 'Compras', 'LUGAR NOVO -> Compras após regra');
+  eq(lst.find(x => x.descricao.indexOf('LUGAR NOVO') !== -1).categoria, 'Compras', 'LUGAR NOVO -> Compras após regra');
 }
 
 group('importarTransacoes — keywords com espaço + sem falso-positivo');
@@ -463,6 +462,69 @@ group('importarTransacoes — categoria por TIPO do extrato + meio correto');
   eq(by('Pagamento fatura cartao Inter').meio, 'Conta', 'pagar fatura é débito em CONTA (não Cartão)');
   eq(by('DROGASIL 1371 BRASILIA BRA').meio, 'Conta', 'compra no débito -> Conta');
   eq(by('LOJA X NO CREDITO').meio, 'Cartão', 'compra no crédito -> Cartão (por tipo)');
+}
+
+group('edição rápida na lista — categoria e recorrente por ID');
+{
+  const { api } = loadApp(baseTrans([
+    txRow({ id: 'a', data: new Date(2026, 6, 3), descricao: 'Mercado X', natureza: 'Despesa', categoria: '', tipo: 'Único', valor: 50 })
+  ]));
+  api.setCategoriaTransacao('a', 'Mercado');
+  eq(api.listTransacoes('2026-07-01')[0].categoria, 'Mercado', 'setCategoriaTransacao grava a categoria');
+  api.setCategoriaTransacao('a', '');
+  eq(api.listTransacoes('2026-07-01')[0].categoria, '', 'setCategoriaTransacao aceita limpar (sem categoria)');
+  api.setTipoTransacao('a', 'Recorrente');
+  eq(api.listTransacoes('2026-07-01')[0].tipo, 'Recorrente', 'setTipoTransacao marca Recorrente');
+  api.setTipoTransacao('a', 'Único');
+  eq(api.listTransacoes('2026-07-01')[0].tipo, 'Único', 'setTipoTransacao volta a Único');
+  throws(() => api.setTipoTransacao('a', 'Xispirito'), 'tipo inválido lança');
+  throws(() => api.setCategoriaTransacao('zzz', 'X'), 'ID inexistente lança');
+}
+
+group('getCategorias — junta padrão + usadas + orçamentos + regras');
+{
+  const { api } = loadApp({
+    Transacoes: [HEADER.slice(),
+      txRow({ id: '1', data: new Date(2026, 6, 3), descricao: 'X', natureza: 'Despesa', categoria: 'Pets', valor: 10 })],
+    Orcamentos: [['Categoria', 'Limite'], ['Viagem', 500]],
+    Regras: [['Termo', 'Categoria'], ['uber', 'Transporte']]
+  });
+  const cats = api.getCategorias();
+  ok(cats.indexOf('Mercado') !== -1, 'inclui categoria padrão (Mercado)');
+  ok(cats.indexOf('Pets') !== -1, 'inclui categoria usada num lançamento (Pets)');
+  ok(cats.indexOf('Viagem') !== -1, 'inclui categoria de orçamento (Viagem)');
+  ok(cats.filter(c => c === 'Transporte').length === 1, 'não duplica (Transporte veio de regra e do padrão)');
+}
+
+group('setRegra — aplica de imediato aos lançamentos existentes');
+{
+  const { api } = loadApp(baseTrans([
+    txRow({ id: '1', data: new Date(2026, 6, 3), descricao: 'GIRAFFAS BRASILIA', natureza: 'Despesa', categoria: '', tipo: 'Único', valor: 30 }),
+    txRow({ id: '2', data: new Date(2026, 6, 4), descricao: 'GIRAFFAS SHOPPING', natureza: 'Despesa', categoria: 'Outros', tipo: 'Único', valor: 25 })
+  ]));
+  const res = api.setRegra('giraffas', 'Alimentação');
+  eq(res.aplicadas, 2, 'regra aplicada aos 2 lançamentos (inclusive o já categorizado como Outros)');
+  const lst = api.listTransacoes('2026-07-01');
+  eq(lst.find(x => x.id === '1').categoria, 'Alimentação', 'lançamento sem categoria vira Alimentação');
+  eq(lst.find(x => x.id === '2').categoria, 'Alimentação', 'lançamento "Outros" é sobrescrito pela regra');
+}
+
+group('renomearCategoria — troca/funde em toda a base');
+{
+  const { api } = loadApp({
+    Transacoes: [HEADER.slice(),
+      txRow({ id: '1', data: new Date(2026, 6, 3), descricao: 'A', natureza: 'Despesa', categoria: 'Alimentação', valor: 10 }),
+      txRow({ id: '2', data: new Date(2026, 6, 4), descricao: 'B', natureza: 'Despesa', categoria: 'Comida', valor: 20 }),
+      txRow({ id: '3', data: new Date(2026, 6, 5), descricao: 'C', natureza: 'Despesa', categoria: 'Transporte', valor: 30 })],
+    Orcamentos: [['Categoria', 'Limite'], ['Alimentação', 400]]
+  });
+  const res = api.renomearCategoria('Alimentação', 'Comida');
+  eq(res.atualizadas, 1, 'renomeia 1 lançamento (o de Alimentação); o de Comida já estava');
+  const lst = api.listTransacoes('2026-07-01');
+  eq(lst.filter(x => x.categoria === 'Comida').length, 2, 'Alimentação fundiu em Comida (2 lançamentos)');
+  eq(lst.filter(x => x.categoria === 'Alimentação').length, 0, 'não sobra nenhum "Alimentação"');
+  eq(api.getOrcamentos()[0].categoria, 'Comida', 'orçamento também renomeado');
+  throws(() => api.renomearCategoria('X', ''), 'renomear sem destino lança');
 }
 
 group('contas — cadastro dinâmico (upsert, delete)');

@@ -36,7 +36,7 @@ fixa). Principais grupos de funções:
 | Grupo | Funções |
 |-------|---------|
 | Web | `doGet` (serve HTML + manifest) |
-| Transações | `addTransacao`, `updateTransacao`, `deleteTransacao`, `listTransacoes` |
+| Transações | `addTransacao`, `updateTransacao`, `deleteTransacao`, `listTransacoes`, `setCategoriaTransacao`, `setTipoTransacao` (edição rápida por ID) |
 | Resumo/visão | `getResumo`, `getEvolucao`, `getPorCategoria`, `getRelatorioAnual`, `getCompartilhados`, `getProjecaoParcelas` |
 | Recorrentes | `gerarRecorrentes` + gatilho mensal (`verificarRecorrentes`, `instalar/remover/statusGatilhoRecorrentes`) |
 | Orçamentos | `getOrcamentos`, `setOrcamento`, `deleteOrcamento`, `getSugestoesOrcamento` |
@@ -45,7 +45,7 @@ fixa). Principais grupos de funções:
 | 50/30/20 | `getRegra503020`, `getClassificacao`, `setClasseCategoria` |
 | Lembretes | `getLembretes`, `setLembrete`, `deleteLembrete`, `verificarLembretes` + gatilho diário |
 | Import/Backup | `importarTransacoes`, `exportarBackup` (CSV), `exportarBackupXML` + **backup agendado** (`backupAgendado` + gatilho semanal/mensal) |
-| Categorização | `categorizarAuto_` (regras do usuário → histórico → keywords), `getRegras`/`setRegra`/`deleteRegra`, `recategorizar` |
+| Categorização | `categorizarAuto_` (regras → tipo → histórico → keywords), `getRegras`/`setRegra` (aplica às existentes)/`deleteRegra`, `recategorizar`, `getCategorias`, `renomearCategoria` |
 | Telegram | `parseLancamentoMsg_`, `get/setConfigTelegram`, `verificarTelegram` + gatilho de 1 min (polling via `UrlFetchApp`) |
 | Setup | `criarEstruturaPlanilha`, `migrarEstrutura`, `testarEstrutura`, `include` |
 

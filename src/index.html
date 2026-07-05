@@ -393,6 +393,20 @@
         <button class="btnGhost" id="btnRecategorizar" style="margin-top:8px;">🔁 Recategorizar não classificados</button>
         <div class="msg" id="msgRegra"></div>
         <div id="regrasList" style="margin-top:12px;"></div>
+
+        <div class="hint" style="margin:16px 0 8px;">✏️ <b>Renomear / juntar categorias</b> — troca uma categoria em <b>todos</b> os lançamentos de uma vez (ex.: <b>Alimentação → Comida</b>). Se as duas já existirem, elas se fundem.</div>
+        <div class="row2" style="margin-bottom:10px;">
+          <div>
+            <label for="rnDe">De</label>
+            <input class="field" type="text" id="rnDe" list="catList" autocomplete="off" placeholder="Categoria atual" />
+          </div>
+          <div>
+            <label for="rnPara">Para</label>
+            <input class="field" type="text" id="rnPara" list="catList" autocomplete="off" placeholder="Nova categoria" />
+          </div>
+        </div>
+        <button class="btnGhost" id="btnRenomearCat">✏️ Renomear categoria</button>
+        <div class="msg" id="msgRenomear"></div>
       </div>
     </section>
 
