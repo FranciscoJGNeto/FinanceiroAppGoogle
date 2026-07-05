@@ -3,6 +3,12 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v46 — Regras de categoria + rename do backend
+- **Regras de categorização (você ensina):** painel **Config → 🏷️ Regras de categoria**. Ex.: termo **giraffas** → **Alimentação**. Quando a descrição **contém** o termo, aplica a categoria — na importação, no bot e sob demanda. Resolve os lugares que a lista embutida não conhece (KFC, Giraffas, aquele CDB, etc.).
+- **Recategorizar:** botão que preenche a categoria dos lançamentos **sem categoria** usando regras + histórico + palavras-chave (bom depois de criar regras novas).
+- **Detecção de cartão:** a importação marca **Cartão** quando a descrição indica crédito; senão usa o meio escolhido.
+- **Backend renomeado:** `Código.js` → **`Codigo.js`** (sem acento, mais amigável a ferramentas). Aba `Regras` auto-criada. Testes: **151 checagens**.
+
 ## v45 — Saldo derivado das transações
 - **Saldo calculado, não mais fixo:** o "Saldo" da conta virou **saldo inicial** numa **data de referência** (novo campo em Contas). A partir daí o app calcula: `inicial + (receitas − despesas)`.
   - **Saldo Atual** = hoje (reflete lançamentos e importações).

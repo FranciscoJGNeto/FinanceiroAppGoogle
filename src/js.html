@@ -892,6 +892,54 @@
         .setClasseCategoria(cat, sel.value);
     }
 
+    // ---- Regras de categoria (termo -> categoria) ----
+    let regrasCat = [];
+    function carregarRegras() {
+      google.script.run
+        .withSuccessHandler(items => { regrasCat = items || []; renderRegras(); })
+        .withFailureHandler(() => { /* silencioso */ })
+        .getRegras();
+    }
+    function renderRegras() {
+      const el = document.getElementById('regrasList');
+      if (!regrasCat.length) { el.innerHTML = '<div style="color:var(--muted); font-size:13px;">Nenhuma regra ainda. Crie uma acima (ex.: "giraffas" → Alimentação).</div>'; return; }
+      el.innerHTML = regrasCat.map(r => `<div class="saldoRow">
+        <span>🔤 <b>${escapeHtml(r.termo)}</b> → ${escapeHtml(r.categoria)}</span>
+        <button class="miniBtn danger" data-rgdel="${escapeHtml(r.termo)}" style="flex:0 0 auto; padding:6px 10px;">🗑️</button>
+      </div>`).join('');
+    }
+    function salvarRegra() {
+      const termo = document.getElementById('rgTermo').value.trim();
+      const cat = document.getElementById('rgCat').value.trim();
+      if (!termo || !cat) { setMsg('msgRegra', '❌ Informe o termo e a categoria.', 'err'); return; }
+      setMsg('msgRegra', '⏳ Salvando...', 'ok');
+      google.script.run
+        .withSuccessHandler(() => {
+          setMsg('msgRegra', '✅ Regra salva! Use "Recategorizar" para aplicar ao que já existe.', 'ok');
+          document.getElementById('rgTermo').value = '';
+          document.getElementById('rgCat').value = '';
+          carregarRegras();
+        })
+        .withFailureHandler(err => setMsg('msgRegra', '❌ ' + (err?.message || err), 'err'))
+        .setRegra(termo, cat);
+    }
+    function onRegraCatClick(e) {
+      const b = e.target.closest('button[data-rgdel]');
+      if (!b) return;
+      const termo = b.getAttribute('data-rgdel');
+      if (!confirm(`Remover a regra "${termo}"?`)) return;
+      google.script.run.withSuccessHandler(carregarRegras).withFailureHandler(err => setMsg('msgRegra', '❌ ' + (err?.message || err), 'err')).deleteRegra(termo);
+    }
+    function recategorizarTudo() {
+      const btn = document.getElementById('btnRecategorizar');
+      btn.disabled = true;
+      setMsg('msgRegra', '⏳ Recategorizando...', 'ok');
+      google.script.run
+        .withSuccessHandler(res => { btn.disabled = false; setMsg('msgRegra', `✅ ${res.atualizadas} lançamento(s) categorizado(s).`, 'ok'); if (res.atualizadas) refresh(); })
+        .withFailureHandler(err => { btn.disabled = false; setMsg('msgRegra', '❌ ' + (err?.message || err), 'err'); })
+        .recategorizar();
+    }
+
     // ---- Orçamentos por categoria (gasto vs limite) ----
     function carregarOrcamentos() {
       google.script.run
@@ -1756,6 +1804,9 @@
     document.getElementById('btnCancelarMeta').addEventListener('click', cancelarEdicaoMeta);
     document.getElementById('metasList').addEventListener('click', onMetaClick);
     document.getElementById('regraContent').addEventListener('change', onRegraChange);
+    document.getElementById('btnSalvarRegra').addEventListener('click', salvarRegra);
+    document.getElementById('btnRecategorizar').addEventListener('click', recategorizarTudo);
+    document.getElementById('regrasList').addEventListener('click', onRegraCatClick);
 
     // Contas
     document.getElementById('contaSaldo').addEventListener('input', (e) => {
@@ -1811,6 +1862,7 @@
     carregarStatusGatilhoRec();
     carregarStatusBackup();
     carregarTelegram();
+    carregarRegras();
     carregarRelatorio();
     initAccordions();
 

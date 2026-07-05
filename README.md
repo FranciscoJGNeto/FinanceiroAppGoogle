@@ -56,7 +56,7 @@ na **sua** conta Google (nada de servidor de terceiros, nada de mensalidade).
 
 ```
 ┌──────────────────────────┐   google.script.run    ┌───────────────────────┐
-│   frontend (navegador)   │ ─────────────────────► │  Código.js (servidor) │
+│   frontend (navegador)   │ ─────────────────────► │  Codigo.js (servidor) │
 │  index + styles + js     │ ◄───────────────────── │  regras de negócio     │
 └──────────────────────────┘     (assíncrono)        └──────────┬────────────┘
                                                                  │ SpreadsheetApp
@@ -89,12 +89,12 @@ FinanceiroAppGoogle/
 ├── .clasp.json            # vínculo com o projeto Apps Script (rootDir: src)
 ├── src/                   # o que é enviado à nuvem (via clasp)
 │   ├── appsscript.json    # manifesto (timezone America/Sao_Paulo, V8)
-│   ├── Código.js          # backend
+│   ├── Codigo.js          # backend
 │   ├── index.html         # estrutura do frontend (inclui os parciais)
 │   ├── styles.html        # CSS (via include())
 │   └── js.html            # JS do frontend (via include())
 ├── tests/                 # suíte de testes em Node (mock do Apps Script)
-│   ├── mock-sheets.js     # mock da API do Sheets + carregador do Código.js
+│   ├── mock-sheets.js     # mock da API do Sheets + carregador do Codigo.js
 │   └── run.js             # casos de teste (node tests/run.js)
 └── docs/                  # documentação (não vai para a nuvem)
     ├── README.md                  # índice/mapa da documentação

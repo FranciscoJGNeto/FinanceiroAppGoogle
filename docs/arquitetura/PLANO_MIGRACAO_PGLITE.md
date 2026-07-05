@@ -50,7 +50,7 @@ Consequências:
    Arquivo .tar / Google Drive / servidor de sync
 ```
 
-- **Sem Apps Script no caminho de dados.** O backend `Código.js` deixa de ser usado (pode ser aposentado ou mantido só como export inicial dos dados).
+- **Sem Apps Script no caminho de dados.** O backend `Codigo.js` deixa de ser usado (pode ser aposentado ou mantido só como export inicial dos dados).
 - **Hospedagem:** como PGlite não roda bem no iframe-sandbox do Apps Script, o front vai para **hospedagem estática** (GitHub Pages, Netlify, Firebase Hosting, Cloudflare Pages — todas com HTTPS grátis). Isso também habilita Service Worker → **PWA real** (resolve a limitação do plano de código D1).
 
 ---

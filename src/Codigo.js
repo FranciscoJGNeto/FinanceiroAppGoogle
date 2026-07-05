@@ -7,6 +7,7 @@ const SHEET_ORC = 'Orcamentos';
 const SHEET_LEMB = 'Lembretes';
 const SHEET_META = 'Metas';
 const SHEET_CLASS = 'Classificacao';
+const SHEET_REGRAS = 'Regras';
 
 // Colunas canônicas da aba Transacoes (ordem usada ao criar/completar o cabeçalho).
 const TRANS_COLS = ['ID', 'Data', 'Conta', 'Meio', 'Descrição', 'Tipo', 'Natureza', 'Categoria',
@@ -75,17 +76,116 @@ const CATEGORIA_KEYWORDS = {
   'Vestuário': ['calcados', 'boutique']
 };
 
-// Sugere uma categoria a partir da descrição: primeiro pelo histórico (histMap:
-// descrição normalizada -> categoria), depois por palavras-chave conhecidas.
-// Compara já normalizado (sem espaço/acento), por isso as keywords também são normalizadas.
-function categorizarAuto_(descricao, histMap) {
+// Sugere uma categoria a partir da descrição:
+//   1) regras do usuário (aba Regras: se a descrição CONTÉM o termo -> categoria);
+//   2) histórico exato (histMap: descrição normalizada -> categoria);
+//   3) palavras-chave embutidas.
+// `regras`: [{ termo (já normalizado), categoria }]. Tudo comparado normalizado.
+function categorizarAuto_(descricao, histMap, regras) {
   const nd = norm_(descricao);
   if (!nd) return '';
+  if (regras && regras.length) {
+    for (let i = 0; i < regras.length; i++) {
+      const t = regras[i].termo;
+      if (t && nd.indexOf(t) !== -1) return regras[i].categoria;
+    }
+  }
   if (histMap && histMap[nd]) return histMap[nd];
   for (const cat in CATEGORIA_KEYWORDS) {
     if (CATEGORIA_KEYWORDS[cat].some(k => { const nk = norm_(k); return nk && nd.indexOf(nk) !== -1; })) return cat;
   }
   return '';
+}
+
+// Detecta o meio (Cartão vs Conta) a partir da descrição; sem indício, usa o fallback.
+function detectMeio_(desc, fallback) {
+  const n = norm_(desc);
+  if (/(cartaodecredito|compranocredito|creditocartao|faturadecartao|faturacartao)/.test(n)) return 'Cartão';
+  return fallback || 'Conta';
+}
+
+// ---- Regras de categorização (aba Regras: A=Termo, B=Categoria) ----
+function getRegras() {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEET_REGRAS);
+  if (!sh || sh.getLastRow() < 2) return [];
+  return sh.getDataRange().getValues().slice(1)
+    .filter(r => String(r[0]).trim() && String(r[1]).trim())
+    .map(r => ({ termo: String(r[0]).trim(), categoria: String(r[1]).trim() }));
+}
+
+function setRegra(termo, categoria) {
+  termo = String(termo || '').trim();
+  categoria = String(categoria || '').trim();
+  if (!termo) throw new Error('Informe o termo (ex.: "giraffas").');
+  if (!categoria) throw new Error('Informe a categoria.');
+  const ss = SpreadsheetApp.getActive();
+  let sh = ss.getSheetByName(SHEET_REGRAS);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_REGRAS);
+    sh.getRange('A1:B1').setValues([['Termo', 'Categoria']]);
+    sh.getRange('A1:B1').setFontWeight('bold');
+  }
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const last = sh.getLastRow();
+    const termos = last > 1 ? sh.getRange(2, 1, last - 1, 1).getValues() : [];
+    let row = -1;
+    for (let i = 0; i < termos.length; i++) { if (norm_(termos[i][0]) === norm_(termo)) { row = i + 2; break; } }
+    if (row === -1) sh.appendRow([termo, categoria]);
+    else sh.getRange(row, 1, 1, 2).setValues([[termo, categoria]]);
+  } finally {
+    lock.releaseLock();
+  }
+  return { ok: true, message: 'Regra salva' };
+}
+
+function deleteRegra(termo) {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEET_REGRAS);
+  if (!sh || sh.getLastRow() < 2) return { ok: true };
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const termos = sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues();
+    for (let i = 0; i < termos.length; i++) { if (norm_(termos[i][0]) === norm_(termo)) { sh.deleteRow(i + 2); break; } }
+  } finally {
+    lock.releaseLock();
+  }
+  return { ok: true, message: 'Regra removida' };
+}
+
+// Recategoriza os lançamentos SEM categoria usando regras + histórico + palavras-chave.
+function recategorizar() {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEET_TRANS);
+  if (!sh) throw new Error('Aba "Transacoes" não encontrada na planilha');
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const map = ensureColunasTrans_(sh);
+    const catCol = map.categoria;
+    if (catCol == null) return { ok: true, atualizadas: 0 };
+    const vals = sh.getDataRange().getValues();
+    const col = (r, f) => (map[f] != null ? r[map[f]] : '');
+    const histMap = {};
+    for (let i = 1; i < vals.length; i++) {
+      const c = String(col(vals[i], 'categoria') || '').trim();
+      if (c) { const k = norm_(col(vals[i], 'descricao')); if (k) histMap[k] = c; }
+    }
+    const regras = getRegras().map(r => ({ termo: norm_(r.termo), categoria: r.categoria }));
+    let atualizadas = 0;
+    for (let i = 1; i < vals.length; i++) {
+      if (String(col(vals[i], 'categoria') || '').trim()) continue;
+      const cat = categorizarAuto_(col(vals[i], 'descricao'), histMap, regras);
+      if (cat) { vals[i][catCol] = cat; atualizadas++; }
+    }
+    if (atualizadas) sh.getDataRange().setValues(vals);
+    return { ok: true, atualizadas: atualizadas };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 // Ano*100 + mês, a partir de uma data (ou null se inválida).
@@ -1600,6 +1700,9 @@ function importarTransacoes(lista) {
     const vals = sh.getDataRange().getValues();
     const col = (r, f) => (map[f] != null ? r[map[f]] : '');
 
+    // Regras do usuário (aba Regras) para auto-categorizar
+    const regras = getRegras().map(r => ({ termo: norm_(r.termo), categoria: r.categoria }));
+
     // Índice das transações já existentes (dedup) + histórico p/ auto-categorizar
     const existentes = {};
     const histMap = {};
@@ -1636,12 +1739,12 @@ function importarTransacoes(lista) {
       setc('id', Utilities.getUuid());
       setc('data', dataObj);
       setc('conta', String((t && t.conta) || '').trim());
-      setc('meio', String((t && t.meio) || 'Conta'));
+      setc('meio', detectMeio_(descricao, String((t && t.meio) || 'Conta')));
       setc('descricao', descricao);
       setc('tipo', 'Único');
       setc('natureza', norm_(t && t.natureza) === 'receita' ? 'Receita' : 'Despesa');
       let categoria = String((t && t.categoria) || '').trim();
-      if (!categoria) categoria = categorizarAuto_(descricao, histMap);
+      if (!categoria) categoria = categorizarAuto_(descricao, histMap, regras);
       setc('categoria', categoria);
       setc('valor', valor);
       setc('obs', String((t && t.obs) || ''));
@@ -1935,6 +2038,14 @@ function criarEstruturaPlanilha() {
     shCl = ss.insertSheet(SHEET_CLASS);
     shCl.getRange('A1:B1').setValues([['Categoria', 'Classe']]);
     shCl.getRange('A1:B1').setFontWeight('bold');
+  }
+
+  // Aba Regras (auto-categorização por termo)
+  let shR = ss.getSheetByName(SHEET_REGRAS);
+  if (!shR) {
+    shR = ss.insertSheet(SHEET_REGRAS);
+    shR.getRange('A1:B1').setValues([['Termo', 'Categoria']]);
+    shR.getRange('A1:B1').setFontWeight('bold');
   }
 
   return 'Estrutura da planilha criada/atualizada com sucesso!';

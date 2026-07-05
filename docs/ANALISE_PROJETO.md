@@ -16,7 +16,7 @@ inicial". Acesso `MYSELF` (só a conta dona abre).
 
 ```
 ┌────────────────────────┐        google.script.run        ┌─────────────────────┐
-│  frontend (3 arquivos) │  ─────────────────────────────► │  Código.js (backend)│
+│  frontend (3 arquivos) │  ─────────────────────────────► │  Codigo.js (backend)│
 │  index + styles + js    │  ◄───────────────────────────── │  regras de negócio   │
 └────────────────────────┘        (callbacks async)         └──────────┬──────────┘
                                                                         │ SpreadsheetApp
@@ -29,7 +29,7 @@ O frontend é dividido em **`index.html`** (estrutura), **`styles.html`** (CSS) 
 **`js.html`** (JS), servidos juntos via `HtmlService.createTemplateFromFile('index')`
 + `include()` — o usuário recebe um único HTML.
 
-### Backend — `Código.js`
+### Backend — `Codigo.js`
 Colunas lidas por **nome de cabeçalho** (não por índice) e config por **chave** (não célula
 fixa). Principais grupos de funções:
 
@@ -45,6 +45,7 @@ fixa). Principais grupos de funções:
 | 50/30/20 | `getRegra503020`, `getClassificacao`, `setClasseCategoria` |
 | Lembretes | `getLembretes`, `setLembrete`, `deleteLembrete`, `verificarLembretes` + gatilho diário |
 | Import/Backup | `importarTransacoes`, `exportarBackup` (CSV), `exportarBackupXML` + **backup agendado** (`backupAgendado` + gatilho semanal/mensal) |
+| Categorização | `categorizarAuto_` (regras do usuário → histórico → keywords), `getRegras`/`setRegra`/`deleteRegra`, `recategorizar` |
 | Telegram | `parseLancamentoMsg_`, `get/setConfigTelegram`, `verificarTelegram` + gatilho de 1 min (polling via `UrlFetchApp`) |
 | Setup | `criarEstruturaPlanilha`, `migrarEstrutura`, `testarEstrutura`, `include` |
 
@@ -59,7 +60,7 @@ fixa). Principais grupos de funções:
 | ➕ Lançar | Novo lançamento + Transações do mês |
 | 📊 Análise | Gráficos, Relatório anual, Parcelas futuras, Fatura de cartão, Compartilhado |
 | 🎯 Planejar | Orçamentos, Metas, Regra 50/30/20, Lembretes |
-| ⚙️ Config | Contas, Backup (+ agendado), Bot do Telegram, Importar extrato |
+| ⚙️ Config | Contas, Backup (+ agendado), Bot do Telegram, Importar extrato, Regras de categoria |
 
 No **cabeçalho** (visível em qualquer tela): navegação de mês (‹ › + rótulo) com botão
 **"Hoje"** para voltar ao mês atual, e botão de instalar. Recursos de UI: **tema escuro
@@ -77,6 +78,7 @@ de moeda, atalho `Ctrl+Enter`, gráficos SVG com paleta acessível e escape de H
 - **Lembretes** — `Descrição | Dia | Valor | Antecedencia | Ativo | UltimoAviso`.
 - **Metas** — `ID | Descrição | Tipo | Alvo | Prazo | CriadoEm`.
 - **Classificacao** — `Categoria | Classe` (Essencial/Desejo/Poupança, para a regra 50/30/20).
+- **Regras** — `Termo | Categoria` (auto-categorização: descrição contém o termo → categoria).
 
 ## Regras de negócio embutidas
 

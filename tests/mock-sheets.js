@@ -1,4 +1,4 @@
-// Mock mínimo da API do Google Apps Script para testar src/Código.js em Node,
+// Mock mínimo da API do Google Apps Script para testar src/Codigo.js em Node,
 // sem tocar em nenhuma planilha real. Usado por tests/run.js.
 'use strict';
 const fs = require('fs');
@@ -56,7 +56,7 @@ class Spreadsheet {
   insertSheet(n) { const s = new Sheet(n); this.sheets[n] = s; return s; }
 }
 
-// Carrega src/Código.js num contexto isolado com a API mockada.
+// Carrega src/Codigo.js num contexto isolado com a API mockada.
 // `sheetsSpec`: { NomeAba: [[linha],[linha]...] }. Retorna { api, ss, sheets }.
 function loadApp(sheetsSpec) {
   const sheets = {};
@@ -97,7 +97,7 @@ function loadApp(sheetsSpec) {
     console, Date, Math, JSON, String, Number, Array, Object, RegExp, parseFloat, parseInt, isNaN
   };
   vm.createContext(ctx);
-  const code = fs.readFileSync(path.join(__dirname, '..', 'src', 'Código.js'), 'utf8');
+  const code = fs.readFileSync(path.join(__dirname, '..', 'src', 'Codigo.js'), 'utf8');
   vm.runInContext(code, ctx);
 
   const nomes = ['addTransacao', 'updateTransacao', 'deleteTransacao', 'listTransacoes', 'getResumo',
@@ -107,6 +107,7 @@ function loadApp(sheetsSpec) {
     'getOrcamentos', 'setOrcamento', 'deleteOrcamento',
     'getMetas', 'setMeta', 'deleteMeta',
     'getRegra503020', 'getClassificacao', 'setClasseCategoria',
+    'getRegras', 'setRegra', 'deleteRegra', 'recategorizar',
     'getContas', 'setConta', 'deleteConta', 'getFaturaCartao', 'exportarBackup', 'exportarBackupXML', 'importarTransacoes',
     'backupAgendado', 'instalarGatilhoBackup', 'removerGatilhoBackup', 'statusGatilhoBackup',
     'parseLancamentoMsg_', 'getConfigTelegram', 'setConfigTelegram', 'verificarTelegram',

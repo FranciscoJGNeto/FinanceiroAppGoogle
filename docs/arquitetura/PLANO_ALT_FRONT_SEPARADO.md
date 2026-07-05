@@ -2,7 +2,7 @@
 
 **Objetivo:** resolver o "app no celular" (PWA **instalável de verdade**, com ícone,
 splash e offline) com o **mínimo de reescrita**, mantendo todo o backend atual
-(Google Sheets + funções do `Código.js`).
+(Google Sheets + funções do `Codigo.js`).
 
 **Ideal para:** quem gosta da stack atual e do "dados no meu Google", mas quer a
 experiência de app no celular que o `/exec` não entrega.

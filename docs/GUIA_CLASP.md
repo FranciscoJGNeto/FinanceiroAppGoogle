@@ -53,7 +53,7 @@ clasp clone "1uQRTmDmcLXq5Bk-tq98u7ZpBQJYCh2mknHR-r9b4SgKIvlEj8j4kFqR1"
 Depois do clone você verá algo como:
 - `appsscript.json`
 - `.clasp.json`
-- o arquivo de script da nuvem (ex.: `Código.js` ou `codigo.js`)
+- o arquivo de script da nuvem (ex.: `Codigo.js` ou `codigo.js`)
 - `index.html`
 
 > Observação: o `clasp` baixa arquivos de script `.gs` com a extensão **`.js`** localmente — isso é normal; no `push` ele volta como `.gs` na nuvem.
@@ -67,10 +67,10 @@ Copie o conteúdo corrigido por cima dos arquivos clonados.
 ```powershell
 # Ajuste o nome do arquivo de script de destino conforme o que apareceu no clone.
 # Se o clone criou "codigo.js":
-Copy-Item "..\FinanceiroAppGoogle\Código.js" ".\codigo.js" -Force
+Copy-Item "..\FinanceiroAppGoogle\Codigo.js" ".\codigo.js" -Force
 
-# Se o clone criou "Código.js" (nome padrão em português):
-# Copy-Item "..\FinanceiroAppGoogle\Código.js" ".\Código.js" -Force
+# Se o clone criou "Codigo.js" (nome padrão em português):
+# Copy-Item "..\FinanceiroAppGoogle\Codigo.js" ".\Codigo.js" -Force
 
 # HTML (mesmo nome nos dois lados):
 Copy-Item "..\FinanceiroAppGoogle\index.html" ".\index.html" -Force
@@ -128,7 +128,7 @@ clasp deploy --description "o que mudou"
 ## Alternativa simples (sem clasp)
 
 Se preferir não usar CLI: abra o editor do Apps Script, e **copie e cole** manualmente:
-- o conteúdo de [Código.js](../src/Código.js) no arquivo de script; e
+- o conteúdo de [Codigo.js](../src/Codigo.js) no arquivo de script; e
 - o conteúdo de [index.html](../src/index.html) no arquivo HTML.
 
 Depois **Implantar → Gerenciar implantações → Nova versão**. Mesmo resultado, sem instalar nada.

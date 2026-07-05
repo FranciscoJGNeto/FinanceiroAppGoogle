@@ -5,14 +5,14 @@
 > escape de HTML) foram corrigidos na **v4**; a **fundação de robustez** (mapeamento por cabeçalho,
 > ID por transação, validação server-side, config por chave) veio na **v5**. Documento mantido como registro.
 
-Erros encontrados em `Código.js` e `index.html`, ordenados por severidade, com plano de correção.
+Erros encontrados em `Codigo.js` e `index.html`, ordenados por severidade, com plano de correção.
 
 Legenda: 🔴 Crítico (quebra funcionalidade) · 🟠 Importante (resultado errado) · 🟡 Melhoria/robustez
 
 ---
 
 ## 🔴 1. `setHeaders` não existe em `TextOutput` — manifest sempre quebra
-**Arquivo:** `Código.js`, `doGet`, linhas 39–44.
+**Arquivo:** `Codigo.js`, `doGet`, linhas 39–44.
 
 ```js
 return ContentService
@@ -34,7 +34,7 @@ return ContentService
 ---
 
 ## 🔴 2. Conversão de valor monetária corrompe casas decimais
-**Arquivo:** `Código.js`, `addTransacao`, `toNum`, linhas 62–66.
+**Arquivo:** `Codigo.js`, `addTransacao`, `toNum`, linhas 62–66.
 
 ```js
 const toNum = (v) => {
@@ -64,7 +64,7 @@ const toNum = (v) => {
 ---
 
 ## 🟠 3. Bug de fuso horário: data pode ser salva/filtrada um dia antes
-**Arquivo:** `Código.js` — `addTransacao` (linha 61) e `getResumo`/`listTransacoes` (linhas 97, 139).
+**Arquivo:** `Codigo.js` — `addTransacao` (linha 61) e `getResumo`/`listTransacoes` (linhas 97, 139).
 
 ```js
 const parseDate = (v) => (v ? new Date(v) : new Date());
@@ -91,7 +91,7 @@ Usar `parseLocalDate` em `addTransacao`, `listTransacoes` e `getResumo`.
 ---
 
 ## 🟠 4. Match de "compartilhado" com descrição vazia gera falso positivo
-**Arquivo:** `Código.js`, `getResumo`, linhas 180–186.
+**Arquivo:** `Codigo.js`, `getResumo`, linhas 180–186.
 
 ```js
 if (compartilhados.some(comp => desc.includes(comp) || comp.includes(desc))) { ... }
@@ -115,7 +115,7 @@ const totalCompart = rows.reduce((acc, r) => {
 ---
 
 ## 🟠 5. Reembolso arredondado para reais inteiros (perde centavos)
-**Arquivo:** `Código.js`, `getResumo`, linha 221.
+**Arquivo:** `Codigo.js`, `getResumo`, linha 221.
 
 ```js
 const reembolso = Math.round(totalCompart * rateio); // ❌ perde centavos
@@ -166,7 +166,7 @@ O `beforeinstallprompt` só dispara quando há **manifest válido + Service Work
 ---
 
 ## 🟡 8. Sem `LockService` em escrita concorrente
-**Arquivo:** `Código.js`, `addTransacao`, linha 83 (`sh.appendRow(row)`).
+**Arquivo:** `Codigo.js`, `addTransacao`, linha 83 (`sh.appendRow(row)`).
 
 Duas gravações simultâneas podem competir. Para uso pessoal o risco é baixo, mas é boa prática.
 
@@ -184,7 +184,7 @@ try {
 ---
 
 ## 🟡 9. Código redundante em `getResumo`
-**Arquivo:** `Código.js`, linhas 149–168.
+**Arquivo:** `Codigo.js`, linhas 149–168.
 
 `rows` já filtra o mês, mas `totalInter/totalItau/totalContaSimples` reprocessam `vals.slice(1)` reaplicando `toYM(...) === ymTarget`. Funciona, mas percorre a planilha 3× a mais.
 

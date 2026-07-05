@@ -1,4 +1,4 @@
-// Suíte de testes do backend (src/Código.js), rodando em Node com a API do
+// Suíte de testes do backend (src/Codigo.js), rodando em Node com a API do
 // Apps Script mockada (tests/mock-sheets.js). Não toca em planilha real.
 //
 //   node tests/run.js
@@ -391,6 +391,34 @@ group('importarTransacoes — auto-categorização');
   eq(byDesc('NETFLIX.COM').categoria, 'Assinaturas', 'Netflix -> Assinaturas (keyword)');
   eq(byDesc('UBER *TRIP').categoria, 'Transporte', 'Uber -> Transporte (keyword)');
   eq(byDesc('Padaria do Zé').categoria, 'Alimentação', 'Padaria -> Alimentação (histórico)');
+}
+
+group('regras de categoria — usuário ensina + recategorizar');
+{
+  const { api } = loadApp(baseTrans([]));
+  api.setRegra('giraffas', 'Alimentação');
+  api.setRegra('kfc', 'Alimentação');
+  api.setRegra('cdb', 'Investimentos');
+  api.setRegra('GIRAFFAS', 'Lazer'); // upsert normalizado (não duplica)
+  eq(api.getRegras().length, 3, 'upsert por termo não duplica (3 regras)');
+  // importa com as descrições reais do usuário -> regras pegam
+  api.importarTransacoes([
+    { data: '2026-07-02', descricao: 'No estabelecimento GIRAFFAS BRASILIA BRA', valor: 30, conta: 'Inter', natureza: 'Despesa' },
+    { data: '2026-07-03', descricao: 'No estabelecimento KFC BRASILIA BRA', valor: 40, conta: 'Inter', natureza: 'Despesa' },
+    { data: '2026-07-04', descricao: 'Aplicacao CDB POS DI LIQ. BANCO INTER SA', valor: 500, conta: 'Inter', natureza: 'Despesa' },
+    { data: '2026-07-05', descricao: 'No estabelecimento LUGAR NOVO XYZ', valor: 15, conta: 'Inter', natureza: 'Despesa' }
+  ]);
+  let lst = api.listTransacoes('2026-07-01');
+  const byDesc = d => lst.find(x => x.descricao === d);
+  eq(byDesc('No estabelecimento GIRAFFAS BRASILIA BRA').categoria, 'Lazer', 'regra giraffas aplicada (upsert -> Lazer)');
+  eq(byDesc('No estabelecimento KFC BRASILIA BRA').categoria, 'Alimentação', 'regra kfc aplicada');
+  eq(byDesc('No estabelecimento LUGAR NOVO XYZ').categoria, '', 'sem regra/keyword fica vazia');
+  // adiciona regra nova e recategoriza os sem categoria
+  api.setRegra('lugar novo', 'Compras');
+  const rec = api.recategorizar();
+  eq(rec.atualizadas, 1, 'recategorizar preenche 1 (LUGAR NOVO)');
+  lst = api.listTransacoes('2026-07-01');
+  eq(byDesc('No estabelecimento LUGAR NOVO XYZ') && api.listTransacoes('2026-07-01').find(x => x.descricao.indexOf('LUGAR NOVO') !== -1).categoria, 'Compras', 'LUGAR NOVO -> Compras após regra');
 }
 
 group('importarTransacoes — keywords com espaço + sem falso-positivo');

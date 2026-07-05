@@ -369,6 +369,33 @@
       </div>
     </section>
 
+    <!-- Regras de categoria -->
+    <section class="panel acc collapsed" data-acc="regras" data-view="config">
+      <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="false" aria-controls="bodyRegras">
+        <h2>🏷️ Regras de categoria</h2>
+        <div class="right">
+          <span class="chevron" aria-hidden="true">▾</span>
+        </div>
+      </div>
+      <div class="panelBody" id="bodyRegras">
+        <div class="hint" style="margin-bottom:10px;">Ensine o app: quando a descrição <b>contém</b> um termo, aplica a categoria. Ex.: termo <b>giraffas</b> → <b>Alimentação</b>. Vale na importação, no bot e no botão de recategorizar. Assim ele aprende os lugares que a lista embutida não conhece.</div>
+        <div class="row2" style="margin-bottom:10px;">
+          <div>
+            <label for="rgTermo">🔤 Termo (parte da descrição)</label>
+            <input class="field" type="text" id="rgTermo" autocomplete="off" placeholder="Ex.: giraffas, kfc, cdb, allpark" />
+          </div>
+          <div>
+            <label for="rgCat">🗂️ Categoria</label>
+            <input class="field" type="text" id="rgCat" list="catList" autocomplete="off" placeholder="Ex.: Alimentação" />
+          </div>
+        </div>
+        <button class="btn" id="btnSalvarRegra">🏷️ Salvar regra</button>
+        <button class="btnGhost" id="btnRecategorizar" style="margin-top:8px;">🔁 Recategorizar não classificados</button>
+        <div class="msg" id="msgRegra"></div>
+        <div id="regrasList" style="margin-top:12px;"></div>
+      </div>
+    </section>
+
     <!-- Lembretes de vencimento -->
     <section class="panel acc collapsed" data-acc="lembretes" data-view="planejar">
       <div class="panelHead accHead" role="button" tabindex="0" aria-expanded="false" aria-controls="bodyLembretes">

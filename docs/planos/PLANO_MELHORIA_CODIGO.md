@@ -42,7 +42,7 @@ Com o ID (A2): `updateTransacao(id, dados)` e `deleteTransacao(id)`. UI ganha ed
 `getResumo`/`listTransacoes` leem a planilha inteira a cada chamada. Usar `CacheService` (TTL curto, ex.: 60s) com chave por mês; invalidar ao gravar.
 
 ### B4. 🟡 Organização em múltiplos arquivos
-Separar `Código.js` em: `Web.gs` (doGet/manifest), `Transacoes.gs`, `Resumo.gs`, `Config.gs`, `Utils.gs` (parseLocalDate_, round2_). Adicionar **JSDoc** nas funções públicas.
+Separar `Codigo.js` em: `Web.gs` (doGet/manifest), `Transacoes.gs`, `Resumo.gs`, `Config.gs`, `Utils.gs` (parseLocalDate_, round2_). Adicionar **JSDoc** nas funções públicas.
 
 ### B5. 🟡 Constantes/enums centralizados
 Contas (`Inter/Itaú/Conta Simples`), tipos (`Único/Recorrente/Parcelado/Anual`), meios — hoje duplicados entre HTML e backend. Servir a lista pelo backend (`getOpcoes()`) para uma única fonte de verdade.
