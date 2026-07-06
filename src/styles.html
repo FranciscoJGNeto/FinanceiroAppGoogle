@@ -51,6 +51,8 @@
       --tex-op: .13;                        /* opacidade da textura */
       --skel1: rgba(255, 255, 255, .05);
       --skel2: rgba(255, 255, 255, .13);
+      --scroll-thumb: rgba(255, 255, 255, .16);
+      --scroll-thumb-h: rgba(255, 255, 255, .30);
     }
 
     /* Tema claro — off-white/creme suave (sem branco estourado) */
@@ -77,11 +79,27 @@
       --tex-op: .05;
       --skel1: rgba(0, 0, 0, .05);
       --skel2: rgba(0, 0, 0, .12);
+      --scroll-thumb: rgba(0, 0, 0, .22);
+      --scroll-thumb-h: rgba(0, 0, 0, .36);
     }
 
     * {
       box-sizing: border-box
     }
+
+    /* Barra de rolagem estilizada — discreta, arredondada e temática */
+    html { scrollbar-width: thin; scrollbar-color: var(--scroll-thumb) transparent; }
+    * { scrollbar-width: thin; scrollbar-color: var(--scroll-thumb) transparent; }
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+      background: var(--scroll-thumb);
+      border-radius: 999px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+    ::-webkit-scrollbar-thumb:hover { background: var(--scroll-thumb-h); background-clip: padding-box; }
+    ::-webkit-scrollbar-corner { background: transparent; }
 
     body {
       margin: 0;
@@ -851,7 +869,7 @@
       }
       .tabbar {
         position: sticky;
-        top: 12px;
+        top: 88px;
         bottom: auto;
         z-index: 10;
         flex: 0 0 210px;
@@ -875,10 +893,12 @@
       .tabbar button[aria-current="page"] { background: rgba(79, 140, 255, .14); color: var(--text); }
 
       .appHeader {
-        position: relative;
-        max-width: 1160px;
-        margin: 0 auto 12px;
-        padding: 8px 0 12px;
+        /* Fica fixo no topo ao rolar (no desktop também, não só no celular) */
+        position: sticky;
+        top: 0;
+        max-width: none;
+        margin: 0 0 12px;
+        padding: 10px max(14px, calc((100vw - 1160px) / 2)) 12px;
       }
 
       h1 {
