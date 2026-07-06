@@ -61,9 +61,11 @@ Gatilho no fim do mês manda um **resumo por e-mail** (totais, top categorias, %
 
 ## Nível C — Entrada de dados sem fricção
 
-### C1. Regras de auto-categorização personalizáveis ⭐⭐⭐ 🔨🔨
-Aba `Regras` (contém "X" → categoria "Y", conta, compartilhado). O usuário cria as suas,
-usadas na importação e no bot. 🔁 amplia a auto-categorização atual (hoje é fixa no código).
+### C1. Regras de auto-categorização personalizáveis ✅ (v46–v49)
+**Feito.** Aba `Regras` (termo → categoria): o usuário cria as suas, usadas na importação e
+no bot; a regra é **aplicada na hora** aos lançamentos existentes que casam. Somou-se: aba
+`Categorias` (criar/renomear/juntar/remover), **categoria por tipo** na importação OFX
+(Aplicação/Resgate→Investimentos, Pix→Transferências) e **edição de categoria direto na lista**.
 
 ### C2. Dividir um lançamento em várias categorias ⭐⭐ 🔨🔨
 Ex.: 1 compra de mercado → parte "Alimentação", parte "Limpeza". Split que soma o total.

@@ -25,23 +25,24 @@ na **sua** conta Google (nada de servidor de terceiros, nada de mensalidade).
 
 | Área | Recursos |
 |------|----------|
-| **Lançar** | Despesas **e** receitas · máscara de moeda · categorias · parcelas · **compartilhado com % próprio** · observações |
-| **Gerenciar** | Editar e excluir qualquer lançamento · busca/filtro instantâneo · **contas dinâmicas** (crie/edite as suas) |
-| **Entender** | Resumo do mês (totais por conta, gasto compartilhado, reembolso, previsão de saldo, % do salário) |
+| **Lançar** | Despesas **e** receitas · máscara de moeda · categorias · parcelas · **compartilhado com % próprio** · observações · **marcar receita como salário** |
+| **Gerenciar** | Editar em **janela (modal)** · excluir · **trocar categoria e recorrência direto na lista** · busca/filtro instantâneo · **contas dinâmicas** (crie/edite as suas) |
+| **Entender** | Resumo do mês (totais por conta, gasto compartilhado, reembolso, previsão de saldo, **% do salário** — baseado no salário recebido no mês) |
 | **Visualizar** | Dashboard: rosca por conta · evolução de 6 meses · barras por categoria · **relatório anual** (receita × despesa por mês, top gastos) |
-| **Planejar** | Orçamento por categoria (sugestões + alerta de estouro) · projeção de parcelas · **recorrentes automáticos** (gatilho mensal) · **regra 50/30/20** (Essencial/Desejo/Poupança) |
+| **Planejar** | Orçamento por categoria (sugestões + alerta de estouro) · projeção de parcelas · **recorrentes automáticos** (lançados **no dia** em que caem) · **regra 50/30/20** (Essencial/Desejo/Poupança) |
+| **Categorias** | Lista de categorias editável (criar/renomear/juntar/remover) · **regras** termo→categoria (aplicadas na hora aos existentes) · recategorizar em lote |
 | **Metas** | Metas de economia **mensais** ("guardar R$ X/mês") e **totais** ("juntar R$ Y até um prazo") com barra de progresso |
 | **Cartão** | **Fatura prevista por cartão** (ciclo de fechamento/vencimento), não por competência |
 | **Lembretes** | Contas com vencimento → **e-mail** automático alguns dias antes (gatilho diário) |
 | **Dividir** | Acerto de contas de gastos compartilhados (quanto a outra pessoa te reembolsa) |
-| **Importar** | Extrato **OFX** (padrão dos apps de banco — Nubank, Itaú, Bradesco, Inter, C6…), **QIF** ou **CSV** (inclui colunas Débito/Crédito por banco) · detecção automática · dedup · auto-categorização |
+| **Importar** | Extrato **OFX** (Nubank, Itaú, Bradesco, Inter, C6…), **QIF** ou **CSV** (colunas Débito/Crédito por banco) · **nome limpo** (extrai o estabelecimento) · **categoria por tipo** (Aplicação/Resgate→Investimentos, Pix→Transferências) · dedup |
 | **Telegram** | **Lançar por mensagem** ao seu bot (ex.: "Mercado 85,90 Inter") — mantém o app privado (polling, sem webhook público) |
 | **Backup** | Exportação para o Google Drive em **CSV** (Excel/Sheets) ou **XML** (estruturado) |
-| **Experiência** | **App com telas** — navegação por barra inferior (celular) / menu lateral (desktop), sem recarregar · **tema escuro neumórfico** · troca de mês no cabeçalho com botão **"Hoje"** · atalho na tela inicial (Android/iOS) |
+| **Experiência** | **App com telas** — navegação por barra inferior (celular) / menu lateral (desktop), sem recarregar · **temas claro e escuro** (neumórfico, com alternância 🌙/☀️) · troca de mês no cabeçalho com botão **"Hoje"** · atalho na tela inicial (Android/iOS) |
 
 > 💡 **Gasto compartilhado:** marque um lançamento como compartilhado e informe o **% que a outra
 > pessoa paga** — o app calcula o **reembolso** e o seu gasto real ajustado. Na importação de extrato,
-> os lançamentos são **categorizados automaticamente** (pelo histórico e por palavras-chave).
+> os lançamentos são **categorizados automaticamente** (por regras suas, tipo da transação, histórico e palavras-chave).
 
 ## 📸 Telas
 
@@ -143,11 +144,12 @@ Script **mockada** — ou seja, valida a lógica **sem tocar em nenhuma planilha
 node tests/run.js
 ```
 
-São **114 checagens** cobrindo parsing de valores, mapeamento por cabeçalho, resumo,
+São **187 checagens** cobrindo parsing de valores, mapeamento por cabeçalho, resumo,
 CRUD, categorias, evolução, **relatório anual**, orçamentos (com sugestões), projeção de
-parcelas, recorrentes (manual e gatilho), **metas**, **fatura de cartão**, **regra 50/30/20**,
-acerto de contas, importação (dedup/auto-categoria), lembretes e backup (CSV/XML). Sai com
-código ≠ 0 se algo falhar (pronto para CI).
+parcelas, **recorrentes (só materializam quando o dia chega)**, **metas**, **fatura de cartão**,
+**regra 50/30/20**, acerto de contas, importação (nome limpo/categoria por tipo/dedup),
+**regras e gerenciamento de categorias** (aplicar/renomear/juntar), **salário derivado**,
+lembretes e backup (CSV/XML). Sai com código ≠ 0 se algo falhar (pronto para CI).
 
 ## 🛠️ Stack
 
@@ -165,7 +167,8 @@ código ≠ 0 se algo falhar (pronto para CI).
 - ✅ **Onda 4–5** — acerto de contas · contas dinâmicas · backup CSV/XML · importar OFX/CSV · lembretes (e-mail)
 - ✅ **Onda 6** — instalar na tela inicial · **app com telas (navegação)** · **tema escuro neumórfico** · troca de mês com botão "Hoje"
 - ✅ **Onda 7 (completa)** — recorrentes automáticos · metas de economia · relatório anual · fatura de cartão · regra 50/30/20 · importar QIF/CSV por banco · backup agendado · **bot do Telegram** (lançar por mensagem)
-- 🔮 **Onda 8+ (planejado)** — patrimônio líquido, dívidas, reserva de emergência, comparativos, alertas de gasto incomum, radar de assinaturas, regras de categoria… em [docs/planos/PLANO_FEATURES_FINANCEIRAS.md](docs/planos/PLANO_FEATURES_FINANCEIRAS.md)
+- ✅ **Polimento (v40–v49)** — toasts/skeleton/a11y · **design tokens** · **tema claro** (🌙/☀️) · importação OFX com **nome limpo + categoria por tipo** · **regras e gerenciador de categorias** (criar/renomear/juntar; regra aplica na hora) · **editar categoria/recorrência na lista** · **modal de edição** · **recorrentes lançados no dia** · **receita marcada como salário**
+- 🔮 **Onda 8+ (planejado)** — patrimônio líquido, dívidas, reserva de emergência, comparativos, alertas de gasto incomum, radar de assinaturas… em [docs/planos/PLANO_FEATURES_FINANCEIRAS.md](docs/planos/PLANO_FEATURES_FINANCEIRAS.md)
 - 🧭 **Arquitetura** — caminhos para PWA instalável de verdade, multiusuário e offline em [docs/arquitetura/](docs/arquitetura/)
 
 Roadmap detalhado (com a versão de cada entrega) em [docs/planos/PLANO_FUNCIONALIDADES.md](docs/planos/PLANO_FUNCIONALIDADES.md).

@@ -12,6 +12,8 @@
 > ✅ **#9** a11y — `prefers-reduced-motion`, `role=status`, `aria-label` (v40) + **foco visível** (`:focus-visible`) e **contraste** do texto secundário → **v41** ·
 > ✅ **#1** **design tokens** — escala de espaçamento (`--sp-*`), tipografia (`--fs-*`) e raios (`--r-sm/--r/--r-lg`) → **v42** ·
 > ✅ **#8** **tema claro** suave (off-white/creme) com alternância 🌙/☀️, persistência e `prefers-color-scheme`; cores cruas tokenizadas → **v43**.
+> ✅ **edição em modal** (`<dialog>`) no lugar de jogar os dados no formulário · **editar categoria/recorrência direto na lista** · bolinha 🔴/🟢 em todos os lançamentos → **v48**/**v49** ·
+> ✅ **gerenciador de categorias em etiquetas** (criar/usar/remover) no painel de Regras → **v49**.
 > ⏳ Pendentes — **#3** ícones SVG no lugar de emojis · adotar `--sp-*` nos paddings/margens (incremental) · **#9** revisão de contraste AA nos dois temas.
 
 > **Obs.:** o "Mockup textual" abaixo é histórico (layout antigo de acordeão único com contas

@@ -1,6 +1,8 @@
 # Plano de Funcionalidades — Soluções para um App de Finanças Pessoais
 
-> **Status (jul/2026, v39):** ✅ Ondas 1–7 **concluídas** (7.1–7.8 entregues).
+> **Status (jul/2026, v49):** ✅ Ondas 1–7 **concluídas** (7.1–7.8 entregues) + polimento
+> v40–v49 (temas claro/escuro, importação OFX com nome limpo/categoria por tipo, gerenciador
+> de categorias e regras, edição em modal, recorrentes lançados no dia, salário marcado).
 > Cada item concluído abaixo traz a **versão** entre parênteses — ex.: `✅ (v6)`. Essa versão é a
 > seção correspondente no **[CHANGELOG.md](../CHANGELOG.md)** (organizado por `## vNN`), onde está
 > descrito o que mudou. Itens pendentes trazem o número do item da **Onda 7** (ex.: `⏳ (7.4)`).

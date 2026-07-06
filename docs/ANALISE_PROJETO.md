@@ -1,6 +1,6 @@
 # Análise do Projeto — Financeiro
 
-> **Atualizado para a v39** (Onda 7 completa). A evolução versão a versão está no [CHANGELOG.md](CHANGELOG.md);
+> **Atualizado para a v49.** A evolução versão a versão está no [CHANGELOG.md](CHANGELOG.md);
 > o roadmap com a versão de cada entrega em [planos/PLANO_FUNCIONALIDADES.md](planos/PLANO_FUNCIONALIDADES.md).
 
 ## O que é o projeto
@@ -8,9 +8,9 @@
 Um **aplicativo web de controle financeiro pessoal** sobre **Google Apps Script (GAS)**,
 com uma **Google Sheets** como banco de dados. É publicado como Web App (`doGet`) e serve
 um app de página única, responsivo (celular e desktop), com **navegação por telas** (barra
-inferior no celular / menu lateral no desktop) e um **tema escuro neumórfico** (fundo preto
-com textura de papel e um cifrão em relevo ao fundo). Tem atalho de "adicionar à tela
-inicial". Acesso `MYSELF` (só a conta dona abre).
+inferior no celular / menu lateral no desktop) e **temas claro e escuro** neumórficos (fundo
+com textura de papel e um cifrão em relevo ao fundo; alternância 🌙/☀️ com persistência). Tem
+atalho de "adicionar à tela inicial". Acesso `MYSELF` (só a conta dona abre).
 
 ## Arquitetura
 
@@ -38,14 +38,14 @@ fixa). Principais grupos de funções:
 | Web | `doGet` (serve HTML + manifest) |
 | Transações | `addTransacao`, `updateTransacao`, `deleteTransacao`, `listTransacoes`, `setCategoriaTransacao`, `setTipoTransacao` (edição rápida por ID) |
 | Resumo/visão | `getResumo`, `getEvolucao`, `getPorCategoria`, `getRelatorioAnual`, `getCompartilhados`, `getProjecaoParcelas` |
-| Recorrentes | `gerarRecorrentes` + gatilho mensal (`verificarRecorrentes`, `instalar/remover/statusGatilhoRecorrentes`) |
+| Recorrentes | `gerarRecorrentes` (só materializa data ≤ hoje) + gatilho **diário** (`verificarRecorrentes`, `instalar/remover/statusGatilhoRecorrentes`) |
 | Orçamentos | `getOrcamentos`, `setOrcamento`, `deleteOrcamento`, `getSugestoesOrcamento` |
 | Metas | `getMetas`, `setMeta`, `deleteMeta` |
 | Contas / Cartão | `getContas`, `setConta`, `deleteConta`, `getFaturaCartao` |
 | 50/30/20 | `getRegra503020`, `getClassificacao`, `setClasseCategoria` |
 | Lembretes | `getLembretes`, `setLembrete`, `deleteLembrete`, `verificarLembretes` + gatilho diário |
 | Import/Backup | `importarTransacoes`, `exportarBackup` (CSV), `exportarBackupXML` + **backup agendado** (`backupAgendado` + gatilho semanal/mensal) |
-| Categorização | `categorizarAuto_` (regras → tipo → histórico → keywords), `getRegras`/`setRegra` (aplica às existentes)/`deleteRegra`, `recategorizar`, `getCategorias`, `renomearCategoria` |
+| Categorização | `categorizarAuto_` (regras → tipo → histórico → keywords), `getRegras`/`setRegra` (aplica às existentes)/`deleteRegra`, `recategorizar`, `getCategorias`/`setCategoria`/`deleteCategoria` (aba Categorias), `renomearCategoria` |
 | Telegram | `parseLancamentoMsg_`, `get/setConfigTelegram`, `verificarTelegram` + gatilho de 1 min (polling via `UrlFetchApp`) |
 | Setup | `criarEstruturaPlanilha`, `migrarEstrutura`, `testarEstrutura`, `include` |
 
@@ -57,16 +57,17 @@ fixa). Principais grupos de funções:
 | Tela | Painéis |
 |------|---------|
 | 🏠 Início | Resumo do mês + saldos por conta |
-| ➕ Lançar | Novo lançamento + Transações do mês |
+| ➕ Lançar | Novo lançamento (+ "é salário" nas receitas) + Transações do mês (categoria/recorrência editáveis na lista; **editar em modal**) |
 | 📊 Análise | Gráficos, Relatório anual, Parcelas futuras, Fatura de cartão, Compartilhado |
 | 🎯 Planejar | Orçamentos, Metas, Regra 50/30/20, Lembretes |
-| ⚙️ Config | Contas, Backup (+ agendado), Bot do Telegram, Importar extrato, Regras de categoria |
+| ⚙️ Config | Contas, Backup (+ agendado), Bot do Telegram, Importar extrato, Categorias & Regras (gerenciar/renomear/juntar) |
 
 No **cabeçalho** (visível em qualquer tela): navegação de mês (‹ › + rótulo) com botão
-**"Hoje"** para voltar ao mês atual, e botão de instalar. Recursos de UI: **tema escuro
-neumórfico** (fundo preto + textura + cifrão em relevo, superfícies translúcidas),
-responsividade (breakpoint 900px), barra de "Salvar" fixa na tela Lançar (mobile), máscara
-de moeda, atalho `Ctrl+Enter`, gráficos SVG com paleta acessível e escape de HTML.
+**"Hoje"** para voltar ao mês atual, botão de instalar e alternância de **tema 🌙/☀️**. Recursos
+de UI: **temas claro e escuro** neumórficos (textura + cifrão em relevo, superfícies
+translúcidas, design tokens), toasts, skeleton loading, `:focus-visible`, responsividade
+(breakpoint 900px), barra de "Salvar" fixa na tela Lançar (mobile), máscara de moeda, atalho
+`Ctrl+Enter`, gráficos SVG com paleta acessível e escape de HTML.
 
 ## Modelo de dados (abas da planilha)
 
