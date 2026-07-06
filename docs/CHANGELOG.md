@@ -3,6 +3,10 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v50 — Cabeçalho fixo + barra de rolagem bonita
+- **Cabeçalho sempre visível:** a faixa do topo (navegação de mês ‹ ›, botão "Hoje" e alternância de tema 🌙/☀️) agora **fica fixa ao rolar** também no **desktop** — antes ela subia junto com a página (no celular já era fixa). Ela passa a ocupar a largura toda, com o conteúdo alinhado à coluna central; o menu lateral desce um pouco para não ficar por baixo.
+- **Barra de rolagem estilizada:** scrollbar **fina, arredondada e discreta**, temática (clara/escura) — no lugar da barra padrão do sistema. Vale para a página e para áreas roláveis (modal, etc.).
+
 ## v49 — Recorrentes no dia certo · salário · modal de edição · categorias em lista
 - **Recorrentes só quando o dia chega:** os recorrentes deixam de ser lançados adiantados. Cada um vira lançamento **de fato no dia em que cai** (gatilho **diário** + ao abrir o app, sempre idempotente). Assim o **Saldo Atual** reflete só o que já aconteceu até **hoje**, e o futuro fica como previsão.
 - **Marcar receita como Salário:** ao lançar/editar uma **Receita**, um toque em **💼 É salário** marca a categoria **Salário**. O resumo passa a usar **o salário que você realmente recebeu no mês** como base do "% do salário" (com fallback para o valor da Config).
