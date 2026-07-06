@@ -699,6 +699,33 @@
       font-size: var(--fs-xs); font-family: inherit; cursor: pointer;
     }
 
+    /* Modal de edição (dialog) */
+    dialog.modal { border: none; background: transparent; padding: 0; max-width: 96vw; max-height: 92vh; color: var(--text); }
+    dialog.modal::backdrop { background: rgba(0, 0, 0, .55); backdrop-filter: blur(2px); }
+    .modalCard {
+      width: 560px; max-width: 96vw; background: var(--bg); border: 1px solid var(--line);
+      border-radius: var(--r-lg, 16px); box-shadow: 0 18px 50px rgba(0, 0, 0, .5); overflow: hidden;
+      display: flex; flex-direction: column; max-height: 92vh;
+    }
+    .modalHead { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+    .modalHead h2 { margin: 0; font-size: var(--fs-lg, 18px); }
+    .modalX { background: transparent; border: none; color: var(--muted); font-size: 20px; cursor: pointer; line-height: 1; padding: 4px 8px; }
+    .modalBody { padding: 14px 16px; overflow-y: auto; }
+    .modalBody label { display: block; margin: 10px 0 4px; font-size: var(--fs-sm); color: var(--muted); }
+    .modalBody .row2 label { margin-top: 0; }
+    .modalFoot { display: flex; gap: 10px; justify-content: flex-end; padding: 12px 16px; border-top: 1px solid var(--line); }
+    .modalFoot .btn, .modalFoot .btnGhost { width: auto; padding: 10px 18px; }
+    .chkRow { display: flex; align-items: center; gap: 8px; font-size: var(--fs-sm); color: var(--text); cursor: pointer; padding: 8px 0; }
+    .chkRow input { width: 18px; height: 18px; }
+
+    /* Gerenciador de categorias (chips) */
+    .catChips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .catChip { display: inline-flex; align-items: stretch; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--chip); }
+    .catChip .catUse { background: transparent; border: none; color: var(--text); font: inherit; font-size: var(--fs-xs); padding: 6px 10px; cursor: pointer; }
+    .catChip .catDel { background: transparent; border: none; border-left: 1px solid var(--line); color: var(--muted); cursor: pointer; padding: 0 9px; font-size: 12px; }
+    .catChip .catDel:hover { color: var(--bad); }
+    hr.sep { border: none; border-top: 1px solid var(--line); margin: 16px 0; }
+
     /* Barra de progresso do % do salário */
     .progress {
       height: 8px; border-radius: 999px; background: var(--track);

@@ -3,6 +3,13 @@
 Versões referem-se às implantações publicadas no Apps Script (`clasp` → `redeploy`).
 O código está versionado no GitHub (privado) e sincronizado com o Apps Script.
 
+## v49 — Recorrentes no dia certo · salário · modal de edição · categorias em lista
+- **Recorrentes só quando o dia chega:** os recorrentes deixam de ser lançados adiantados. Cada um vira lançamento **de fato no dia em que cai** (gatilho **diário** + ao abrir o app, sempre idempotente). Assim o **Saldo Atual** reflete só o que já aconteceu até **hoje**, e o futuro fica como previsão.
+- **Marcar receita como Salário:** ao lançar/editar uma **Receita**, um toque em **💼 É salário** marca a categoria **Salário**. O resumo passa a usar **o salário que você realmente recebeu no mês** como base do "% do salário" (com fallback para o valor da Config).
+- **Editar em janela (modal):** clicar em **✏️ Editar** abre um **diálogo** com os campos do lançamento — não joga mais tudo no formulário do topo. Salvou, fecha e atualiza.
+- **Categorias em lista (não só select):** em **Config → Regras de categoria**, todas as categorias aparecem como **etiquetas**: toque para usar numa regra, **➕ crie** novas (persistidas na aba `Categorias`) e **✕ remova** as suas. Mais fácil de cadastrar e adaptar.
+- Backend: `gerarRecorrentes` respeita a data de hoje (retorna `pendentes`); gatilho diário; `getResumo` deriva salário de receitas "Salário"; nova aba **Categorias** com `setCategoria`/`deleteCategoria`; `getCategorias` inclui as custom. Testes: **187 checagens**.
+
 ## v48 — Editar categoria/recorrente na lista + categorias flexíveis
 - **Categoria direto na lista:** cada lançamento agora tem um **seletor de categoria** — troca na hora, sem abrir o formulário inteiro (desktop e celular).
 - **Recorrente com 1 toque:** botão **🔄** em cada lançamento marca/desmarca como recorrente, com **selo 🔄 Recorrente** visível. Os recorrentes do mês passam a ser **lançados automaticamente** ao abrir o app (idempotente, sem duplicar) — o botão manual continua disponível.

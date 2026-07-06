@@ -378,7 +378,16 @@
         </div>
       </div>
       <div class="panelBody" id="bodyRegras">
-        <div class="hint" style="margin-bottom:10px;">Ensine o app: quando a descrição <b>contém</b> um termo, aplica a categoria. Ex.: termo <b>giraffas</b> → <b>Alimentação</b>. Vale na importação, no bot e no botão de recategorizar. Assim ele aprende os lugares que a lista embutida não conhece.</div>
+        <div class="hint" style="margin-bottom:8px;">🗂️ <b>Suas categorias</b> — toque numa para usá-la na regra abaixo; ➕ crie novas; ✕ remove as que você criou.</div>
+        <div id="catManager" class="catChips"></div>
+        <div class="row2" style="margin:10px 0 4px;">
+          <input class="field" type="text" id="novaCat" autocomplete="off" placeholder="Nova categoria (ex.: Pets)" />
+          <button class="btnGhost" id="btnAddCat">➕ Criar categoria</button>
+        </div>
+        <div class="msg" id="msgCat"></div>
+        <hr class="sep" />
+
+        <div class="hint" style="margin-bottom:10px;">Ensine o app: quando a descrição <b>contém</b> um termo, aplica a categoria. Ex.: termo <b>giraffas</b> → <b>Alimentação</b>. Vale na importação, no bot e é aplicada <b>na hora</b> aos lançamentos existentes.</div>
         <div class="row2" style="margin-bottom:10px;">
           <div>
             <label for="rgTermo">🔤 Termo (parte da descrição)</label>
@@ -386,7 +395,7 @@
           </div>
           <div>
             <label for="rgCat">🗂️ Categoria</label>
-            <input class="field" type="text" id="rgCat" list="catList" autocomplete="off" placeholder="Ex.: Alimentação" />
+            <input class="field" type="text" id="rgCat" list="catList" autocomplete="off" placeholder="Toque numa categoria acima" />
           </div>
         </div>
         <button class="btn" id="btnSalvarRegra">🏷️ Salvar regra</button>
@@ -517,6 +526,11 @@
             <option value="Transferências"></option>
             <option value="Outros"></option>
           </datalist>
+        </div>
+
+        <!-- Salário (só aparece em Receita) -->
+        <div id="salarioBlock" style="display:none; margin-bottom:12px;">
+          <label class="chkRow"><input type="checkbox" id="tSalario" /> 💼 Esta receita é o seu <b>salário</b></label>
         </div>
 
         <!-- Compartilhado -->
@@ -739,6 +753,97 @@
       <button class="btn" id="btnSalvar">💾 Salvar</button>
     </div>
   </div>
+
+  <!-- Modal de edição de lançamento -->
+  <dialog id="editDialog" class="modal">
+    <div class="modalCard">
+      <div class="modalHead">
+        <h2>✏️ Editar lançamento</h2>
+        <button type="button" class="modalX" id="eClose" aria-label="Fechar">✕</button>
+      </div>
+      <div class="modalBody">
+        <div class="row2">
+          <div>
+            <label for="eData">📅 Data</label>
+            <input class="field" type="date" id="eData" />
+          </div>
+          <div>
+            <label for="eValor">💵 Valor</label>
+            <input class="field" type="text" id="eValor" inputmode="numeric" placeholder="0,00" />
+          </div>
+        </div>
+        <label for="eDesc">🏷️ Descrição</label>
+        <input class="field" type="text" id="eDesc" autocomplete="off" />
+        <div class="row2">
+          <div>
+            <label for="eNatureza">↕️ Tipo de movimento</label>
+            <select class="field" id="eNatureza">
+              <option value="Despesa">🔴 Despesa</option>
+              <option value="Receita">🟢 Receita</option>
+            </select>
+          </div>
+          <div id="eSalarioWrap" style="display:none;">
+            <label>💼 Origem</label>
+            <label class="chkRow"><input type="checkbox" id="eSalario" /> É salário</label>
+          </div>
+        </div>
+        <label for="eCategoria">🗂️ Categoria</label>
+        <input class="field" type="text" id="eCategoria" list="catList" autocomplete="off" placeholder="Ex.: Mercado, Transporte..." />
+        <div class="row2">
+          <div>
+            <label for="eConta">🏦 Conta</label>
+            <select class="field" id="eConta"></select>
+          </div>
+          <div>
+            <label for="eMeio">💰 Meio</label>
+            <select class="field" id="eMeio">
+              <option value="Conta">💰 Conta</option>
+              <option value="Cartão">💳 Cartão</option>
+            </select>
+          </div>
+        </div>
+        <div class="row2">
+          <div>
+            <label for="eTipo">📝 Recorrência</label>
+            <select class="field" id="eTipo">
+              <option value="Único">⚡ Único</option>
+              <option value="Recorrente">🔄 Recorrente</option>
+              <option value="Parcelado">📋 Parcelado</option>
+              <option value="Anual">📅 Anual</option>
+            </select>
+          </div>
+          <div id="eCompartWrap">
+            <label for="eCompart">🤝 Compartilhado</label>
+            <select class="field" id="eCompart">
+              <option value="0">Não</option>
+              <option value="1">Sim</option>
+            </select>
+          </div>
+        </div>
+        <div class="row2" id="eParcelasRow" style="display:none;">
+          <div>
+            <label for="eParcAtual">🔢 Parcela atual</label>
+            <input class="field" type="number" id="eParcAtual" min="1" inputmode="numeric" />
+          </div>
+          <div>
+            <label for="eParcTotal">📊 Total parcelas</label>
+            <input class="field" type="number" id="eParcTotal" min="1" inputmode="numeric" />
+          </div>
+        </div>
+        <div id="eRateioWrap" style="display:none;">
+          <label for="eRateio">📊 % que a outra pessoa paga (reembolsa)</label>
+          <input class="field" type="number" id="eRateio" min="1" max="100" inputmode="numeric" />
+        </div>
+        <label for="eObs">🗒️ Observação</label>
+        <textarea class="field" id="eObs" rows="2"></textarea>
+        <div class="msg" id="msgEdit"></div>
+      </div>
+      <div class="modalFoot">
+        <button type="button" class="btnGhost" id="eCancelar">Cancelar</button>
+        <button type="button" class="btn" id="eSalvarBtn">💾 Salvar alterações</button>
+      </div>
+    </div>
+  </dialog>
 
   <?!= include("js") ?>
 </body>

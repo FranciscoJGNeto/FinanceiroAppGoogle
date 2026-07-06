@@ -79,6 +79,7 @@ de moeda, atalho `Ctrl+Enter`, gráficos SVG com paleta acessível e escape de H
 - **Metas** — `ID | Descrição | Tipo | Alvo | Prazo | CriadoEm`.
 - **Classificacao** — `Categoria | Classe` (Essencial/Desejo/Poupança, para a regra 50/30/20).
 - **Regras** — `Termo | Categoria` (auto-categorização: descrição contém o termo → categoria).
+- **Categorias** — `Nome` (categorias custom criadas pelo usuário; somam-se às embutidas/usadas).
 
 ## Regras de negócio embutidas
 
@@ -88,6 +89,8 @@ de moeda, atalho `Ctrl+Enter`, gráficos SVG com paleta acessível e escape de H
 - **Total ajustado:** `totalGeral − reembolso` (gasto real).
 - **% do salário:** `totalAjustado / salário`.
 - **Saldo (derivado):** por conta, `saldoInicial + (receitas − despesas até a data) − (líquido até a DataSaldo)`. **Saldo Atual** = hoje; **Previsão Final** = fim do mês visto (encadeia entre meses). Sem `DataSaldo`, o valor é o saldo de hoje.
+- **Recorrentes:** materializados **no dia em que caem** (data ≤ hoje) — gatilho diário + ao abrir o app, idempotente. Os do futuro não são antecipados.
+- **Salário:** se houver receitas com categoria **Salário** no mês, a soma delas é a base do `% do salário`; senão, usa o valor da Config.
 - **Economia (metas):** `receitas − despesas` (do mês ou acumulada até um prazo).
 
 ## Público / uso

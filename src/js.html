@@ -76,6 +76,12 @@
         if (nat === 'Receita') { cb.style.display = 'none'; setCompart(false); }
         else cb.style.display = '';
       }
+      // "É salário?" só faz sentido em receita
+      const sb = document.getElementById('salarioBlock');
+      if (sb) {
+        if (nat === 'Receita') sb.style.display = '';
+        else { sb.style.display = 'none'; const s = document.getElementById('tSalario'); if (s) s.checked = false; }
+      }
     }
 
     // ---- Parcelas só aparecem quando Tipo = Parcelado ----
@@ -1673,14 +1679,15 @@
 
     // Delegação de clique nos botões editar/excluir (cards e tabela)
     function gerarRecorrentes() {
-      if (!confirm('Gerar os lançamentos recorrentes neste mês?\n\n'
-        + 'Itens marcados como "Recorrente" em meses anteriores que ainda não existem '
-        + 'neste mês serão criados (sem duplicar os que já existem).')) return;
+      if (!confirm('Lançar os recorrentes deste mês cujo dia já chegou?\n\n'
+        + 'Só entram os itens "Recorrente" de meses anteriores cujo dia (<= hoje) já passou, '
+        + 'sem duplicar os que já existem. Os do futuro entram sozinhos quando o dia chegar.')) return;
       setMsg('msgLista', '⏳ Gerando recorrentes...', 'ok');
       google.script.run
         .withSuccessHandler(res => {
-          const parts = [`✅ ${res.criadas} recorrente(s) criada(s)`];
+          const parts = [`✅ ${res.criadas} recorrente(s) lançada(s)`];
           if (res.ignoradas) parts.push(`${res.ignoradas} já existia(m)`);
+          if (res.pendentes) parts.push(`${res.pendentes} aguardando o dia`);
           setMsg('msgLista', parts.join(' · ') + '.', 'ok');
           refresh();
         })
@@ -1714,8 +1721,8 @@
       const st = document.getElementById('recStatus');
       if (btn) btn.textContent = ativo ? '🚫 Desativar automático' : '⏰ Gerar automático';
       if (st) st.innerHTML = ativo
-        ? '✅ Geração automática <b>ativa</b> (todo dia 1º do mês).'
-        : '⚪ Geração automática desativada — use o botão acima quando quiser.';
+        ? '✅ Geração automática <b>ativa</b> — cada recorrente é lançado no dia em que cai.'
+        : '⚪ Geração automática desativada. Obs.: ao abrir o app, os recorrentes cujo dia já chegou também são lançados.';
     }
     function toggleGatilhoRec() {
       const btn = document.getElementById('btnToggleGatilhoRec');
@@ -1733,7 +1740,7 @@
       if (!btn) return;
       const id = btn.getAttribute('data-id');
       const act = btn.getAttribute('data-act');
-      if (act === 'edit') iniciarEdicao(id);
+      if (act === 'edit') abrirEdicao(id);
       else if (act === 'del') excluir(id);
       else if (act === 'rec') toggleRecorrente(id);
     }
@@ -1776,9 +1783,130 @@
           catOptions = cats || [];
           const dl = document.getElementById('catList');
           if (dl) dl.innerHTML = catOptions.map(c => `<option value="${escapeHtml(c)}"></option>`).join('');
+          renderCatManager();
         })
         .withFailureHandler(() => {})
         .getCategorias();
+    }
+
+    // Gerenciador visual de categorias (chips) no painel de Regras
+    function renderCatManager() {
+      const el = document.getElementById('catManager');
+      if (!el) return;
+      if (!catOptions.length) { el.innerHTML = '<span class="hint">Nenhuma categoria ainda.</span>'; return; }
+      el.innerHTML = catOptions.map(c =>
+        `<span class="catChip"><button type="button" class="catUse" data-cat="${escapeHtml(c)}">${escapeHtml(c)}</button><button type="button" class="catDel" data-catdel="${escapeHtml(c)}" title="Remover">✕</button></span>`
+      ).join('');
+    }
+
+    function onCatManagerClick(e) {
+      const use = e.target.closest('button.catUse');
+      if (use) { document.getElementById('rgCat').value = use.getAttribute('data-cat'); document.getElementById('rgTermo').focus(); return; }
+      const del = e.target.closest('button.catDel');
+      if (del) {
+        const cat = del.getAttribute('data-catdel');
+        if (!confirm(`Remover a categoria "${cat}" da lista?\n(Os lançamentos que já a usam continuam com ela.)`)) return;
+        google.script.run
+          .withSuccessHandler(() => { toast('🗑️ Categoria removida da lista.', 'ok'); carregarCategorias(); })
+          .withFailureHandler(err => setMsg('msgCat', '❌ ' + (err?.message || err), 'err'))
+          .deleteCategoria(cat);
+      }
+    }
+
+    function addNovaCategoria() {
+      const nome = document.getElementById('novaCat').value.trim();
+      if (!nome) { setMsg('msgCat', '❌ Informe o nome da categoria.', 'err'); return; }
+      google.script.run
+        .withSuccessHandler(() => {
+          document.getElementById('novaCat').value = '';
+          setMsg('msgCat', '✅ Categoria criada.', 'ok');
+          document.getElementById('rgCat').value = nome;
+          carregarCategorias();
+        })
+        .withFailureHandler(err => setMsg('msgCat', '❌ ' + (err?.message || err), 'err'))
+        .setCategoria(nome);
+    }
+
+    // ---- Modal de edição de lançamento ----
+    let editModalId = null;
+    function eEl(id) { return document.getElementById(id); }
+
+    function abrirEdicao(id) {
+      const r = currentRows.find(x => x.id === id);
+      if (!r) { toast('❌ Lançamento não encontrado.', 'err'); return; }
+      editModalId = id;
+      eEl('eData').value = r.dataISO || new Date().toISOString().slice(0, 10);
+      setValorEl(eEl('eValor'), r.valor);
+      eEl('eDesc').value = r.descricao || '';
+      eEl('eCategoria').value = r.categoria || '';
+      eEl('eNatureza').value = r.natureza === 'Receita' ? 'Receita' : 'Despesa';
+      eEl('eConta').innerHTML = eEl('tConta').innerHTML; // reaproveita as contas
+      setSelectValue(eEl('eConta'), r.conta || '');
+      eEl('eMeio').value = r.meio || 'Conta';
+      eEl('eTipo').value = r.tipo || 'Único';
+      eEl('eCompart').value = r.compartilhado ? '1' : '0';
+      eEl('eRateio').value = r.rateio ? Math.round(r.rateio * 100) : 50;
+      eEl('eParcAtual').value = r.parcelaAtual || '';
+      eEl('eParcTotal').value = r.parcelaTotal || '';
+      eEl('eSalario').checked = normCat(r.categoria) === normCat('Salário');
+      eEl('eObs').value = r.obs || '';
+      atualizarCamposEdicao();
+      setMsg('msgEdit', '', 'ok');
+      const dlg = eEl('editDialog');
+      if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+    }
+
+    function fecharEdicao() {
+      editModalId = null;
+      const dlg = eEl('editDialog');
+      if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open');
+    }
+
+    // Mostra/oculta campos condicionais do modal conforme natureza/tipo/compartilhado
+    function atualizarCamposEdicao() {
+      const receita = eEl('eNatureza').value === 'Receita';
+      eEl('eSalarioWrap').style.display = receita ? '' : 'none';
+      eEl('eCompartWrap').style.display = receita ? 'none' : '';
+      if (receita) eEl('eCompart').value = '0';
+      eEl('eParcelasRow').style.display = eEl('eTipo').value === 'Parcelado' ? 'grid' : 'none';
+      eEl('eRateioWrap').style.display = (!receita && eEl('eCompart').value === '1') ? '' : 'none';
+    }
+
+    function salvarEdicaoModal() {
+      if (!editModalId) return;
+      const receita = eEl('eNatureza').value === 'Receita';
+      let categoria = eEl('eCategoria').value.trim();
+      if (receita && eEl('eSalario').checked) categoria = 'Salário';
+      const tipo = eEl('eTipo').value;
+      const t = {
+        data: eEl('eData').value,
+        conta: eEl('eConta').value,
+        meio: eEl('eMeio').value,
+        descricao: eEl('eDesc').value.trim(),
+        categoria: categoria,
+        tipo: tipo,
+        natureza: eEl('eNatureza').value,
+        compartilhado: !receita && eEl('eCompart').value === '1',
+        rateio: (Number(eEl('eRateio').value) || 0) / 100,
+        parcelaAtual: tipo === 'Parcelado' ? eEl('eParcAtual').value : '',
+        parcelaTotal: tipo === 'Parcelado' ? eEl('eParcTotal').value : '',
+        valor: centsOfEl(eEl('eValor')) / 100,
+        obs: eEl('eObs').value.trim()
+      };
+      if (!t.descricao) { setMsg('msgEdit', '❌ Informe a descrição.', 'err'); return; }
+      if (!(t.valor > 0)) { setMsg('msgEdit', '❌ Informe um valor maior que 0.', 'err'); return; }
+      setMsg('msgEdit', '⏳ Salvando...', 'ok');
+      eEl('eSalvarBtn').disabled = true;
+      google.script.run
+        .withSuccessHandler(() => {
+          eEl('eSalvarBtn').disabled = false;
+          fecharEdicao();
+          toast('✅ Lançamento atualizado!', 'ok');
+          carregarCategorias();
+          refresh();
+        })
+        .withFailureHandler(err => { eEl('eSalvarBtn').disabled = false; setMsg('msgEdit', '❌ ' + (err?.message || err), 'err'); })
+        .updateTransacao(editModalId, t);
     }
 
     function salvar() {
@@ -1790,6 +1918,7 @@
         categoria: document.getElementById('tCategoria').value.trim(),
         tipo: document.getElementById('tTipo').value,
         natureza: document.getElementById('tNatureza').value,
+        salario: document.getElementById('tSalario') && document.getElementById('tSalario').checked,
         compartilhado: document.getElementById('tCompart').value === '1',
         rateio: (Number(document.getElementById('tRateio').value) || 0) / 100,
         parcelaAtual: document.getElementById('tParcAtual').value,
@@ -1797,6 +1926,9 @@
         valor: valorCentavos() / 100,
         obs: document.getElementById('tObs').value.trim()
       };
+
+      // "É salário" marca a categoria como Salário (usada como base do % do salário)
+      if (t.natureza === 'Receita' && t.salario) t.categoria = 'Salário';
 
       if (!t.descricao) {
         setMsg('msgSalvar', '❌ Informe a descrição.', 'err');
@@ -1892,6 +2024,17 @@
     document.getElementById('txCards').addEventListener('change', onListChange);
     document.getElementById('tb').addEventListener('change', onListChange);
     document.getElementById('btnRecorrentes').addEventListener('click', gerarRecorrentes);
+
+    // Modal de edição
+    eEl('eValor').addEventListener('input', (e) => { const c = centsOfEl(e.target); e.target.value = c ? formatCentavos(c) : ''; });
+    eEl('eNatureza').addEventListener('change', atualizarCamposEdicao);
+    eEl('eTipo').addEventListener('change', atualizarCamposEdicao);
+    eEl('eCompart').addEventListener('change', atualizarCamposEdicao);
+    eEl('eSalario').addEventListener('change', () => { if (eEl('eSalario').checked) eEl('eCategoria').value = 'Salário'; });
+    eEl('eSalvarBtn').addEventListener('click', salvarEdicaoModal);
+    eEl('eCancelar').addEventListener('click', fecharEdicao);
+    eEl('eClose').addEventListener('click', fecharEdicao);
+    eEl('editDialog').addEventListener('cancel', (e) => { e.preventDefault(); fecharEdicao(); });
     document.getElementById('btnToggleGatilhoRec').addEventListener('click', toggleGatilhoRec);
 
     // Relatório anual
@@ -1944,6 +2087,9 @@
     document.getElementById('btnRecategorizar').addEventListener('click', recategorizarTudo);
     document.getElementById('btnRenomearCat').addEventListener('click', renomearCategoria);
     document.getElementById('regrasList').addEventListener('click', onRegraCatClick);
+    document.getElementById('catManager').addEventListener('click', onCatManagerClick);
+    document.getElementById('btnAddCat').addEventListener('click', addNovaCategoria);
+    document.getElementById('novaCat').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addNovaCategoria(); } });
 
     // Contas
     document.getElementById('contaSaldo').addEventListener('input', (e) => {

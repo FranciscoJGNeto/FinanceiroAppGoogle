@@ -183,15 +183,31 @@ group('getProjecaoParcelas — parcelas em aberto');
 
 group('gerarRecorrentes — cria faltantes, não duplica, idempotente');
 {
+  // Datas relativas a HOJE: mês-alvo no PASSADO (todos os dias já chegaram).
+  const now = new Date();
+  const M = (delta, day) => new Date(now.getFullYear(), now.getMonth() + delta, day);
+  const isoM = (delta) => { const d = M(delta, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`; };
   const { api } = loadApp(baseTrans([
-    txRow({ id: 'a', data: new Date(2026, 5, 30), conta: 'Inter', descricao: 'Netflix', tipo: 'Recorrente', natureza: 'Despesa', valor: 55.9 }),
-    txRow({ id: 'b', data: new Date(2026, 5, 10), conta: 'Inter', descricao: 'Aluguel', tipo: 'Recorrente', natureza: 'Despesa', valor: 1200 }),
-    txRow({ id: 'd', data: new Date(2026, 6, 2), conta: 'Inter', descricao: 'Netflix', tipo: 'Recorrente', natureza: 'Despesa', valor: 55.9 })
+    txRow({ id: 'a', data: M(-2, 28), conta: 'Inter', descricao: 'Netflix', tipo: 'Recorrente', natureza: 'Despesa', valor: 55.9 }),
+    txRow({ id: 'b', data: M(-2, 10), conta: 'Inter', descricao: 'Aluguel', tipo: 'Recorrente', natureza: 'Despesa', valor: 1200 }),
+    txRow({ id: 'd', data: M(-1, 2), conta: 'Inter', descricao: 'Netflix', tipo: 'Recorrente', natureza: 'Despesa', valor: 55.9 })
   ]));
-  const r1 = api.gerarRecorrentes('2026-07-01');
-  eq([r1.criadas, r1.ignoradas], [1, 1], '1ª: cria Aluguel, ignora Netflix (já em julho)');
-  const r2 = api.gerarRecorrentes('2026-07-01');
+  const r1 = api.gerarRecorrentes(isoM(-1)); // mês passado (dias todos <= hoje)
+  eq([r1.criadas, r1.ignoradas], [1, 1], '1ª: cria Aluguel, ignora Netflix (já existe no mês)');
+  const r2 = api.gerarRecorrentes(isoM(-1));
   eq(r2.criadas, 0, '2ª chamada é idempotente (0 criadas)');
+}
+
+group('gerarRecorrentes — não antecipa os do futuro (lança só quando o dia chega)');
+{
+  const now = new Date();
+  const M = (delta, day) => new Date(now.getFullYear(), now.getMonth() + delta, day);
+  const isoNext = (() => { const d = M(1, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`; })();
+  const { api } = loadApp(baseTrans([
+    txRow({ id: 'a', data: M(0, 10), conta: 'Inter', descricao: 'Aluguel', tipo: 'Recorrente', natureza: 'Despesa', valor: 1200 })
+  ]));
+  const r = api.gerarRecorrentes(isoNext); // mês que vem: nenhum dia chegou
+  eq([r.criadas, r.pendentes], [0, 1], 'recorrente do mês futuro fica pendente (não é lançado)');
 }
 
 group('recorrentes automáticos — gatilho (instalar/status/remover) + verificar');
@@ -525,6 +541,33 @@ group('renomearCategoria — troca/funde em toda a base');
   eq(lst.filter(x => x.categoria === 'Alimentação').length, 0, 'não sobra nenhum "Alimentação"');
   eq(api.getOrcamentos()[0].categoria, 'Comida', 'orçamento também renomeado');
   throws(() => api.renomearCategoria('X', ''), 'renomear sem destino lança');
+}
+
+group('categorias custom — criar/listar/remover (aba Categorias)');
+{
+  const { api } = loadApp({ Transacoes: [HEADER.slice()], Categorias: [['Nome']] });
+  api.setCategoria('Pets');
+  api.setCategoria('pets'); // idempotente (normalizado)
+  ok(api.getCategorias().filter(c => c.toLowerCase() === 'pets').length === 1, 'categoria custom não duplica');
+  ok(api.getCategorias().indexOf('Pets') !== -1, 'categoria custom aparece na lista');
+  api.deleteCategoria('Pets');
+  ok(api.getCategorias().indexOf('Pets') === -1, 'remover tira a categoria custom');
+  ok(api.getCategorias().indexOf('Salário') !== -1, 'Salário está entre as categorias padrão');
+  throws(() => api.setCategoria('  '), 'categoria vazia lança');
+}
+
+group('salário informado por receita (categoria Salário) vira base do % salário');
+{
+  const { api } = loadApp({
+    Transacoes: [HEADER.slice(),
+      txRow({ id: '1', data: new Date(2026, 6, 5), conta: 'Inter', descricao: 'Pagamento', natureza: 'Receita', categoria: 'Salário', valor: 4000 }),
+      txRow({ id: '2', data: new Date(2026, 6, 6), conta: 'Inter', descricao: 'Mercado', natureza: 'Despesa', categoria: 'Mercado', valor: 1000 })],
+    Config: [['Configuração', 'Valor'], ['Salário líquido', 2000]],
+    Saldos: [['Conta', 'Saldo', 'Fechamento', 'Vencimento', 'DataSaldo'], ['Inter', 0, 0, 0, new Date(2026, 6, 1)]]
+  });
+  const r = api.getResumo('2026-07-01');
+  eq(r.salario, 4000, 'salário vem da receita marcada como Salário (4000), não da Config (2000)');
+  eq(r.pctSalario, 0.25, '% salário = 1000/4000 = 0,25');
 }
 
 group('contas — cadastro dinâmico (upsert, delete)');

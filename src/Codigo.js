@@ -8,6 +8,7 @@ const SHEET_LEMB = 'Lembretes';
 const SHEET_META = 'Metas';
 const SHEET_CLASS = 'Classificacao';
 const SHEET_REGRAS = 'Regras';
+const SHEET_CATEG = 'Categorias';
 
 // Colunas canônicas da aba Transacoes (ordem usada ao criar/completar o cabeçalho).
 const TRANS_COLS = ['ID', 'Data', 'Conta', 'Meio', 'Descrição', 'Tipo', 'Natureza', 'Categoria',
@@ -233,17 +234,27 @@ function renomearCategoria(de, para) {
   return { ok: true, atualizadas: atualizadas };
 }
 
-// Categorias distintas conhecidas (para os seletores): junta as embutidas, as já
-// usadas nos lançamentos, as de orçamentos e as das regras. Ordenadas.
+// Categorias custom persistidas pelo usuário (aba Categorias, coluna A).
+function getCategoriasCustom_() {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEET_CATEG);
+  if (!sh || sh.getLastRow() < 2) return [];
+  return sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues()
+    .map(r => String(r[0]).trim()).filter(Boolean);
+}
+
+// Categorias distintas conhecidas (para os seletores): junta as embutidas, as
+// custom (aba Categorias), as já usadas nos lançamentos, as de orçamentos e regras.
 function getCategorias() {
   const ss = SpreadsheetApp.getActive();
-  const base = ['Moradia', 'Mercado', 'Alimentação', 'Transporte', 'Saúde', 'Educação',
+  const base = ['Salário', 'Moradia', 'Mercado', 'Alimentação', 'Transporte', 'Saúde', 'Educação',
     'Lazer', 'Assinaturas', 'Vestuário', 'Contas e serviços', 'Impostos e taxas',
     'Investimentos', 'Transferências', 'Outros'];
   const seen = {};
   const out = [];
   const add = (c) => { const s = String(c || '').trim(); if (!s) return; const k = norm_(s); if (!seen[k]) { seen[k] = true; out.push(s); } };
   base.forEach(add);
+  getCategoriasCustom_().forEach(add);
   const shT = ss.getSheetByName(SHEET_TRANS);
   if (shT && shT.getLastRow() > 1) {
     const map = colMapTrans_(shT.getRange(1, 1, 1, shT.getLastColumn()).getValues()[0].map(norm_));
@@ -253,6 +264,34 @@ function getCategorias() {
   if (shO && shO.getLastRow() > 1) shO.getRange(2, 1, shO.getLastRow() - 1, 1).getValues().forEach(r => add(r[0]));
   getRegras().forEach(r => add(r.categoria));
   return out;
+}
+
+// Cria/garante uma categoria custom (aba Categorias). Idempotente (por norma).
+function setCategoria(nome) {
+  nome = String(nome || '').trim();
+  if (!nome) throw new Error('Informe o nome da categoria.');
+  const ss = SpreadsheetApp.getActive();
+  let sh = ss.getSheetByName(SHEET_CATEG);
+  if (!sh) { sh = ss.insertSheet(SHEET_CATEG); sh.getRange('A1').setValue('Nome').setFontWeight('bold'); }
+  const existentes = getCategoriasCustom_().map(norm_);
+  const base = getCategorias().map(norm_); // já inclui embutidas/usadas
+  if (existentes.indexOf(norm_(nome)) === -1) sh.appendRow([nome]);
+  return { ok: true, jaExistia: base.indexOf(norm_(nome)) !== -1 };
+}
+
+// Remove uma categoria custom (só da aba Categorias; embutidas/usadas continuam
+// aparecendo enquanto houver lançamentos com ela).
+function deleteCategoria(nome) {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEET_CATEG);
+  if (!sh || sh.getLastRow() < 2) return { ok: true };
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const v = sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues();
+    for (let i = 0; i < v.length; i++) { if (norm_(v[i][0]) === norm_(nome)) { sh.deleteRow(i + 2); break; } }
+  } finally { lock.releaseLock(); }
+  return { ok: true };
 }
 
 // Atualiza SÓ a categoria de um lançamento (pelo ID) — para edição rápida na lista.
@@ -711,6 +750,11 @@ function getResumo(mesISO) {
   }
   salario = numFrom_(salario, 0);
 
+  // Se houver receitas marcadas como "Salário" no mês, elas passam a ser a base do
+  // salário (o usuário informou de fato quanto recebeu) — senão, usa o valor da Config.
+  const salarioTx = sumRows(r => isReceita(r) && norm_(col(r, 'categoria')) === norm_('Salário'));
+  if (salarioTx > 0) salario = round2_(salarioTx);
+
   let rateio = numFrom_(cfg.rateio, null);
   if (rateio == null && shC && shC.getLastRow() >= 5) {
     try { rateio = Number(shC.getRange('B5').getValue()); } catch (e) { console.warn('Config rateio: ' + e); }
@@ -1019,14 +1063,21 @@ function gerarRecorrentes(mesISO) {
 
     const nCols = sh.getLastColumn();
     const ultimoDia = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+    // Só materializa recorrentes cujo dia JÁ CHEGOU (data <= hoje). Os do futuro
+    // ficam como previsão e são lançados de fato quando o dia chega (gatilho diário
+    // / ao abrir o app). Isso mantém o saldo atual e o razão fiéis à data de hoje.
+    const hoje = new Date();
+    hoje.setHours(23, 59, 59, 999);
     let criadas = 0;
     let ignoradas = 0;
+    let pendentes = 0;
 
     Object.keys(templates).forEach(k => {
       if (existentes[k]) { ignoradas++; return; }
       const src = templates[k];
       const dia = Math.min(src._dt.getDate(), ultimoDia);
       const novaData = new Date(target.getFullYear(), target.getMonth(), dia);
+      if (novaData > hoje) { pendentes++; return; } // ainda não chegou o dia
       const g = (f) => (map[f] != null ? src.row[map[f]] : '');
       const row = new Array(nCols).fill('');
       const setc = (campo, val) => { if (map[campo] != null) row[map[campo]] = val; };
@@ -1045,21 +1096,22 @@ function gerarRecorrentes(mesISO) {
       criadas++;
     });
 
-    return { ok: true, criadas: criadas, ignoradas: ignoradas };
+    return { ok: true, criadas: criadas, ignoradas: ignoradas, pendentes: pendentes };
   } finally {
     lock.releaseLock();
   }
 }
 
-// Rodado pelo gatilho mensal: gera os recorrentes do MÊS ATUAL (idempotente).
+// Rodado pelo gatilho diário: gera os recorrentes do MÊS ATUAL cujo dia já chegou
+// (idempotente — não duplica e não antecipa os do futuro).
 function verificarRecorrentes() {
   return gerarRecorrentes(); // sem arg = mês atual
 }
 
-// Gatilho automático mensal (dia 1º, ~06h) para verificarRecorrentes.
+// Gatilho automático DIÁRIO (~06h): lança cada recorrente no dia em que ele cai.
 function instalarGatilhoRecorrentes() {
   removerGatilhoRecorrentes();
-  ScriptApp.newTrigger('verificarRecorrentes').timeBased().onMonthDay(1).atHour(6).create();
+  ScriptApp.newTrigger('verificarRecorrentes').timeBased().everyDays(1).atHour(6).create();
   return { ok: true, ativo: true };
 }
 function removerGatilhoRecorrentes() {
@@ -2044,6 +2096,10 @@ function migrarEstrutura() {
   const sh = ss.getSheetByName(SHEET_TRANS);
   if (!sh) return 'Aba "Transacoes" não encontrada.';
 
+  // Garante abas novas (Regras, Categorias) sem tocar nas existentes.
+  if (!ss.getSheetByName(SHEET_REGRAS)) { const r = ss.insertSheet(SHEET_REGRAS); r.getRange('A1:B1').setValues([['Termo', 'Categoria']]).setFontWeight('bold'); }
+  if (!ss.getSheetByName(SHEET_CATEG)) { const c = ss.insertSheet(SHEET_CATEG); c.getRange('A1').setValue('Nome').setFontWeight('bold'); }
+
   const map = ensureColunasTrans_(sh); // garante ID/CriadoEm etc.
   const last = sh.getLastRow();
   if (last > 1 && map.id != null) {
@@ -2179,6 +2235,13 @@ function criarEstruturaPlanilha() {
     shR = ss.insertSheet(SHEET_REGRAS);
     shR.getRange('A1:B1').setValues([['Termo', 'Categoria']]);
     shR.getRange('A1:B1').setFontWeight('bold');
+  }
+
+  // Aba Categorias (categorias custom criadas pelo usuário)
+  let shCat = ss.getSheetByName(SHEET_CATEG);
+  if (!shCat) {
+    shCat = ss.insertSheet(SHEET_CATEG);
+    shCat.getRange('A1').setValue('Nome').setFontWeight('bold');
   }
 
   return 'Estrutura da planilha criada/atualizada com sucesso!';

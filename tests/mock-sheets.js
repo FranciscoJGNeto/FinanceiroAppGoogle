@@ -109,7 +109,7 @@ function loadApp(sheetsSpec) {
     'getMetas', 'setMeta', 'deleteMeta',
     'getRegra503020', 'getClassificacao', 'setClasseCategoria',
     'getRegras', 'setRegra', 'deleteRegra', 'recategorizar', 'getCategorias', 'renomearCategoria',
-    'setCategoriaTransacao', 'setTipoTransacao',
+    'setCategoriaTransacao', 'setTipoTransacao', 'setCategoria', 'deleteCategoria',
     'getContas', 'setConta', 'deleteConta', 'getFaturaCartao', 'exportarBackup', 'exportarBackupXML', 'importarTransacoes',
     'backupAgendado', 'instalarGatilhoBackup', 'removerGatilhoBackup', 'statusGatilhoBackup',
     'parseLancamentoMsg_', 'getConfigTelegram', 'setConfigTelegram', 'verificarTelegram',
